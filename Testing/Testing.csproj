@@ -69,18 +69,6 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.WindowsAPICodePack, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\_dependent\Microsoft.WindowsAPICodePack.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.WindowsAPICodePack.Shell, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\_dependent\Microsoft.WindowsAPICodePack.Shell.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.WindowsAPICodePack.ShellExtensions, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\_dependent\Microsoft.WindowsAPICodePack.ShellExtensions.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -99,6 +87,18 @@
     <ProjectReference Include="..\udnz.com.WinNative\udnz.com.WinNative.csproj">
       <Project>{1bc199dd-12f2-4f89-ab6a-518cdc6585f1}</Project>
       <Name>udnz.com.WinNative</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\WindowsAPICodePack\Core\Core.csproj">
+      <Project>{2e1fb0df-f9bb-4909-9f32-2d9d022a8e57}</Project>
+      <Name>Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\WindowsAPICodePack\ShellExtensions\ShellExtensions.csproj">
+      <Project>{f3c863ec-33f4-4ed2-9d67-00bf3eeeab64}</Project>
+      <Name>ShellExtensions</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\WindowsAPICodePack\Shell\Shell.csproj">
+      <Project>{aa0c00cb-8699-4f37-bfae-40ca87acc06d}</Project>
+      <Name>Shell</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -15,26 +15,95 @@ namespace Testing
 {
     class Program
     {
+        [DllImport("shell32.dll")]
+        private static extern int SHILCreateFromPath([MarshalAs(UnmanagedType.LPWStr)] string pszPath, out IntPtr ppIdl, ref uint rgflnOut);
+
+        static string extName = "我的扩展";
+        static Guid guid = new Guid("00000ABC-0000-0000-0000-5D45B06CF3C9");
+        static Guid computerGuid = new Guid("20D04FE0-3AEA-1069-A2D8-08002B30309D");
+        static string parsingName = string.Format("::{{{0}}}\\::{{{1}}}", computerGuid, guid);
+        static KnownFolderManagerClass m = new KnownFolderManagerClass();
+
         static void Main(string[] args)
         {
             Console.BufferWidth = 120;
             Console.WindowWidth = 120;
+            Console.WindowHeight = 50;
 
             //IntPtr desktopP;
             //var desktop = ShellExtension.GetDesktopFolder(out desktopP);
-
+            //ShellNativeMethods.SHGetDesktopFolder
             //GetChilds(desktop);
+            //---------------
 
-            ShellLibrary sl = new ShellLibrary("MyShellLib2", Microsoft.WindowsAPICodePack.Shell.KnownFolders.DeviceMetadataStore, true);
-            sl.LibraryType = LibraryFolderType.Music;
+            CreateLib();
 
             ListFolders();
 
-            string extName = "我的扩展";
-            var guid = new Guid("00000ABC-0000-0000-0000-5D45B06CF3C9");
-            var computerGuid = new Guid("20D04FE0-3AEA-1069-A2D8-08002B30309D");
-            var parsingName = string.Format("::{{{0}}}\\::{{{1}}}", computerGuid, guid);
+            RegisterFolder();
 
+
+            //--------------------
+            IShellItem s;
+            NonFileSystemKnownFolder sf = (NonFileSystemKnownFolder)ShellFolder.FromParsingName(KnownFolders.Computer.ParsingName);
+            IntPtr ppidl;
+            uint flag = 0;
+            SHILCreateFromPath(@"d:\temp", out ppidl, ref flag);
+            var tmp = ShellNativeMethods.SHCreateShellItem(IntPtr.Zero, sf.NativeShellFolder, ppidl, out s);
+            
+
+
+            GetFolder();
+
+            //DeleteFolder();
+
+            Console.WriteLine("Try to get extension again:");
+
+            GetFolder();
+
+
+            Console.ReadKey();
+        }
+
+        private static void DeleteFolder()
+        {
+            Console.WriteLine("===============DELETE================");
+            m.UnregisterFolder(guid);
+            Console.WriteLine("Extension deleted.");
+            Console.WriteLine();
+            Console.WriteLine();
+        }
+
+        private static void GetFolder()
+        {
+            Console.WriteLine("===============GET================");
+            IKnownFolderNative f;
+            m.GetFolder(guid, out f);
+            if (f != null)
+            {
+                KnownFoldersSafeNativeMethods.NativeFolderDefinition d2;
+                f.GetFolderDefinition(out d2);
+
+                Console.WriteLine("Extension found: {0}, {1}", Marshal.PtrToStringAuto(d2.name), Marshal.PtrToStringAuto(d2.relativePath));
+                Console.WriteLine("Extension: ::{{{0}}}\\::{{{1}}}", d2.parentId, f.GetId());
+
+                //Guid ishellItem = new Guid(ShellIIDGuid.IShellItem2);
+                //IShellItem2 s;
+                //f.GetShellItem((int)(KNOWN_FOLDER_FLAG.KF_FLAG_CREATE
+                //    | KNOWN_FOLDER_FLAG.KF_FLAG_DEFAULT_PATH
+                //    | KNOWN_FOLDER_FLAG.KF_FLAG_INIT
+                //    | KNOWN_FOLDER_FLAG.KF_FLAG_SIMPLE_IDLIST), ref ishellItem, out s);
+            }
+            else
+            {
+                Console.WriteLine("Got nothing");
+            }
+            Console.WriteLine();
+            Console.WriteLine();
+        }
+
+        private static void RegisterFolder()
+        {
             Console.WriteLine("===============ADD================");
             KnownFoldersSafeNativeMethods.NativeFolderDefinition d = new KnownFoldersSafeNativeMethods.NativeFolderDefinition();
             d.category = FolderCategory.Common;
@@ -50,66 +119,16 @@ namespace Testing
             d.parsingName = Marshal.StringToBSTR("::{" + guid + "}");
             d.attributes = 1;
 
-            KnownFolderManagerClass m = new KnownFolderManagerClass();
             m.RegisterFolder(guid, ref d);
 
             Console.WriteLine("Extension added: {0}", extName);
+            Console.WriteLine();
+            Console.WriteLine();
+        }
 
-            Console.WriteLine("===============List again================");
-
-
-            ListFolders();
-
-
-            Console.WriteLine("===============GET================");
-            IKnownFolderNative f;
-            m.GetFolder(guid, out f);
-            if (f != null)
-            {
-                //var sss = f.GetPath(0);
-                //Console.WriteLine(sss);
-
-                //f.SetPath((int)KNOWN_FOLDER_FLAG.KF_FLAG_DONT_UNEXPAND, @"d:\temp");
-                //sss = f.GetPath(0);
-                //Console.WriteLine(sss);
-
-                KnownFoldersSafeNativeMethods.NativeFolderDefinition d2;
-                f.GetFolderDefinition(out d2);
-
-                Console.WriteLine("Extension found: {0}, {1}", Marshal.PtrToStringAuto(d2.name), Marshal.PtrToStringAuto(d2.relativePath));
-                Console.WriteLine("Extension: ::{{{0}}}\\::{{{1}}}", d2.parentId, f.GetId());
-
-                Guid ishellItem = new Guid(ShellIIDGuid.IShellItem2);
-                IShellItem2 s;
-                f.GetShellItem((int)(KNOWN_FOLDER_FLAG.KF_FLAG_CREATE
-                    | KNOWN_FOLDER_FLAG.KF_FLAG_DEFAULT_PATH
-                    | KNOWN_FOLDER_FLAG.KF_FLAG_INIT
-                    | KNOWN_FOLDER_FLAG.KF_FLAG_SIMPLE_IDLIST), ref ishellItem, out s);
-
-
-                //Console.WriteLine("===============DELETE================");
-                //m.UnregisterFolder(guid);
-                //Console.WriteLine("Extension deleted.");
-
-                Console.WriteLine("===============GET================");
-                Console.WriteLine("Try to get extension again:");
-
-                IKnownFolderNative f2;
-                m.GetFolder(guid, out f2);
-                if (f2 != null)
-                {
-                    KnownFoldersSafeNativeMethods.NativeFolderDefinition d3;
-                    f2.GetFolderDefinition(out d3);
-                    Console.WriteLine("Extension found: {0}, {1}", Marshal.PtrToStringAuto(d3.name), Marshal.PtrToStringAuto(d3.relativePath));
-                }
-                else
-                {
-                    Console.WriteLine("Got nothing");
-                }
-            }
-
-
-            Console.ReadKey();
+        private static void CreateLib()
+        {
+            ShellLibrary sl = new ShellLibrary("MyShellLib2", Microsoft.WindowsAPICodePack.Shell.KnownFolders.Libraries, true);
         }
 
         private static void GetChilds(IShellFolder desktop)
@@ -139,6 +158,8 @@ namespace Testing
                     Console.WriteLine(name);
                 }
             }
+            Console.WriteLine();
+            Console.WriteLine();
         }
 
         private static void ListFolders()
@@ -147,8 +168,10 @@ namespace Testing
             while (ie.MoveNext())
             {
                 var s = ie.Current;
-                Console.WriteLine(string.Format("{0}\r\n\t{1}", s.Name, s.ParsingName));
+                Console.WriteLine(string.Format("{0,-25}\t{1}", s.Name, s.ParsingName));
             }
+            Console.WriteLine();
+            Console.WriteLine();
         }
     }
 }
