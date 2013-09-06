@@ -18,10 +18,10 @@ namespace Testing
         [DllImport("shell32.dll")]
         private static extern int SHILCreateFromPath([MarshalAs(UnmanagedType.LPWStr)] string pszPath, out IntPtr ppIdl, ref uint rgflnOut);
 
-        static string extName = "我的扩展";
-        static Guid guid = new Guid("00000ABC-0000-0000-0000-5D45B06CF3C9");
-        static Guid computerGuid = new Guid("20D04FE0-3AEA-1069-A2D8-08002B30309D");
-        static string parsingName = string.Format("::{{{0}}}\\::{{{1}}}", computerGuid, guid);
+        private const string EXT_NAME = "我的扩展";
+        static readonly Guid _guid = new Guid("00000ABC-0000-0000-0000-5D45B06CF3C9");
+        static readonly Guid _computerGuid = new Guid("20D04FE0-3AEA-1069-A2D8-08002B30309D");
+        static string _parsingName = string.Format("::{{{0}}}\\::{{{1}}}", _computerGuid, _guid);
         static KnownFolderManagerClass m = new KnownFolderManagerClass();
 
         static void Main(string[] args)
@@ -45,7 +45,7 @@ namespace Testing
 
             //--------------------
             IShellItem s;
-            NonFileSystemKnownFolder sf = (NonFileSystemKnownFolder)ShellFolder.FromParsingName(KnownFolders.Computer.ParsingName);
+            NonFileSystemKnownFolder sf = (NonFileSystemKnownFolder)ShellObject.FromParsingName(KnownFolders.Computer.ParsingName);
             IntPtr ppidl;
             uint flag = 0;
             SHILCreateFromPath(@"d:\temp", out ppidl, ref flag);
@@ -68,7 +68,7 @@ namespace Testing
         private static void DeleteFolder()
         {
             Console.WriteLine("===============DELETE================");
-            m.UnregisterFolder(guid);
+            m.UnregisterFolder(_guid);
             Console.WriteLine("Extension deleted.");
             Console.WriteLine();
             Console.WriteLine();
@@ -78,7 +78,7 @@ namespace Testing
         {
             Console.WriteLine("===============GET================");
             IKnownFolderNative f;
-            m.GetFolder(guid, out f);
+            m.GetFolder(_guid, out f);
             if (f != null)
             {
                 KnownFoldersSafeNativeMethods.NativeFolderDefinition d2;
@@ -107,21 +107,21 @@ namespace Testing
             Console.WriteLine("===============ADD================");
             KnownFoldersSafeNativeMethods.NativeFolderDefinition d = new KnownFoldersSafeNativeMethods.NativeFolderDefinition();
             d.category = FolderCategory.Common;
-            d.localizedName = Marshal.StringToBSTR(extName);
+            d.localizedName = Marshal.StringToBSTR(EXT_NAME);
             d.definitionOptions = DefinitionOptions.LocalRedirectOnly;
-            d.name = Marshal.StringToBSTR(extName);
+            d.name = Marshal.StringToBSTR(EXT_NAME);
             d.description = Marshal.StringToBSTR("我的扩展描述");
             d.localizedName = Marshal.StringToBSTR("MyExtension");
             //var parent = KnownFolderHelper.FromKnownFolderId(new Guid("20D04FE0-3AEA-1069-A2D8-08002B30309D"));
-            d.parentId = computerGuid;
+            d.parentId = _computerGuid;
             d.folderTypeId = FolderTypes.Documents;
             d.relativePath = Marshal.StringToBSTR("MyExtension");
-            d.parsingName = Marshal.StringToBSTR("::{" + guid + "}");
+            d.parsingName = Marshal.StringToBSTR("::{" + _guid + "}");
             d.attributes = 1;
 
-            m.RegisterFolder(guid, ref d);
+            m.RegisterFolder(_guid, ref d);
 
-            Console.WriteLine("Extension added: {0}", extName);
+            Console.WriteLine("Extension added: {0}", EXT_NAME);
             Console.WriteLine();
             Console.WriteLine();
         }
