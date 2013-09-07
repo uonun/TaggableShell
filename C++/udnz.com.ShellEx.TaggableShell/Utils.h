@@ -16,5 +16,6 @@ public:
 	~Utils(void);
 
 	//static LPWSTR MyLoadString(__in UINT uID);
+	static void __cdecl PrintLog(const wchar_t *format, ...);
 };
 

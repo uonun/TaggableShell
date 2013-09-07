@@ -16,12 +16,9 @@ MainForm::~MainForm(void)
 
 MainForm* MainForm::Instance(void)
 {
-	auto lock = LocalAlloc(LMEM_FIXED,1);
-	LocalLock(lock);
 	if(_instance==NULL){
 		_instance= new MainForm();
 	}
-	LocalUnlock(lock);
 	return _instance;
 }
 
@@ -54,6 +51,7 @@ HRESULT MainForm::LoadImageList(void){
 
 	HRESULT hr = SHGetImageList(SHIL_SMALL,IID_IImageList,(void **)&imgList);
 	TreeView_SetImageList(GetDlgItem(hdlg, IDC_TREE1),imgList,TVSIL_NORMAL);
+	imgList->Release();
 	return  hr;
 }
 
@@ -70,13 +68,6 @@ int MainForm::GetImgIdxInList(LPCTSTR pszPath)
 // Windows Tree-View Control http://www.songho.ca/misc/treeview/treeview.html
 HRESULT MainForm::LoadShellItems(void)
 {
-	HWND buLoad = GetDlgItem(hdlg, IDC_BU_LOAD);
-	Button_Enable(buLoad,false);
-
-	WCHAR str_loading[LOADSTRING_BUFFERSIZE];
-	LoadString(NULL,IDS_LOADING,str_loading,sizeof(str_loading)/sizeof(str_loading[0]));
-	SetWindowText(buLoad,str_loading);
-
 	LPSHELLFOLDER psfDeskTop = NULL;
 	// Get an IShellFolder interface pointer
 	HRESULT hr = SHGetDesktopFolder(&psfDeskTop);
@@ -108,15 +99,12 @@ HRESULT MainForm::LoadShellItems(void)
 		// 为根节点填充 1 级子级
 		hr = LoadSubItem(psfDeskTop,hTreeView,tvItem,1);
 
+		psfDeskTop->Release();
+		delete data;
+
 		// 展开根节点
 		TreeView_Expand(hTreeView,tvItem,TVE_EXPAND);
 	}
-
-	WCHAR str_load[LOADSTRING_BUFFERSIZE];
-	LoadString(NULL,IDS_BU_LOAD,str_load,sizeof(str_load)/sizeof(str_load[0]));
-	SetWindowText(buLoad,str_load);
-
-	Button_Enable(buLoad,true);
 
 	return S_OK;
 }
@@ -128,6 +116,14 @@ HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep
 
 	if(deep > 0 && sf != NULL)
 	{
+		HWND buLoad = GetDlgItem(hdlg, IDC_BU_LOAD);
+		Button_Enable(buLoad,false);
+
+		WCHAR str_loading[LOADSTRING_BUFFERSIZE];
+		LoadString(NULL,IDS_LOADING,str_loading,sizeof(str_loading)/sizeof(str_loading[0]));
+		SetWindowText(buLoad,str_loading);
+
+
 		LPENUMIDLIST ppenum;
 		hr = sf->EnumObjects(NULL,SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &ppenum);
 		if(hr == S_OK)
@@ -143,8 +139,7 @@ HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep
 				WCHAR pszDisplayName[MAX_PATH];
 				GetDisplayName(sf,pidlItems,MAX_PATH,pszDisplayName);
 
-				OutputDebugString(pszDisplayName);
-				OutputDebugString(L"\r\n");
+				Utils::PrintLog(L"%s\n",pszDisplayName); 
 
 				// bind LPITEMIDLIST to IShellFolder
 				IShellFolder *sub = NULL;
@@ -157,7 +152,7 @@ HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep
 				LPTVITEMDATA data = new TVITEMDATA();
 				data->bExpanded = deep > 1;
 				data->pShellFolder = sub;
-				 
+
 				// add tree-view item with user data((LPARAM)pidlItems).
 				auto tvItem = InsertItem(tv,pszDisplayName,parent,NULL,imgIdx,imgIdx,(LPARAM)data);
 
@@ -180,9 +175,16 @@ HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep
 
 				CoTaskMemFree(pidlItems);
 			}
-
 		}
 		sf->Release();
+
+
+		WCHAR str_load[LOADSTRING_BUFFERSIZE];
+		LoadString(NULL,IDS_BU_LOAD,str_load,sizeof(str_load)/sizeof(str_load[0]));
+		SetWindowText(buLoad,str_load);
+
+		Button_Enable(buLoad,true);
+
 	}
 	return hr;
 }
@@ -204,6 +206,75 @@ HTREEITEM MainForm::InsertItem(HWND hwnd,const LPWSTR str, HTREEITEM parent, HTR
 	// insert the item
 	//return (HTREEITEM)::SendMessage(hwnd, TVM_INSERTITEM,0, (LPARAM)&insertStruct);
 	return TreeView_InsertItem(hwnd,&insertStruct);
+}
+
+/*! 
+* Enumerate and print all known folders. 
+* http://code.msdn.microsoft.com/CppShellKnownFolders-449fd4d7/sourcecode?fileId=21583&pathId=2096200435
+*/ 
+void MainForm::PrintAllKnownFolders() 
+{ 
+	HRESULT hr; 
+	PWSTR pszPath = NULL; 
+
+	// Create an IKnownFolderManager instance 
+	IKnownFolderManager* pkfm = NULL; 
+	hr = CoCreateInstance(CLSID_KnownFolderManager, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pkfm)); 
+	if (SUCCEEDED(hr)) 
+	{ 
+		KNOWNFOLDERID *rgKFIDs = NULL; 
+		UINT cKFIDs = 0; 
+		// Get the IDs of all known folders 
+		hr = pkfm->GetFolderIds(&rgKFIDs, &cKFIDs); 
+		if (SUCCEEDED(hr)) 
+		{ 
+			IKnownFolder *pkfCurrent = NULL; 
+			// Enumerate the known folders. rgKFIDs[i] has the KNOWNFOLDERID 
+			for (UINT i = 0; i < cKFIDs; ++i) 
+			{ 
+				hr = pkfm->GetFolder(rgKFIDs[i], &pkfCurrent); 
+				if (SUCCEEDED(hr)) 
+				{ 
+					// Get the non-localized, canonical name for the known  
+					// folder from KNOWNFOLDER_DEFINITION 
+					KNOWNFOLDER_DEFINITION kfd; 
+					hr = pkfCurrent->GetFolderDefinition(&kfd); 
+					if (SUCCEEDED(hr)) 
+					{ 
+						// Next, get the path of the known folder 
+						hr = pkfCurrent->GetPath(0, &pszPath); 
+						if (SUCCEEDED(hr)) 
+						{ 
+							Utils::PrintLog(L"%s: %s\n", kfd.pszName, pszPath); 
+							CoTaskMemFree(pszPath); 
+						} 
+						FreeKnownFolderDefinitionFields(&kfd); 
+					} 
+					pkfCurrent->Release(); 
+				} 
+			} 
+			CoTaskMemFree(rgKFIDs); 
+		} 
+		pkfm->Release(); 
+	} 
+} 
+
+void MainForm::RegMyFolder(void)
+{
+	HRESULT hr; 
+
+
+	//IKnownFolder **computer;
+	//HRESULT hr = kfm->GetFolder(FOLDERID_ComputerFolder,computer);
+	//if(hr == S_OK){
+	//	KNOWNFOLDER_DEFINITION *kd;
+	//	kfm->RegisterFolder(computer,kd);
+	//}
+}
+
+void MainForm::UnRegMyFolder(void)
+{
+
 }
 
 LRESULT CALLBACK MainForm::DlgProc(     
@@ -240,6 +311,15 @@ LRESULT CALLBACK MainForm::DlgProc(
 			case ID_M_EXIT:
 				DestroyWindow(hdlg);
 				break;
+			case IDC_BU_REGFOLDER:
+				RegMyFolder();
+				break;
+			case IDC_BU_UNREGFOLDER:
+				UnRegMyFolder();
+				break;
+			case IDC_BU_LISTKNOWNFOLDERS:
+				PrintAllKnownFolders();
+				break;
 			}
 			return 0;
 		}
@@ -260,9 +340,8 @@ LRESULT CALLBACK MainForm::DlgProc(
 		PostQuitMessage(0);     
 		return 0;     
 	default:
-		WCHAR msg[260];
-		wsprintf(msg,L"Message: %d\r\n",uMsg);
-		OutputDebugStringW((LPCWSTR)msg);
+		//Utils::PrintLog(L"Message: %d\r\n",uMsg);
+		break;
 	}
 	return (INT_PTR)FALSE;
 }
@@ -329,9 +408,7 @@ int MainForm::TreeViewNotify(WPARAM wParam, LPARAM lParam)
 		// the item selection has changed
 	case TVN_SELCHANGED:
 		{
-			auto pnmtv = (LPNMTREEVIEW)lParam;
-			HTREEITEM item = pnmtv->itemNew.hItem;
-			OutputDebugStringW(L"TVN_SELCHANGED\r\n");
+
 		}
 		break;
 
@@ -345,7 +422,8 @@ int MainForm::TreeViewNotify(WPARAM wParam, LPARAM lParam)
 				auto tCurrentItem =pnmtv->itemNew.hItem;
 				auto sf = data->pShellFolder;
 				LoadSubItem(sf,tv,tCurrentItem,1);
-				data->bExpanded=true;
+				data->bExpanded=true;	
+				pnmtv->itemNew.lParam=NULL;
 				TreeView_Expand(tv,tCurrentItem,TVE_EXPAND);
 			}
 			OutputDebugStringW(L"TVN_SELCHANGED\r\n");

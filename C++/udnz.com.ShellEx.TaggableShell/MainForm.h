@@ -31,6 +31,10 @@ protected:
 
 private:
 	MainForm(void);
+	//把复制构造函数和=操作符也设为私有,防止被复制
+	MainForm(const MainForm&);
+	MainForm& operator=(const MainForm&);
+
 	static MainForm* _instance;
 
 	void GetDisplayName(IShellFolder* sf,LPITEMIDLIST pidlItems,_In_ UINT pszDisplayNameBuffSize,_Out_ LPWSTR pszDisplayName);
@@ -50,5 +54,9 @@ private:
 	HTREEITEM MainForm::InsertItem(HWND hwnd,const LPWSTR str, HTREEITEM parent, HTREEITEM insertAfter,int imageIndex, int selectedImageIndex,LPARAM pidl);
 	HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep = 1);
 	int TreeViewNotify(WPARAM wParam, LPARAM lParam);
+
+	void PrintAllKnownFolders();
+	void RegMyFolder(void);
+	void UnRegMyFolder(void);
 };
 
