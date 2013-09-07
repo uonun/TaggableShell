@@ -1,18 +1,33 @@
-#include <ShlObj.h>
-#include <shlwapi.h>
 #include "MainForm.h"
-#include <string>
-#include <sstream>
-using namespace std;
+
+
+MainForm* MainForm::_instance = NULL;
 
 MainForm::MainForm(void)
 {
+
 }
 
 
 MainForm::~MainForm(void)
 {
 
+}
+
+MainForm* MainForm::Instance(void)
+{
+	auto lock = LocalAlloc(LMEM_FIXED,1);
+	LocalLock(lock);
+	if(_instance==NULL){
+		_instance= new MainForm();
+	}
+	LocalUnlock(lock);
+	return _instance;
+}
+
+void MainForm::Init(HWND hdlg,HINSTANCE hApp){
+	this->hApp = hApp;
+	this->hdlg = hdlg;
 }
 
 // Tree-View Control Reference http://msdn.microsoft.com/en-us/library/ff486110(v=vs.85).aspx
@@ -35,64 +50,76 @@ HRESULT MainForm::LoadShellItems(void)
 		// 清空
 		TreeView_DeleteAllItems(hTreeView);
 
-		LPITEMIDLIST pidlProgFiles = NULL;
-		IShellFolder *psfProgFiles = NULL;
-
-		// 获取路径的 LPITEMIDLIST 对象
-		hr = SHGetFolderLocation(NULL, CSIDL_DRIVES, NULL, NULL, &pidlProgFiles);
-
-		// 将 LPITEMIDLIST 指定的路径 绑定到 IShellFolder 上
-		hr = psfDeskTop->BindToObject(pidlProgFiles, NULL, IID_IShellFolder, (LPVOID *) &psfProgFiles);
-		psfDeskTop->Release();
-
-		LPENUMIDLIST ppenum;
-		hr = psfProgFiles->EnumObjects(NULL,SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &ppenum);
-
-		if(FAILED(hr))
-			return hr;
-
-		// 添加根节点
-		auto trRoot = InsertItem(hTreeView,L"My Computer",TVI_ROOT,NULL,0,0,NULL);
-
-		LPITEMIDLIST pidlItems = NULL;
-		STRRET strDispName;
-		TCHAR pszDisplayName[MAX_PATH];
-		ULONG celtFetched;
-		//IShellFolder *psfFirstFolder = NULL;
-		ULONG uAttr;
-
-		while( hr = ppenum->Next(1,&pidlItems, &celtFetched) == S_OK && (celtFetched) == 1)
-		{
-			psfProgFiles->GetDisplayNameOf(pidlItems, SHGDN_INFOLDER, &strDispName);
-			StrRetToBuf(&strDispName, pidlItems, pszDisplayName, MAX_PATH);
-
-			OutputDebugString(pszDisplayName);
-			OutputDebugString(L"\r\n");
-
-			// 添加到 TreeView
-			//IShellFolder *s = NULL;
-			//hr = psfProgFiles->BindToObject(pidlItems, NULL, IID_IShellFolder, (LPVOID *) &s);
-
-			ITEMIDLIST* item = new ITEMIDLIST(*pidlItems);		
-			InsertItem(hTreeView,pszDisplayName,trRoot,NULL,0,0,(LPARAM)item);
-
-			//if(!psfFirstFolder)
-			//{
-			//	uAttr = SFGAO_FOLDER;
-			//	psfProgFiles->GetAttributesOf(1, (LPCITEMIDLIST *) &pidlItems, &uAttr);
-			//	if(uAttr & SFGAO_FOLDER)
-			//	{
-			//		hr = psfProgFiles->BindToObject(pidlItems, NULL, IID_IShellFolder, (LPVOID *) &psfFirstFolder);
-			//	}
-			//}
-			CoTaskMemFree(pidlItems);
-		}
+		hr = LoadSubItem(psfDeskTop,hTreeView,TVI_ROOT);
 		
 		// 展开根节点
-		TreeView_Expand(hTreeView,trRoot,TVE_EXPAND);
+		TreeView_Expand(hTreeView,TVI_ROOT,TVE_EXPAND);
 	}
 
 	return S_OK;
+}
+
+
+HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep)
+{	
+	HRESULT hr = S_FALSE;
+
+	if(deep > 0 && sf != NULL)
+	{
+		LPENUMIDLIST ppenum;
+		hr = sf->EnumObjects(NULL,SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &ppenum);
+		if(hr == S_OK)
+		{
+			LPITEMIDLIST pidlItems = NULL;
+			STRRET strDispName;
+			WCHAR pszDisplayName[MAX_PATH];
+			ULONG celtFetched;
+			ULONG uAttr;
+
+			while( hr = ppenum->Next(1,&pidlItems, &celtFetched) == S_OK && (celtFetched) == 1)
+			{
+				sf->GetDisplayNameOf(pidlItems, SHGDN_INFOLDER, &strDispName);
+				StrRetToBuf(&strDispName, pidlItems, pszDisplayName, MAX_PATH);
+
+				OutputDebugString(pszDisplayName);
+				OutputDebugString(L"\r\n");
+
+				// bind LPITEMIDLIST to IShellFolder
+				IShellFolder *sub = NULL;
+				hr = sf->BindToObject(pidlItems, NULL, IID_IShellFolder, (LPVOID *)&sub);
+
+				// generate a user data for tree-view item.
+				LPTVITEMDATA data = new TVITEMDATA();
+				data->bExpanded = false;
+				data->pShellFolder = sub;
+				
+				// add tree-view item with user data((LPARAM)pidlItems).
+				auto tvItem = InsertItem(tv,pszDisplayName,parent,NULL,0,0,(LPARAM)data);
+
+				// update tree-view
+				UpdateWindow(tv);
+
+#pragma region Get sub items.
+				if(hr == S_OK)
+				{
+					uAttr = SFGAO_FOLDER ;
+					sf->GetAttributesOf(1, (LPCITEMIDLIST *) &pidlItems, &uAttr);
+					if(uAttr & SFGAO_FOLDER)
+					{
+						deep--;
+						LoadSubItem(sub,tv,tvItem,deep);
+						deep++;
+					}
+				}
+#pragma endregion
+
+				CoTaskMemFree(pidlItems);
+			}
+
+		}
+		sf->Release();
+	}
+	return hr;
 }
 
 
@@ -102,12 +129,12 @@ HTREEITEM MainForm::InsertItem(HWND hwnd,const wchar_t* str, HTREEITEM parent, H
 	TVINSERTSTRUCT insertStruct;
 	insertStruct.hParent = parent;
 	insertStruct.hInsertAfter = insertAfter;
-	insertStruct.item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
+	insertStruct.item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_PARAM;
 	insertStruct.item.pszText = (LPWSTR)str;
 	insertStruct.item.cchTextMax = sizeof(str)/sizeof(str[0]);
 	insertStruct.item.iImage = imageIndex;
 	insertStruct.item.iSelectedImage = selectedImageIndex;
-	insertStruct.itemex.lParam = pidl;
+	insertStruct.item.lParam = pidl;
 
 	// insert the item
 	//return (HTREEITEM)::SendMessage(hwnd, TVM_INSERTITEM,0, (LPARAM)&insertStruct);
@@ -124,7 +151,10 @@ LRESULT CALLBACK MainForm::DlgProc(
 	switch(uMsg)     
 	{   
 	case WM_INITDIALOG:
-		return 0;
+		{
+			SetWindowText(GetDlgItem(hwnd, IDC_BU_LOAD),Utils::MyLoadString(IDS_BU_LOAD));
+			return 0;
+		}
 	case WM_SYSCOMMAND:
 		if(wParam == SC_CLOSE)
 		{
@@ -138,7 +168,9 @@ LRESULT CALLBACK MainForm::DlgProc(
 			switch(LOWORD(wParam))     
 			{     
 			case IDC_BU_LOAD:
+				SetWindowText(GetDlgItem(hwnd, IDC_BU_LOAD),Utils::MyLoadString(IDS_LOADING));
 				LoadShellItems();
+				SetWindowText(GetDlgItem(hwnd, IDC_BU_LOAD),Utils::MyLoadString(IDS_BU_LOAD));
 				break;
 			case ID_M_EXIT:
 				DestroyWindow(hdlg);
@@ -165,41 +197,41 @@ LRESULT CALLBACK MainForm::DlgProc(
 // Tree-View Notifications http://www.songho.ca/misc/treeview/treeviewnotify.html
 int MainForm::TreeViewNotify(WPARAM wParam, LPARAM lParam)
 {
-    // first cast lParam to NMHDR* to know what event is
-    NMHDR* nmhdr = (NMHDR*)lParam;
+	// first cast lParam to NMHDR* to know what event is
+	NMHDR* nmhdr = (NMHDR*)lParam;
 
-    // TreeView notifications start with TVN_
-    switch(nmhdr->code)
-    {
-    // drag-and-drop operation has begun
-    case TVN_BEGINDRAG:
-        // cast again lParam to NMTREEVIEW*
-        break;
+	// TreeView notifications start with TVN_
+	switch(nmhdr->code)
+	{
+		// drag-and-drop operation has begun
+	case TVN_BEGINDRAG:
+		// cast again lParam to NMTREEVIEW*
+		break;
 
-    // drag-and-drop operation using right mouse button has begun
-    case TVN_BEGINRDRAG:
-        break;
+		// drag-and-drop operation using right mouse button has begun
+	case TVN_BEGINRDRAG:
+		break;
 
-    // label editing has begun
-    case TVN_BEGINLABELEDIT:
-        // cast again lParam to NMTVDISPINFO*
-        break;
+		// label editing has begun
+	case TVN_BEGINLABELEDIT:
+		// cast again lParam to NMTVDISPINFO*
+		break;
 
-    // label editing has ended
-    case TVN_ENDLABELEDIT:
-        // cast again lParam to NMTVDISPINFO*
-        break;
+		// label editing has ended
+	case TVN_ENDLABELEDIT:
+		// cast again lParam to NMTVDISPINFO*
+		break;
 
-    // an item has been deleted
-    case TVN_DELETEITEM:
-        break;
+		// an item has been deleted
+	case TVN_DELETEITEM:
+		break;
 
-    // TreeView needs info(such as item text) to display an item
-    case TVN_GETDISPINFO:
-        break;
+		// TreeView needs info(such as item text) to display an item
+	case TVN_GETDISPINFO:
+		break;
 
-    // parent window must update the item information
-    case TVN_SETDISPINFO:
+		// parent window must update the item information
+	case TVN_SETDISPINFO:
 		break;
 
 		// list of items was expanded or collapsed
@@ -211,32 +243,46 @@ int MainForm::TreeViewNotify(WPARAM wParam, LPARAM lParam)
 		break;
 
 		// a keyboard event has occurred
-    case TVN_KEYDOWN:
-        // When the TreeView control is contained in a dialog box,
-        // IsDialogMessage() processes the ESC and ENTER keystrokes and
-        // does not pass them on to the edit control that is created by
-        // the TreeView control. The result is that the keystrokes have
-        // no effect.
-        // Cast again lParam to NMTVKEYDOWN*
-        break;
+	case TVN_KEYDOWN:
+		// When the TreeView control is contained in a dialog box,
+		// IsDialogMessage() processes the ESC and ENTER keystrokes and
+		// does not pass them on to the edit control that is created by
+		// the TreeView control. The result is that the keystrokes have
+		// no effect.
+		// Cast again lParam to NMTVKEYDOWN*
+		break;
 
 		// the item selection has changed
 	case TVN_SELCHANGED:
 		{
 			auto pnmtv = (LPNMTREEVIEW)lParam;
 			HTREEITEM item = pnmtv->itemNew.hItem;
-			
 			OutputDebugStringW(L"TVN_SELCHANGED\r\n");
 		}
 		break;
 
-    // the item selection is about to change
-    case TVN_SELCHANGING:
-        break;
+		// the item selection is about to change
+	case TVN_SELCHANGING:
+		{
+			auto pnmtv = (LPNMTREEVIEW)lParam;
+			TVITEMDATA *data = (LPTVITEMDATA)pnmtv->itemNew.lParam;
+			if(data!=NULL && !data->bExpanded){
+				auto tv=pnmtv->hdr.hwndFrom;
+				auto tCurrentItem =pnmtv->itemNew.hItem;
+				auto sf = data->pShellFolder;
+				LoadSubItem(sf,tv,tCurrentItem,1);
+				data->bExpanded=true;
+				TreeView_Expand(tv,tCurrentItem,TVE_EXPAND);
+			}
+			OutputDebugStringW(L"TVN_SELCHANGED\r\n");
+		}
+		break;
 
-    default:
-        break;
-    }
+	default:
+		break;
+	}
 
-    return 0;
+	return 0;
 }
+
+

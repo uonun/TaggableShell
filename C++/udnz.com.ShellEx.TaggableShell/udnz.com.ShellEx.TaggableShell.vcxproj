@@ -40,6 +40,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>..\$(Configuration)\</OutDir>
+    <TargetName>TaggableShell$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -82,11 +83,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MainForm.cpp" />
+    <ClCompile Include="Utils.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainForm.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Utils.h" />
     <ClInclude Include="WinMain.h" />
   </ItemGroup>
   <ItemGroup>

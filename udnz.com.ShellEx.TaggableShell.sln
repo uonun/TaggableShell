@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2010
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "udnz.com.ShellEx.TaggableShell", "DotNet\udnz.com.ShellEx.TaggableShell\udnz.com.ShellEx.TaggableShell.csproj", "{1CC2C525-90A7-48AA-8364-88010440D879}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "udnz.com.WinNative", "DotNet\udnz.com.WinNative\udnz.com.WinNative.csproj", "{1BC199DD-12F2-4F89-AB6A-518CDC6585F1}"
@@ -197,6 +197,7 @@ Global
 		{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8}.CodeAnalysisDebug|x64.ActiveCfg = Debug|Win32
 		{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8}.CodeAnalysisDebug|x86.ActiveCfg = Debug|Win32
 		{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8}.Debug|Any CPU.Build.0 = Debug|Win32
 		{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
 		{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8}.Debug|Mixed Platforms.Build.0 = Debug|Win32
 		{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8}.Debug|Win32.ActiveCfg = Debug|Win32
@@ -218,6 +219,7 @@ Global
 		{26CCBE08-33FE-4C55-B420-D19A4221CD69}.CodeAnalysisDebug|x64.ActiveCfg = Debug|Win32
 		{26CCBE08-33FE-4C55-B420-D19A4221CD69}.CodeAnalysisDebug|x86.ActiveCfg = Debug|Win32
 		{26CCBE08-33FE-4C55-B420-D19A4221CD69}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{26CCBE08-33FE-4C55-B420-D19A4221CD69}.Debug|Any CPU.Build.0 = Debug|Win32
 		{26CCBE08-33FE-4C55-B420-D19A4221CD69}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
 		{26CCBE08-33FE-4C55-B420-D19A4221CD69}.Debug|Mixed Platforms.Build.0 = Debug|Win32
 		{26CCBE08-33FE-4C55-B420-D19A4221CD69}.Debug|Win32.ActiveCfg = Debug|Win32
