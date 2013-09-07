@@ -30,10 +30,53 @@ void MainForm::Init(HWND hdlg,HINSTANCE hApp){
 	this->hdlg = hdlg;
 }
 
+unsigned __stdcall MainForm::ThreadStaticEntryPoint(void * pThis)
+{
+	MainForm * pthX = (MainForm*)pThis;
+	pthX->LoadImageList();
+	pthX->LoadShellItems();
+	return 1;          // the thread exit code, If the function succeeds, the return value is nonzero.
+}
+
+void MainForm::GetDisplayName(IShellFolder* sf,LPITEMIDLIST pidlItems,_In_ UINT pszDisplayNameBuffSize,_Out_ LPWSTR pszDisplayName){
+	STRRET strDispName;	
+	sf->GetDisplayNameOf(pidlItems, SHGDN_INFOLDER, &strDispName);
+	StrRetToBuf(&strDispName,pidlItems, pszDisplayName,pszDisplayNameBuffSize);
+
+	if(pszDisplayName[0] == '\0'){
+		sf->GetDisplayNameOf(pidlItems, SHGDN_FORPARSING, &strDispName);
+		StrRetToBuf(&strDispName, pidlItems, pszDisplayName, pszDisplayNameBuffSize);
+	}
+}
+
+HRESULT MainForm::LoadImageList(void){
+	IImageList *imgList;
+
+	HRESULT hr = SHGetImageList(SHIL_SMALL,IID_IImageList,(void **)&imgList);
+	TreeView_SetImageList(GetDlgItem(hdlg, IDC_TREE1),imgList,TVSIL_NORMAL);
+	return  hr;
+}
+
+int MainForm::GetImgIdxInList(LPCTSTR pszPath)
+{
+	SHFILEINFOW sfi = {0};
+	auto hr = SHGetFileInfo(pszPath, -1,&sfi,sizeof(sfi),SHGFI_PIDL | SHGFI_ICON);
+	int imgIdx = sfi.iIcon;
+	DestroyIcon(sfi.hIcon); // we do not need the handle of icon, free the memory.
+	return imgIdx;
+}
+
 // Tree-View Control Reference http://msdn.microsoft.com/en-us/library/ff486110(v=vs.85).aspx
 // Windows Tree-View Control http://www.songho.ca/misc/treeview/treeview.html
 HRESULT MainForm::LoadShellItems(void)
 {
+	HWND buLoad = GetDlgItem(hdlg, IDC_BU_LOAD);
+	Button_Enable(buLoad,false);
+
+	WCHAR str_loading[LOADSTRING_BUFFERSIZE];
+	LoadString(NULL,IDS_LOADING,str_loading,sizeof(str_loading)/sizeof(str_loading[0]));
+	SetWindowText(buLoad,str_loading);
+
 	LPSHELLFOLDER psfDeskTop = NULL;
 	// Get an IShellFolder interface pointer
 	HRESULT hr = SHGetDesktopFolder(&psfDeskTop);
@@ -50,11 +93,30 @@ HRESULT MainForm::LoadShellItems(void)
 		// 清空
 		TreeView_DeleteAllItems(hTreeView);
 
-		hr = LoadSubItem(psfDeskTop,hTreeView,TVI_ROOT);
-		
+		// “桌面”的显示文字
+		WCHAR deskTopName[MAX_PATH];
+		GetDisplayName(psfDeskTop,NULL,MAX_PATH,deskTopName);
+
+		// generate a user data for tree-view item.
+		LPTVITEMDATA data = new TVITEMDATA();
+		data->bExpanded = true;
+		data->pShellFolder = psfDeskTop;
+
+		// 将“桌面”作为根节点添加到树
+		auto tvItem = InsertItem(hTreeView,deskTopName,NULL,NULL,0,0,(LPARAM)data);
+
+		// 为根节点填充 1 级子级
+		hr = LoadSubItem(psfDeskTop,hTreeView,tvItem,1);
+
 		// 展开根节点
-		TreeView_Expand(hTreeView,TVI_ROOT,TVE_EXPAND);
+		TreeView_Expand(hTreeView,tvItem,TVE_EXPAND);
 	}
+
+	WCHAR str_load[LOADSTRING_BUFFERSIZE];
+	LoadString(NULL,IDS_BU_LOAD,str_load,sizeof(str_load)/sizeof(str_load[0]));
+	SetWindowText(buLoad,str_load);
+
+	Button_Enable(buLoad,true);
 
 	return S_OK;
 }
@@ -72,14 +134,14 @@ HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep
 		{
 			LPITEMIDLIST pidlItems = NULL;
 			STRRET strDispName;
-			WCHAR pszDisplayName[MAX_PATH];
+			TCHAR pszDisplayName[MAX_PATH];
 			ULONG celtFetched;
 			ULONG uAttr;
 
 			while( hr = ppenum->Next(1,&pidlItems, &celtFetched) == S_OK && (celtFetched) == 1)
 			{
-				sf->GetDisplayNameOf(pidlItems, SHGDN_INFOLDER, &strDispName);
-				StrRetToBuf(&strDispName, pidlItems, pszDisplayName, MAX_PATH);
+				WCHAR pszDisplayName[MAX_PATH];
+				GetDisplayName(sf,pidlItems,MAX_PATH,pszDisplayName);
 
 				OutputDebugString(pszDisplayName);
 				OutputDebugString(L"\r\n");
@@ -88,13 +150,16 @@ HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep
 				IShellFolder *sub = NULL;
 				hr = sf->BindToObject(pidlItems, NULL, IID_IShellFolder, (LPVOID *)&sub);
 
+				// get image index in system image list.
+				int imgIdx = GetImgIdxInList((LPCTSTR)pidlItems);
+
 				// generate a user data for tree-view item.
 				LPTVITEMDATA data = new TVITEMDATA();
-				data->bExpanded = false;
+				data->bExpanded = deep > 1;
 				data->pShellFolder = sub;
-				
+				 
 				// add tree-view item with user data((LPARAM)pidlItems).
-				auto tvItem = InsertItem(tv,pszDisplayName,parent,NULL,0,0,(LPARAM)data);
+				auto tvItem = InsertItem(tv,pszDisplayName,parent,NULL,imgIdx,imgIdx,(LPARAM)data);
 
 				// update tree-view
 				UpdateWindow(tv);
@@ -123,14 +188,14 @@ HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep
 }
 
 
-HTREEITEM MainForm::InsertItem(HWND hwnd,const wchar_t* str, HTREEITEM parent, HTREEITEM insertAfter,int imageIndex, int selectedImageIndex,LPARAM pidl)
+HTREEITEM MainForm::InsertItem(HWND hwnd,const LPWSTR str, HTREEITEM parent, HTREEITEM insertAfter,int imageIndex, int selectedImageIndex,LPARAM pidl)
 {
 	// build TVINSERTSTRUCT
 	TVINSERTSTRUCT insertStruct;
 	insertStruct.hParent = parent;
 	insertStruct.hInsertAfter = insertAfter;
 	insertStruct.item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_PARAM;
-	insertStruct.item.pszText = (LPWSTR)str;
+	insertStruct.item.pszText = str;
 	insertStruct.item.cchTextMax = sizeof(str)/sizeof(str[0]);
 	insertStruct.item.iImage = imageIndex;
 	insertStruct.item.iSelectedImage = selectedImageIndex;
@@ -152,7 +217,9 @@ LRESULT CALLBACK MainForm::DlgProc(
 	{   
 	case WM_INITDIALOG:
 		{
-			SetWindowText(GetDlgItem(hwnd, IDC_BU_LOAD),Utils::MyLoadString(IDS_BU_LOAD));
+			WCHAR str_load[LOADSTRING_BUFFERSIZE];
+			LoadString(NULL,IDS_BU_LOAD,str_load,sizeof(str_load)/sizeof(str_load[0]));
+			SetWindowText(GetDlgItem(hwnd, IDC_BU_LOAD),str_load);
 			return 0;
 		}
 	case WM_SYSCOMMAND:
@@ -168,9 +235,7 @@ LRESULT CALLBACK MainForm::DlgProc(
 			switch(LOWORD(wParam))     
 			{     
 			case IDC_BU_LOAD:
-				SetWindowText(GetDlgItem(hwnd, IDC_BU_LOAD),Utils::MyLoadString(IDS_LOADING));
-				LoadShellItems();
-				SetWindowText(GetDlgItem(hwnd, IDC_BU_LOAD),Utils::MyLoadString(IDS_BU_LOAD));
+				_beginthreadex(0,0,ThreadStaticEntryPoint,this,0,0);
 				break;
 			case ID_M_EXIT:
 				DestroyWindow(hdlg);
@@ -178,6 +243,15 @@ LRESULT CALLBACK MainForm::DlgProc(
 			}
 			return 0;
 		}
+		//case WM_SIZE:
+		//	{
+		//		auto hTreeView = GetDlgItem(hdlg, IDC_TREE1);  
+		//		if(hTreeView!=NULL)
+		//		{
+
+		//		}
+		//		return 0;
+		//	}
 	case  WM_NOTIFY:
 		{
 			return TreeViewNotify(wParam,lParam);

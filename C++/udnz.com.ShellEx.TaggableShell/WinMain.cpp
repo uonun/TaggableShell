@@ -1,12 +1,14 @@
-#include "WinMain.h"
+ï»¿#include "WinMain.h"
 
-int CALLBACK WinMain(     
-	_In_  HINSTANCE hInstance,     
-	_In_  HINSTANCE hPrevInstance,     
-	_In_  LPSTR lpCmdLine,     
-	_In_  int nCmdShow     
+int CALLBACK WinMain(
+	_In_  HINSTANCE hInstance,
+	_In_  HINSTANCE hPrevInstance,
+	_In_  LPSTR lpCmdLine,
+	_In_  int nCmdShow
 	)     
 {   
+	setlocale(LC_ALL,"chs");
+
 	auto hwnd = GetDesktopWindow();
 	auto f = MainForm::Instance();
 	auto hdlg =	CreateDialog(hInstance,MAKEINTRESOURCE(IDD_MAINFORM),hwnd,(DLGPROC)DlgProc);	
@@ -15,10 +17,11 @@ int CALLBACK WinMain(
 	if(f->hdlg!=NULL){
 		ShowWindow(f->hdlg, SW_SHOW);
 
-		auto fCaption = Utils::MyLoadString(IDS_FROMCAPTION);
+		WCHAR fCaption[LOADSTRING_BUFFERSIZE];
+		int n = LoadString(NULL,IDS_FROMCAPTION,fCaption,sizeof(fCaption)/sizeof(fCaption[0]));
 		SetWindowText(f->hdlg,fCaption);
 		
-		// ¸üĞÂ´°¿Ú     
+		// æ›´æ–°çª—å£     
 		UpdateWindow(hwnd);
 
 		MSG msg;     
