@@ -10,13 +10,13 @@
 #define UDNZSHELLAPI __declspec(dllimport)
 #endif
 
-extern "C" UDNZSHELLAPI BOOL WINAPI DllMain(
-  _In_  HINSTANCE hinstDLL,
-  _In_  DWORD fdwReason,
-  _In_  LPVOID lpvReserved
-);
+//extern "C" UDNZSHELLAPI BOOL WINAPI DllMain(
+//  _In_  HINSTANCE hinstDLL,
+//  _In_  DWORD fdwReason,
+//  _In_  LPVOID lpvReserved
+//);
 
-//extern "C" UDNZSHELLAPI HRESULT CALLBACK DllGetClassObject 
+//extern "C" HRESULT CALLBACK DllGetClassObject 
 //    (REFCLSID rclsid, REFIID riid, LPVOID * ppvObj) ;
 //
 //extern "C" UDNZSHELLAPI HRESULT __stdcall DllCanUnloadNow(void);

@@ -3,11 +3,11 @@
 
 MainForm* MainForm::_instance = NULL;
 
+#pragma region Constructor
 MainForm::MainForm(void)
 {
 
 }
-
 
 MainForm::~MainForm(void)
 {
@@ -21,7 +21,9 @@ MainForm* MainForm::Instance(void)
 	}
 	return _instance;
 }
+#pragma endregion
 
+#pragma region Common
 void MainForm::Init(HWND hdlg,HINSTANCE hApp){
 	this->hApp = hApp;
 	this->hdlg = hdlg;
@@ -63,6 +65,9 @@ int MainForm::GetImgIdxInList(LPCTSTR pszPath)
 	DestroyIcon(sfi.hIcon); // we do not need the handle of icon, free the memory.
 	return imgIdx;
 }
+#pragma endregion
+
+#pragma region Load shell items
 
 // Tree-View Control Reference http://msdn.microsoft.com/en-us/library/ff486110(v=vs.85).aspx
 // Windows Tree-View Control http://www.songho.ca/misc/treeview/treeview.html
@@ -156,9 +161,6 @@ HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep
 				// add tree-view item with user data((LPARAM)pidlItems).
 				auto tvItem = InsertItem(tv,pszDisplayName,parent,NULL,imgIdx,imgIdx,(LPARAM)data);
 
-				// update tree-view
-				UpdateWindow(tv);
-
 #pragma region Get sub items.
 				if(hr == S_OK)
 				{
@@ -172,6 +174,9 @@ HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep
 					}
 				}
 #pragma endregion
+				
+				// update tree-view
+				UpdateWindow(tv);
 
 				CoTaskMemFree(pidlItems);
 			}
@@ -208,6 +213,9 @@ HTREEITEM MainForm::InsertItem(HWND hwnd,const LPWSTR str, HTREEITEM parent, HTR
 	return TreeView_InsertItem(hwnd,&insertStruct);
 }
 
+#pragma endregion
+
+#pragma region Known folders
 /*! 
 * Enumerate and print all known folders. 
 * http://code.msdn.microsoft.com/CppShellKnownFolders-449fd4d7/sourcecode?fileId=21583&pathId=2096200435
@@ -277,6 +285,18 @@ void MainForm::UnRegMyFolder(void)
 
 }
 
+#pragma endregion
+
+#pragma region Shell Extension Handlers
+/*!
+ * How to Register and Implement a Property Sheet Handler for a File Type
+ * http://msdn.microsoft.com/en-us/library/windows/desktop/hh127448(v=vs.85).aspx
+ */
+
+
+#pragma endregion
+
+#pragma region Messages
 LRESULT CALLBACK MainForm::DlgProc(     
 	_In_  HWND hwnd,     
 	_In_  UINT uMsg,     
@@ -345,6 +365,7 @@ LRESULT CALLBACK MainForm::DlgProc(
 	}
 	return (INT_PTR)FALSE;
 }
+
 
 // handle WM_NOTIFY message
 // Tree-View Notifications http://www.songho.ca/misc/treeview/treeviewnotify.html
@@ -437,4 +458,4 @@ int MainForm::TreeViewNotify(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-
+#pragma endregion
