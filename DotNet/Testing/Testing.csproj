@@ -89,15 +89,15 @@
       <Name>udnz.com.WinNative</Name>
     </ProjectReference>
     <ProjectReference Include="..\WindowsAPICodePack\Core\Core.csproj">
-      <Project>{2e1fb0df-f9bb-4909-9f32-2d9d022a8e57}</Project>
+      <Project>{2E1FB0DF-F9BB-4909-9F32-2D9D022A8E57}</Project>
       <Name>Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\WindowsAPICodePack\ShellExtensions\ShellExtensions.csproj">
-      <Project>{f3c863ec-33f4-4ed2-9d67-00bf3eeeab64}</Project>
+      <Project>{F3C863EC-33F4-4ED2-9D67-00BF3EEEAB64}</Project>
       <Name>ShellExtensions</Name>
     </ProjectReference>
     <ProjectReference Include="..\WindowsAPICodePack\Shell\Shell.csproj">
-      <Project>{aa0c00cb-8699-4f37-bfae-40ca87acc06d}</Project>
+      <Project>{AA0C00CB-8699-4F37-BFAE-40CA87ACC06D}</Project>
       <Name>Shell</Name>
     </ProjectReference>
   </ItemGroup>
