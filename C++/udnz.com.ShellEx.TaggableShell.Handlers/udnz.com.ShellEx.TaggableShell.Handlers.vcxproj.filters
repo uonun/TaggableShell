@@ -17,7 +17,7 @@
   <ItemGroup>
     <None Include="ReadMe.txt" />
     <None Include="Export.def">
-      <Filter>源文件</Filter>
+      <Filter>资源文件</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -25,6 +25,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="dllmain.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TagHandler.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,7 +41,7 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="TaggableShell.Handlers.cpp">
+    <ClCompile Include="TagHandler.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
