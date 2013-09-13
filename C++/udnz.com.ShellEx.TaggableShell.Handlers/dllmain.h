@@ -1,6 +1,5 @@
 #pragma once
 #include "StdAfx.h"
-#include <windows.h>
 #include <new> // std::nothrow
 //#include "resource.h"
 
@@ -17,8 +16,11 @@
 //const WCHAR c_szDocInfoTip[] = L"prop:System.ItemType;System.Author;System.Size;System.DateModified;System.Document.PageCount";
 //const WCHAR c_szDocPreviewDetails[] = L"prop:*System.DateModified;System.Author;System.Keywords;System.Rating;*System.Size;System.Title;System.Comment;System.Category;*System.Document.PageCount;System.ContentStatus;System.ContentType;*System.OfflineAvailability;*System.OfflineStatus;System.Subject;*System.DateCreated;*System.SharedWith";
 
-class DECLSPEC_UUID("EF0112FF-4175-4D49-B46C-516426596BBA") TagHandler;
+class DECLSPEC_UUID("00000000-0825-4D49-B46C-516426596BBA") TagHandler;
 HRESULT TagHandler_CreateInstance(REFIID riid, void **ppv);
+
+HRESULT RegisterHandler();
+HRESULT UnregisterHandler();
 
 void DllAddRef();
 void DllRelease();
@@ -28,3 +30,5 @@ void DllRelease();
 //HRESULT RegisterOpenMetadata();
 //HRESULT UnregisterOpenMetadata();
 
+// Handle the the DLL's module
+extern HINSTANCE g_hInst;
