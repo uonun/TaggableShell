@@ -1,10 +1,12 @@
 #include "Utils.h"
+
+#ifdef LOG4CPP
 #include "log4cpp/Category.hh"
 #include "log4cpp/RollingFileAppender.hh"
 #include "log4cpp/BasicLayout.hh"
 #include "log4cpp/Priority.hh"
 using namespace log4cpp;
-
+#endif
 
 Utils::Utils(void)
 {
@@ -23,6 +25,7 @@ Utils::~Utils(void)
 //	return fCaption;
 //}
 
+#ifdef LOG4CPP
 void __cdecl Utils::PrintLog(const wchar_t *format, ...)
 {
 	wchar_t buf[4096], *p = buf;
@@ -72,3 +75,4 @@ void __cdecl Utils::PrintLog(const wchar_t *format, ...)
 	_log.debug(szDst);
 	log4cpp::Category::shutdown();    
 }
+#endif

@@ -10,6 +10,7 @@
 #include <Shlwapi.h>
 #include "dllmain.h"
 
+
 typedef HRESULT (*PFNCREATEINSTANCE)(REFIID riid, void **ppvObject);
 struct CLASS_OBJECT_INIT
 {
@@ -35,6 +36,11 @@ HINSTANCE g_hInst = NULL;
 STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 {
 	::CoInitialize(NULL);
+
+#ifdef LOG4CPP
+	Utils::PrintLog(L"DllMain, dwReason = %d. (DLL_PROCESS_DETACH = 0, DLL_PROCESS_ATTACH = 1, DLL_THREAD_ATTACH = 2, DLL_THREAD_DETACH = 3)",dwReason);
+#endif
+
 	if (dwReason == DLL_PROCESS_ATTACH)
 	{
 		g_hInst = hInstance;
@@ -89,6 +95,9 @@ public:
 
 	CClassFactory(PFNCREATEINSTANCE pfnCreate) : _cRef(1), _pfnCreate(pfnCreate)
 	{
+#ifdef LOG4CPP
+		Utils::PrintLog(L"CClassFactory.ctor");
+#endif
 		DllAddRef();
 	}
 
@@ -149,17 +158,30 @@ private:
 
 STDAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void **ppv)
 {
-	return CClassFactory::CreateInstance(clsid, c_rgClassObjectInit, ARRAYSIZE(c_rgClassObjectInit), riid, ppv);
+#ifdef LOG4CPP
+	Utils::PrintLog(L"DllGetClassObject");
+#endif
+
+	auto hr = CClassFactory::CreateInstance(clsid, c_rgClassObjectInit, ARRAYSIZE(c_rgClassObjectInit), riid, ppv);
+	return hr;
 }
 
 STDAPI DllRegisterServer()
-{
+{	
+#ifdef LOG4CPP
+	Utils::PrintLog(L"DllRegisterServer");
+#endif
+
 	return S_OK;
 	//return RegisterHandler();
 }
 
 STDAPI DllUnregisterServer()
 {
+#ifdef LOG4CPP
+	Utils::PrintLog(L"DllUnregisterServer");
+#endif
+
 	return S_OK;
 	//return UnregisterHandler();
 }

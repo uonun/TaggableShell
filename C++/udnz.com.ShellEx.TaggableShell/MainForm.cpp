@@ -1,17 +1,25 @@
 #include "MainForm.h"
-
+#include <shlwapi.h>
 
 MainForm* MainForm::_instance = NULL;
 
 #pragma region Constructor
 MainForm::MainForm(void)
 {
+	setlocale( LC_ALL, "zh-CN" );
 
+	Utils::PrintLog(L"/////////////////////////////////////////////");
+	Utils::PrintLog(L"///////////APPLICATION START/////////////////");
+	Utils::PrintLog(L"/////////////////////////////////////////////");
+	Utils::PrintLog(L"MainForm.ctor");
 }
 
 MainForm::~MainForm(void)
 {
-
+	Utils::PrintLog(L"MainForm.~ctor");
+	Utils::PrintLog(L"/////////////////////////////////////////////");
+	Utils::PrintLog(L"///////////APPLICATION END///////////////////");
+	Utils::PrintLog(L"/////////////////////////////////////////////");
 }
 
 MainForm* MainForm::Instance(void)
@@ -27,6 +35,8 @@ MainForm* MainForm::Instance(void)
 void MainForm::Init(HWND hdlg,HINSTANCE hApp){
 	this->hApp = hApp;
 	this->hdlg = hdlg;
+
+	Utils::PrintLog(L"Init");
 }
 
 unsigned __stdcall MainForm::ThreadStaticEntryPoint(void * pThis)
@@ -49,6 +59,8 @@ void MainForm::GetDisplayName(IShellFolder* sf,LPITEMIDLIST pidlItems,_In_ UINT 
 }
 
 HRESULT MainForm::LoadImageList(void){
+	Utils::PrintLog(L"LoadImageList");
+
 	IImageList *imgList;
 
 	HRESULT hr = SHGetImageList(SHIL_SMALL,IID_IImageList,(void **)&imgList);
@@ -72,7 +84,9 @@ int MainForm::GetImgIdxInList(LPCTSTR pszPath)
 // Tree-View Control Reference http://msdn.microsoft.com/en-us/library/ff486110(v=vs.85).aspx
 // Windows Tree-View Control http://www.songho.ca/misc/treeview/treeview.html
 HRESULT MainForm::LoadShellItems(void)
-{
+{	
+	Utils::PrintLog(L"LoadShellItems");
+
 	LPSHELLFOLDER psfDeskTop = NULL;
 	// Get an IShellFolder interface pointer
 	HRESULT hr = SHGetDesktopFolder(&psfDeskTop);
@@ -92,6 +106,7 @@ HRESULT MainForm::LoadShellItems(void)
 		// “桌面”的显示文字
 		WCHAR deskTopName[MAX_PATH];
 		GetDisplayName(psfDeskTop,NULL,MAX_PATH,deskTopName);
+		Utils::PrintLog(L"Got desktop: %s",deskTopName);
 
 		// generate a user data for tree-view item.
 		LPTVITEMDATA data = new TVITEMDATA();
@@ -110,6 +125,8 @@ HRESULT MainForm::LoadShellItems(void)
 		// 展开根节点
 		TreeView_Expand(hTreeView,tvItem,TVE_EXPAND);
 	}
+
+	Utils::PrintLog(L"LoadShellItems Done.");
 
 	return S_OK;
 }
@@ -135,16 +152,15 @@ HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep
 		{
 			LPITEMIDLIST pidlItems = NULL;
 			STRRET strDispName;
-			TCHAR pszDisplayName[MAX_PATH];
+			WCHAR pszDisplayName[MAX_PATH];
 			ULONG celtFetched;
 			ULONG uAttr;
 
 			while( hr = ppenum->Next(1,&pidlItems, &celtFetched) == S_OK && (celtFetched) == 1)
 			{
-				WCHAR pszDisplayName[MAX_PATH];
 				GetDisplayName(sf,pidlItems,MAX_PATH,pszDisplayName);
 
-				Utils::PrintLog(L"%s\n",pszDisplayName); 
+				Utils::PrintLog(L"Got sub item: %s",pszDisplayName);
 
 				// bind LPITEMIDLIST to IShellFolder
 				IShellFolder *sub = NULL;
@@ -174,7 +190,7 @@ HRESULT MainForm::LoadSubItem(IShellFolder* sf,HWND tv,HTREEITEM parent,int deep
 					}
 				}
 #pragma endregion
-				
+
 				// update tree-view
 				UpdateWindow(tv);
 
@@ -222,6 +238,8 @@ HTREEITEM MainForm::InsertItem(HWND hwnd,const LPWSTR str, HTREEITEM parent, HTR
 */ 
 void MainForm::PrintAllKnownFolders() 
 { 
+	Utils::PrintLog(L"PrintAllKnownFolders");
+
 	HRESULT hr; 
 	PWSTR pszPath = NULL; 
 
@@ -253,7 +271,7 @@ void MainForm::PrintAllKnownFolders()
 						hr = pkfCurrent->GetPath(0, &pszPath); 
 						if (SUCCEEDED(hr)) 
 						{ 
-							Utils::PrintLog(L"%s: %s\n", kfd.pszName, pszPath); 
+							Utils::PrintLog(L"Got known folder: %s: %s", kfd.pszName, pszPath);
 							CoTaskMemFree(pszPath); 
 						} 
 						FreeKnownFolderDefinitionFields(&kfd); 
@@ -289,9 +307,9 @@ void MainForm::UnRegMyFolder(void)
 
 #pragma region Shell Extension Handlers
 /*!
- * How to Register and Implement a Property Sheet Handler for a File Type
- * http://msdn.microsoft.com/en-us/library/windows/desktop/hh127448(v=vs.85).aspx
- */
+* How to Register and Implement a Property Sheet Handler for a File Type
+* http://msdn.microsoft.com/en-us/library/windows/desktop/hh127448(v=vs.85).aspx
+*/
 
 
 #pragma endregion
@@ -447,7 +465,6 @@ int MainForm::TreeViewNotify(WPARAM wParam, LPARAM lParam)
 				pnmtv->itemNew.lParam=NULL;
 				TreeView_Expand(tv,tCurrentItem,TVE_EXPAND);
 			}
-			OutputDebugStringW(L"TVN_SELCHANGED\r\n");
 		}
 		break;
 

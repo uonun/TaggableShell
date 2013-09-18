@@ -8,23 +8,32 @@
 #include "RegisterExtension.h"
 #include "resource.h"
 
-TagHandler::TagHandler() : _cRef(1)
+TagHandler::TagHandler() : _cRef(1),_pStream(NULL)
 {
 	DllAddRef();
+#ifdef LOG4CPP
+	Utils::PrintLog(L"TagHandler.ctor");
+#endif
 }
 
 TagHandler::~TagHandler(void){   
+#ifdef LOG4CPP
+	Utils::PrintLog(L"TagHandler.~ctor");
+#endif
 	DllRelease();
 }
 
 HRESULT TagHandler_CreateInstance(REFIID riid, void **ppv)
 {
-	HRESULT hr = E_OUTOFMEMORY;
-	TagHandler *pirm = new (std::nothrow) TagHandler();
-	if (pirm)
+#ifdef LOG4CPP
+	Utils::PrintLog(L"TagHandler.TagHandler_CreateInstance");
+#endif
+    TagHandler *pNew = new(std::nothrow) TagHandler;
+    HRESULT hr = pNew ? S_OK : E_OUTOFMEMORY;
+	if (pNew)
 	{
-		hr = pirm->QueryInterface(riid, ppv);
-		pirm->Release();
+		hr = pNew->QueryInterface(riid, ppv);
+		pNew->Release();
 	}
 	return hr;
 }
@@ -36,7 +45,7 @@ IFACEMETHODIMP TagHandler::QueryInterface(REFIID riid, void ** ppv)
 	{
 		QITABENT(TagHandler, IInitializeWithStream),
 		QITABENT(TagHandler, IShellPropSheetExt),
-		{0,0 },
+		{0},
 	};
 	return QISearch(this, qit, riid, ppv);
 }
@@ -58,11 +67,14 @@ IFACEMETHODIMP_(ULONG) TagHandler::Release()
 
 HRESULT TagHandler::Initialize(IStream *pStream, DWORD grfMode)
 {
+#ifdef LOG4CPP
+	Utils::PrintLog(L"TagHandler.Initialize");
+#endif
 	HRESULT hr = E_UNEXPECTED;
 	if (!_pStream)
 	{
 		// save a reference to the stream as well as the grfMode
-		hr = pStream->QueryInterface(&_pStream);
+		hr = pStream->QueryInterface(IID_PPV_ARGS(&_pStream));
 		if (SUCCEEDED(hr))
 		{
 			_grfMode = grfMode;
@@ -115,11 +127,15 @@ UINT CALLBACK PageCallbackProc(
 	_Inout_  LPPROPSHEETPAGE ppsp
 	)
 {
-    return 1;   // use nonzero let the page be created
+	return 1;   // use nonzero let the page be created
 }
 
 STDMETHODIMP TagHandler::AddPages(LPFNADDPROPSHEETPAGE lpfnAddPage, LPARAM lParam)
 {
+#ifdef LOG4CPP
+	Utils::PrintLog(L"TagHandler.AddPages");
+#endif
+
 	PROPSHEETPAGE  psp;
 	HPROPSHEETPAGE hPage;
 
