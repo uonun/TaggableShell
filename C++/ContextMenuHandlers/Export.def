@@ -1,0 +1,9 @@
+;Author: uonun
+;http://msdn.microsoft.com/zh-cn/library/28d6s79h(v=vs.100).aspx
+LIBRARY 
+EXPORTS 
+	DllMain				 PRIVATE
+	DllCanUnloadNow      PRIVATE
+	DllGetClassObject    PRIVATE
+	DllRegisterServer    PRIVATE
+	DllUnregisterServer  PRIVATE
