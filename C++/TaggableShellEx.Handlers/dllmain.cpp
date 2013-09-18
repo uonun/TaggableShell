@@ -21,7 +21,8 @@ struct CLASS_OBJECT_INIT
 // add classes supported by this module here
 const CLASS_OBJECT_INIT c_rgClassObjectInit[] =
 {
-	{ &__uuidof(ContextMenuHandler), ContextMenuHandler_CreateInstance }
+	{ &__uuidof(ContextMenuHandler), ContextMenuHandler_CreateInstance },
+	{ &__uuidof(PropertyPageHandler), PropertyPageHandler_CreateInstance }
 };
 
 

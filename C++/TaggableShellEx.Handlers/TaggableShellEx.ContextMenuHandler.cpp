@@ -3,7 +3,7 @@
 #include <shlwapi.h>
 #include <shlobj.h>
 #include <PrSht.h>
-#include "ContextMenuHandler.h"
+#include "TaggableShellEx.ContextMenuHandler.h"
 #include "dllmain.h"
 #include "resource.h"
 

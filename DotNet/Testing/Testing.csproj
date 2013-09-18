@@ -82,7 +82,7 @@
   <ItemGroup>
     <ProjectReference Include="..\udnz.com.ShellEx.TaggableShell\udnz.com.ShellEx.TaggableShell.csproj">
       <Project>{1cc2c525-90a7-48aa-8364-88010440d879}</Project>
-      <Name>udnz.com.ShellEx.TaggableShell</Name>
+      <Name>udnz.com.ShellEx.TaggableShell %28DotNet\udnz.com.ShellEx.TaggableShell%29</Name>
     </ProjectReference>
     <ProjectReference Include="..\udnz.com.WinNative\udnz.com.WinNative.csproj">
       <Project>{1bc199dd-12f2-4f89-ab6a-518cdc6585f1}</Project>

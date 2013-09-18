@@ -21,9 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{3A4C1F01-EF4
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "udnz.com.ShellEx.TaggableShell", "C++\udnz.com.ShellEx.TaggableShell\udnz.com.ShellEx.TaggableShell.vcxproj", "{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "udnz.com.ShellEx.TaggableShell.Handlers", "C++\udnz.com.ShellEx.TaggableShell.Handlers\udnz.com.ShellEx.TaggableShell.Handlers.vcxproj", "{022A628E-1183-4DBB-9CAC-F4A9F23827CC}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ContextMenuHandlers", "C++\ContextMenuHandlers\ContextMenuHandlers.vcxproj", "{7B7293B6-EDCA-4A43-A75A-25C515AB47D0}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TaggableShellEx.Handlers", "C++\TaggableShellEx.Handlers\ContextMenuHandlers.vcxproj", "{7B7293B6-EDCA-4A43-A75A-25C515AB47D0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -242,33 +240,6 @@ Global
 		{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8}.Release|x64.Build.0 = Release|x64
 		{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8}.Release|x86.ActiveCfg = Release|Win32
 		{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8}.Release|x86.Build.0 = Release|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.CodeAnalysisDebug|Any CPU.ActiveCfg = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.CodeAnalysisDebug|Mixed Platforms.ActiveCfg = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.CodeAnalysisDebug|Mixed Platforms.Build.0 = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.CodeAnalysisDebug|Win32.ActiveCfg = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.CodeAnalysisDebug|Win32.Build.0 = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.CodeAnalysisDebug|x64.ActiveCfg = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.CodeAnalysisDebug|x86.ActiveCfg = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Debug|Any CPU.ActiveCfg = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Debug|Any CPU.Build.0 = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Debug|Mixed Platforms.Build.0 = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Debug|Win32.ActiveCfg = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Debug|Win32.Build.0 = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Debug|x64.ActiveCfg = Debug|x64
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Debug|x64.Build.0 = Debug|x64
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Debug|x86.ActiveCfg = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Debug|x86.Build.0 = Debug|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Release|Any CPU.ActiveCfg = Release|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Release|Any CPU.Build.0 = Release|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Release|Mixed Platforms.ActiveCfg = Release|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Release|Mixed Platforms.Build.0 = Release|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Release|Win32.ActiveCfg = Release|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Release|Win32.Build.0 = Release|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Release|x64.ActiveCfg = Release|x64
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Release|x64.Build.0 = Release|x64
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Release|x86.ActiveCfg = Release|Win32
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC}.Release|x86.Build.0 = Release|Win32
 		{7B7293B6-EDCA-4A43-A75A-25C515AB47D0}.CodeAnalysisDebug|Any CPU.ActiveCfg = Debug|Win32
 		{7B7293B6-EDCA-4A43-A75A-25C515AB47D0}.CodeAnalysisDebug|Mixed Platforms.ActiveCfg = Debug|Win32
 		{7B7293B6-EDCA-4A43-A75A-25C515AB47D0}.CodeAnalysisDebug|Mixed Platforms.Build.0 = Debug|Win32
@@ -306,7 +277,6 @@ Global
 		{AA0C00CB-8699-4F37-BFAE-40CA87ACC06D} = {550A7511-6658-49DD-895F-F0DD2DB25FEF}
 		{F3C863EC-33F4-4ED2-9D67-00BF3EEEAB64} = {550A7511-6658-49DD-895F-F0DD2DB25FEF}
 		{676CF94F-6CA6-48C0-80D1-7F5BB86A7EE8} = {3A4C1F01-EF4E-416D-8657-8892A3D56E6C}
-		{022A628E-1183-4DBB-9CAC-F4A9F23827CC} = {3A4C1F01-EF4E-416D-8657-8892A3D56E6C}
 		{7B7293B6-EDCA-4A43-A75A-25C515AB47D0} = {3A4C1F01-EF4E-416D-8657-8892A3D56E6C}
 	EndGlobalSection
 EndGlobal

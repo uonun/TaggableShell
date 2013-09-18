@@ -24,7 +24,10 @@
     <ClCompile Include="Utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="ContextMenuHandler.cpp">
+    <ClCompile Include="TaggableShellEx.ContextMenuHandler.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TaggableShellEx.PropertyPageHandler.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,16 +50,19 @@
     <ClInclude Include="Utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="ContextMenuHandler.h">
+    <ClInclude Include="TaggableShellEx.ContextMenuHandler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TaggableShellEx.PropertyPageHandler.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ContextMenuHandlers.vcxproj" />
     <None Include="Register.reg" />
     <None Include="UnRegister.reg" />
     <None Include="Export.def">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="TaggableShellEx.Handlers.vcxproj" />
   </ItemGroup>
 </Project>
