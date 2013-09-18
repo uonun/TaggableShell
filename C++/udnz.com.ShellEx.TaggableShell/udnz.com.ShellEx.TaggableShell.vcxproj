@@ -56,32 +56,32 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)C++\$(Configuration)\$(PlatformShortName)\</OutDir>
+    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformShortName)\</OutDir>
     <TargetName>TaggableShell.$(PlatformShortName)</TargetName>
     <ReferencePath>$(ReferencePath)</ReferencePath>
-    <LibraryPath>$(SolutionDir)C++\lib\log4cpp;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)C++\lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
+    <LibraryPath>$(SolutionDir)C++\_lib\log4cpp;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)C++\_lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)C++\$(Configuration)\$(PlatformShortName)\</OutDir>
+    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformShortName)\</OutDir>
     <TargetName>TaggableShell.$(PlatformShortName)</TargetName>
-    <IncludePath>$(SolutionDir)C++\lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
-    <LibraryPath>$(SolutionDir)C++\lib\log4cpp;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
+    <IncludePath>$(SolutionDir)C++\_lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
+    <LibraryPath>$(SolutionDir)C++\_lib\log4cpp;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)C++\$(Configuration)\$(PlatformShortName)\</OutDir>
+    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformShortName)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <TargetName>TaggableShell.$(PlatformShortName)</TargetName>
-    <IncludePath>$(SolutionDir)C++\lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
-    <LibraryPath>$(SolutionDir)C++\lib\log4cpp;$(VCInstallDir)lib\amd64;$(VCInstallDir)atlmfc\lib\amd64;$(WindowsSdkDir)lib\x64;</LibraryPath>
+    <IncludePath>$(SolutionDir)C++\_lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
+    <LibraryPath>$(SolutionDir)C++\_lib\log4cpp;$(VCInstallDir)lib\amd64;$(VCInstallDir)atlmfc\lib\amd64;$(WindowsSdkDir)lib\x64;</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>TaggableShell.$(PlatformShortName)</TargetName>
-    <OutDir>$(SolutionDir)C++\$(Configuration)\$(PlatformShortName)\</OutDir>
+    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformShortName)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
-    <IncludePath>$(SolutionDir)C++\lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
-    <LibraryPath>$(SolutionDir)C++\lib\log4cpp;$(VCInstallDir)lib\amd64;$(VCInstallDir)atlmfc\lib\amd64;$(WindowsSdkDir)lib\x64;</LibraryPath>
+    <IncludePath>$(SolutionDir)C++\_lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
+    <LibraryPath>$(SolutionDir)C++\_lib\log4cpp;$(VCInstallDir)lib\amd64;$(VCInstallDir)atlmfc\lib\amd64;$(WindowsSdkDir)lib\x64;</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -96,6 +96,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>shlwapi.lib;log4cpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\log4cpp.dll" "$(TargetDir)log4cpp.dll"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -116,6 +119,9 @@
       <AddModuleNamesToAssembly>
       </AddModuleNamesToAssembly>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\log4cpp.dll" "$(TargetDir)log4cpp.dll"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
@@ -127,11 +133,17 @@
       <AddModuleNamesToAssembly>
       </AddModuleNamesToAssembly>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\log4cpp.dll" "$(TargetDir)log4cpp.dll"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
       <AdditionalDependencies>shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\log4cpp.dll" "$(TargetDir)log4cpp.dll"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="MainForm.cpp" />
