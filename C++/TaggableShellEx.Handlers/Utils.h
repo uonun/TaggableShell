@@ -6,7 +6,7 @@
 using namespace std;
 
 #ifdef LOG4CPP
-#define LOG_FOLDER					"E:\\Works\\UDNZ\\udnz.com.ShellEx.TaggableShell\\C++\\Debug\\x86\\"
+#define LOG_FOLDER					".\\"
 #define LOG_FILENAME				"TaggableShell.Handlers.debug.log"
 #endif
 
