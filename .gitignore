@@ -9,7 +9,9 @@
 # Build results
 
 [Dd]ebug/
+_[Dd]ebug/
 [Rr]elease/
+_[Rr]elease/
 x64/
 build/
 [Bb]in/
@@ -149,4 +151,5 @@ $RECYCLE.BIN/
 
 # Mac crap
 .DS_Store
+
 
