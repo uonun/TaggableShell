@@ -6,6 +6,9 @@
 *.user
 *.sln.docstates
 
+_[Rr]elease/
+_[Dd]ebug/
+
 # Build results
 
 [Dd]ebug/
@@ -142,6 +145,7 @@ App_Data/*.ldf
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
+*.lnk
 
 # Folder config file
 Desktop.ini
