@@ -1,10 +1,12 @@
 #include "Utils.h"
+
+#ifdef LOG4CPP
 #include "log4cpp/Category.hh"
 #include "log4cpp/RollingFileAppender.hh"
 #include "log4cpp/BasicLayout.hh"
 #include "log4cpp/Priority.hh"
 using namespace log4cpp;
-
+#endif
 
 Utils::Utils(void)
 {
@@ -22,9 +24,9 @@ Utils::~Utils(void)
 //	int n = LoadString(NULL,uID,fCaption,sizeof(fCaption)/sizeof(fCaption[0]));
 //	return fCaption;
 //}
-
 void __cdecl Utils::PrintLog(const wchar_t *format, ...)
 {
+#ifdef LOG4CPP
 	wchar_t buf[4096], *p = buf;
 	va_list args;
 	va_start(args, format);
@@ -71,4 +73,5 @@ void __cdecl Utils::PrintLog(const wchar_t *format, ...)
 	//oss << "Got sub item: "<<szDst;
 	_log.debug(szDst);
 	log4cpp::Category::shutdown();    
+#endif
 }
