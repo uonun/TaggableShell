@@ -13,6 +13,11 @@ ContextMenuHandler::ContextMenuHandler() : _cRef(1),_pStream(NULL)
 #ifdef LOG4CPP
 	Utils::PrintLog(L"ContextMenuHandler.ctor");
 #endif
+
+	m_pIDFolder = (LPITEMIDLIST)malloc(sizeof(LPITEMIDLIST));
+	*m_szFile = NULL;
+	m_pDataObj = NULL;
+	m_hRegKey = NULL;
 }
 
 ContextMenuHandler::~ContextMenuHandler(void){   
@@ -65,59 +70,34 @@ IFACEMETHODIMP_(ULONG) ContextMenuHandler::Release()
 }
 
 HRESULT ContextMenuHandler::Initialize(LPCITEMIDLIST pIDFolder, 
-                                   IDataObject *pDataObj, 
-                                   HKEY hRegKey) 
+									   IDataObject *pDataObj, 
+									   HKEY hRegKey) 
 { 
-    // If Initialize has already been called, release the old PIDL
-    ILFree(m_pIDFolder);
-    m_pIDFolder = NULL;
+	// If Initialize has already been called, release the old PIDL
+	ILFree(m_pIDFolder);
+	m_pIDFolder = NULL;
 
-    //Store the new PIDL.
-    if(pIDFolder)
-    {
-        m_pIDFolder = ILClone(pIDFolder);
-    }
-    
-    // If Initialize has already been called, release the old
-    // IDataObject pointer.
-    if (m_pDataObj)
-    { 
-        m_pDataObj->Release(); 
-    }
-     
-    // If a data object pointer was passed in, save it and
-    // extract the file name. 
-    if (pDataObj) 
-    { 
-        m_pDataObj = pDataObj; 
-        pDataObj->AddRef(); 
-      
-        STGMEDIUM   medium;
-        FORMATETC   fe = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
-        UINT        uCount;
+	// If Initialize has already been called, release the old
+	// IDataObject pointer.
+	if (m_pDataObj)
+	{ 
+		m_pDataObj->Release(); 
+	}
 
-        if(SUCCEEDED(m_pDataObj->GetData(&fe, &medium)))
-        {
-            // Get the count of files dropped.
-            uCount = DragQueryFile((HDROP)medium.hGlobal, (UINT)-1, NULL, 0);
+	//Store the new PIDL.
+	if(pIDFolder)
+	{
+		m_pIDFolder = ILClone(pIDFolder);
+	}
 
-            // Get the first file name from the CF_HDROP.
-            if(uCount)
-                DragQueryFile((HDROP)medium.hGlobal, 0, m_szFile, 
-                              sizeof(m_szFile)/sizeof(TCHAR));
-
-            ReleaseStgMedium(&medium);
-        }
-    }
-
-    // Duplicate the registry handle. 
-    if (hRegKey) 
-        RegOpenKeyEx(hRegKey, 
-                     NULL, 
-                     0L, 
-                     MAXIMUM_ALLOWED, 
-                     &m_hRegKey); 
-    return S_OK; 
+	// If a data object pointer was passed in, save it and
+	// extract the file name. 
+	if (pDataObj) 
+	{ 
+		m_pDataObj = pDataObj; 
+		pDataObj->AddRef(); 
+	}
+	return S_OK; 
 }
 
 
@@ -155,29 +135,29 @@ HRESULT ContextMenuHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT*
 }
 
 HRESULT ContextMenuHandler::InvokeCommand (
-  LPCMINVOKECOMMANDINFO pCmdInfo )
+	LPCMINVOKECOMMANDINFO pCmdInfo )
 {
-  // If lpVerb really points to a string, ignore this function call and bail out.
-  if ( 0 != HIWORD( pCmdInfo->lpVerb ) )
-    return E_INVALIDARG;
- 
-  // Get the command index - the only valid one is 0.
-  switch ( LOWORD( pCmdInfo->lpVerb ) )
-    {
-    case 0:
-      {
-      TCHAR szMsg[MAX_PATH + 32];
- 
-      wsprintf ( szMsg, L"The selected file was:\n\n%s", m_szFile );
- 
-      MessageBox ( pCmdInfo->hwnd, szMsg, L"SimpleShlExt", MB_ICONINFORMATION );
- 
-      return S_OK;
-      }
-    break;
- 
-    default:
-      return E_INVALIDARG;
-    break;
-    }
+	// If lpVerb really points to a string, ignore this function call and bail out.
+	if ( 0 != HIWORD( pCmdInfo->lpVerb ) )
+		return E_INVALIDARG;
+
+	// Get the command index - the only valid one is 0.
+	switch ( LOWORD( pCmdInfo->lpVerb ) )
+	{
+	case 0:
+		{
+			TCHAR szMsg[MAX_PATH + 32];
+
+			wsprintf ( szMsg, L"The selected file was:\n\n%s", m_szFile );
+
+			MessageBox ( pCmdInfo->hwnd, szMsg, L"SimpleShlExt", MB_ICONINFORMATION );
+
+			return S_OK;
+		}
+		break;
+
+	default:
+		return E_INVALIDARG;
+		break;
+	}
 }

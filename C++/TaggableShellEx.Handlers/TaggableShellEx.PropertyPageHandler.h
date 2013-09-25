@@ -5,7 +5,7 @@
 #include "dllmain.h"
 
 class PropertyPageHandler:
-	public IInitializeWithStream,
+	public IShellExtInit,
 	public IShellPropSheetExt
 {
 public:
@@ -18,8 +18,10 @@ public:
 
 	IFACEMETHODIMP_(ULONG) Release();
 
-	// IInitializeWithStream
-	STDMETHODIMP Initialize(IStream *pStream,DWORD grfMode);
+	// IShellExtInit
+	STDMETHODIMP Initialize(LPCITEMIDLIST pIDFolder, 
+                                   IDataObject *pDataObj, 
+                                   HKEY hRegKey);
 
 	// IShellPropSheetExt
 	STDMETHODIMP AddPages(LPFNADDPROPSHEETPAGE lpfnAddPage, LPARAM lParam);
@@ -28,10 +30,11 @@ public:
 private:
 	~PropertyPageHandler(void);
 
-	//LPCITEMIDLIST  m_pIDFolder;           //The folder's PIDL
-	//TCHAR          m_szFile[MAX_PATH];    //The file name
-	//IDataObject   *m_pDataObj;            //The IDataObject pointer
-	//HKEY           m_hRegKey;             //The file or folder's registry key
+	// IShellExtInit
+	LPITEMIDLIST  m_pIDFolder;           //The folder's PIDL
+	TCHAR          m_szFile[MAX_PATH];    //The file name
+	IDataObject   *m_pDataObj;            //The IDataObject pointer
+	HKEY           m_hRegKey;             //The file or folder's registry key
 
 	// IUnknown
 	long _cRef;

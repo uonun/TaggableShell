@@ -36,7 +36,6 @@ HINSTANCE g_hInst = NULL;
 // Standard DLL functions
 STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 {
-	DebugBreak();
 	::CoInitialize(NULL);
 	
 #ifdef LOG4CPP

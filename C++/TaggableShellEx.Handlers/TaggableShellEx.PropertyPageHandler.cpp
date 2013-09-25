@@ -13,6 +13,12 @@ PropertyPageHandler::PropertyPageHandler() : _cRef(1),_pStream(NULL)
 #ifdef LOG4CPP
 	Utils::PrintLog(L"PropertyPageHandler.ctor");
 #endif
+	
+	m_pIDFolder = (LPITEMIDLIST)malloc(sizeof(LPITEMIDLIST));
+	*m_szFile = NULL;
+	m_pDataObj = NULL;
+	m_hRegKey = NULL;
+
 }
 
 PropertyPageHandler::~PropertyPageHandler(void){   
@@ -42,7 +48,7 @@ IFACEMETHODIMP PropertyPageHandler::QueryInterface(REFIID riid, void ** ppv)
 {
 	static const QITAB qit[] =
 	{
-		QITABENT(PropertyPageHandler, IInitializeWithStream),
+		QITABENT(PropertyPageHandler, IShellExtInit),
 		QITABENT(PropertyPageHandler, IShellPropSheetExt),
 		{0},
 	};
@@ -64,22 +70,35 @@ IFACEMETHODIMP_(ULONG) PropertyPageHandler::Release()
 	return cRef;
 }
 
-HRESULT PropertyPageHandler::Initialize(IStream *pStream, DWORD grfMode)
-{
-#ifdef LOG4CPP
-	Utils::PrintLog(L"PropertyPageHandler.Initialize");
-#endif
-	HRESULT hr = E_UNEXPECTED;
-	if (!_pStream)
-	{
-		// save a reference to the stream as well as the grfMode
-		hr = pStream->QueryInterface(IID_PPV_ARGS(&_pStream));
-		if (SUCCEEDED(hr))
-		{
-			_grfMode = grfMode;
-		}
+HRESULT PropertyPageHandler::Initialize(LPCITEMIDLIST pIDFolder, 
+									   IDataObject *pDataObj, 
+									   HKEY hRegKey) 
+{ 
+	// If Initialize has already been called, release the old PIDL
+	ILFree(m_pIDFolder);
+	m_pIDFolder = NULL;
+
+	// If Initialize has already been called, release the old
+	// IDataObject pointer.
+	if (m_pDataObj)
+	{ 
+		m_pDataObj->Release(); 
 	}
-	return hr;
+
+	//Store the new PIDL.
+	if(pIDFolder)
+	{
+		m_pIDFolder = ILClone(pIDFolder);
+	}
+
+	// If a data object pointer was passed in, save it and
+	// extract the file name. 
+	if (pDataObj) 
+	{ 
+		m_pDataObj = pDataObj; 
+		pDataObj->AddRef(); 
+	}
+	return S_OK; 
 }
 
 INT_PTR CALLBACK PageDlgProc(     

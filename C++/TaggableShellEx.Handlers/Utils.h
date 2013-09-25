@@ -8,6 +8,8 @@ using namespace std;
 #ifdef LOG4CPP
 #define LOG_FOLDER					".\\"
 #define LOG_FILENAME				"TaggableShell.Handlers.debug.log"
+
+#pragma comment(lib, "log4cpp.lib");
 #endif
 
 class Utils
