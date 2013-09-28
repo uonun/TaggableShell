@@ -74,6 +74,7 @@
     <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformShortName)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <TargetName>TaggableShell.$(PlatformShortName)</TargetName>
+    <LibraryPath>..\_lib\log4cpp\bin\$(PlatformTarget);$(VCInstallDir)lib\amd64;$(VCInstallDir)atlmfc\lib\amd64;$(WindowsSDK_LibraryPath_x64);</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>TaggableShell.$(PlatformShortName)</TargetName>
@@ -86,7 +87,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LOG4CPP;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -136,11 +137,16 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
-      <AdditionalDependencies>shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>log4cpp.lib;shlwapi.lib;Comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\log4cpp.dll" "$(TargetDir)log4cpp.dll"</Command>
+      <Command>..\TaggableShellEx.Handlers\onbuild.bat $(Configuration) $(PlatformTarget)</Command>
     </PostBuildEvent>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)C++\_lib\log4cpp</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="MainForm.cpp" />

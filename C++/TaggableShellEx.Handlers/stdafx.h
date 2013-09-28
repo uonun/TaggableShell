@@ -8,9 +8,36 @@
 #include "targetver.h"
 
 #define WIN32_LEAN_AND_MEAN             //  从 Windows 头文件中排除极少使用的信息
-// Windows 头文件:
-#include <windows.h>
 
 
+#include <Windows.h>  
+#include <string>
+#include <sstream>
+#include "resource.h"
+#include "Utils.h"
+using namespace std;
 
-// TODO: 在此处引用程序需要的其他头文件
+
+#ifdef LOG4CPP
+#define LOG_FILENAME					L"TaggableShell.Handlers.log"
+#endif
+
+#define LOADSTRING_BUFFERSIZE			512
+#define TAG_LENGTH						10					// max length of each tag.
+#define MAXCOUNT_TAG					100
+#define FOLDER_PROFILE					L"Profile"
+#define FOLDER_LOG						L"Logs"
+#define FILE_TAGS						L"Tags.tagsex"
+
+// Handle the the DLL's module
+extern HINSTANCE g_hInst;
+extern WCHAR __loadStringBuffer[LOADSTRING_BUFFERSIZE];
+
+extern WCHAR g_DllDirectory[MAX_PATH];
+extern WCHAR g_DllFullName[MAX_PATH];
+extern WCHAR g_ProfileDirectory[MAX_PATH];
+extern WCHAR g_TagsFullName[MAX_PATH];
+#ifdef LOG4CPP
+extern WCHAR g_LogFullName[MAX_PATH];
+extern WCHAR g_LogDirectory[MAX_PATH];
+#endif

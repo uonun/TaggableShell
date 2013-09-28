@@ -1,8 +1,9 @@
 #pragma once
 #include "StdAfx.h"
 #include <new> // std::nothrow
-//#include "resource.h"
-#include "Utils.h"
+#include <windows.h>
+#include <shlobj.h>
+#include <Shlwapi.h>
 
 // stuff from the Windows SDK that we will use
 //class DECLSPEC_UUID("8d80504a-0826-40c5-97e1-ebc68f953792") DocFilePropertyHandler;
@@ -32,6 +33,3 @@ void DllRelease();
 //HRESULT UnregisterDocFile();
 //HRESULT RegisterOpenMetadata();
 //HRESULT UnregisterOpenMetadata();
-
-// Handle the the DLL's module
-extern HINSTANCE g_hInst;

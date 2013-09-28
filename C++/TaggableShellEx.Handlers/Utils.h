@@ -1,27 +1,9 @@
 #pragma once
-#include <Windows.h>  
-#include <string>
-#include "resource.h"
-//#include <sstream>
-using namespace std;
+#include "StdAfx.h"
 
-#ifdef LOG4CPP
-#define LOG_FOLDER					".\\"
-#define LOG_FILENAME				"TaggableShell.Handlers.debug.log"
+LPWSTR MyLoadString(__in UINT uID);
 
-#pragma comment(lib, "log4cpp.lib");
-#endif
-
-class Utils
-{
-public:
-	Utils(void);
-	~Utils(void);
-
-	//static LPWSTR MyLoadString(__in UINT uID);
-
-#ifdef LOG4CPP
-	static void __cdecl PrintLog(const wchar_t *format, ...);
-#endif
-};
-
+void PrintLog(const wchar_t *format, ...);
+void Replace(LPWSTR path,char from,char to);
+//void WStr2Str(LPWSTR s1,LPSTR s2);
+void Str2WStr(LPSTR s1,LPWSTR s2);

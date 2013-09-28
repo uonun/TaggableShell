@@ -30,12 +30,12 @@
     <ClCompile Include="TaggableShellEx.PropertyPageHandler.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Taghelper.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dllmain.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="stdafx.h">
@@ -53,6 +53,12 @@
     <ClInclude Include="TaggableShellEx.PropertyPageHandler.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Taghelper.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Register.reg" />
@@ -61,5 +67,12 @@
       <Filter>资源文件</Filter>
     </None>
     <None Include="TaggableShellEx.Handlers.vcxproj" />
+    <None Include="Register.ContextMenu.reg" />
+    <None Include="onbuild.bat" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TaggableShellEx.Handlers.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

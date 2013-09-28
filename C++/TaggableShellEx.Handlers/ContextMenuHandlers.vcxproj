@@ -23,6 +23,7 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="TaggableShellEx.ContextMenuHandler.cpp" />
     <ClCompile Include="TaggableShellEx.PropertyPageHandler.cpp" />
+    <ClCompile Include="Taghelper.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -31,14 +32,20 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TaggableShellEx.ContextMenuHandler.h" />
     <ClInclude Include="TaggableShellEx.PropertyPageHandler.h" />
+    <ClInclude Include="Taghelper.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="onbuild.bat" />
+    <None Include="Register.ContextMenu.reg" />
     <None Include="TaggableShellEx.Handlers.vcxproj" />
     <None Include="Export.def" />
     <None Include="Register.reg" />
     <None Include="UnRegister.reg" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TaggableShellEx.Handlers.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7B7293B6-EDCA-4A43-A75A-25C515AB47D0}</ProjectGuid>
@@ -91,16 +98,17 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformShortName)\</OutDir>
-    <TargetName>TaggableShell.Handlers.$(PlatformShortName)</TargetName>
-    <IncludePath>$(SolutionDir)C++\_lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);</IncludePath>
-    <LibraryPath>$(SolutionDir)C++\_lib\log4cpp;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);</LibraryPath>
+    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformTarget)\</OutDir>
+    <TargetName>TaggableShell.Handlers.$(PlatformTarget)</TargetName>
+    <LibraryPath>..\_lib\log4cpp\bin\$(PlatformTarget);$(LibraryPath)</LibraryPath>
+    <IntDir>$(Configuration)\$(PlatformTarget)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>TaggableShell.Handlers.$(PlatformShortName)</TargetName>
+    <TargetName>TaggableShell.Handlers.$(PlatformTarget)</TargetName>
+    <LibraryPath>..\_lib\log4cpp\bin\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformShortName)\</OutDir>
-    <IntDir>$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformTarget)\</OutDir>
+    <IntDir>$(Configuration)\$(PlatformTarget)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -110,7 +118,10 @@
     <TargetName>TaggableShell.Handlers.$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>TaggableShell.Handlers.$(PlatformShortName)</TargetName>
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)C++\_lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(SolutionDir)C++\_lib\log4cpp;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -118,16 +129,17 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CONTEXTMENUHANDLERS_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LOG4CPP;WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)C++\_lib\log4cpp</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>shlwapi.lib;Comctl32.lib;log4cpp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>log4cpp.lib;shlwapi.lib;Comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>Export.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\log4cpp.dll" "$(TargetDir)log4cpp.dll"</Command>
+      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\bin\$(PlatformTarget)\log4cpp.dll" "$(TargetDir)log4cpp.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -136,15 +148,17 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)C++\_lib\log4cpp</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>shlwapi.lib;Comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>log4cpp.lib;shlwapi.lib;Comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>Export.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\log4cpp.dll" "$(TargetDir)log4cpp.dll"</Command>
+      <Command>onbuild.bat $(Configuration) $(PlatformTarget)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -166,8 +180,7 @@
       <AdditionalDependencies>shlwapi.lib;Comctl32.lib;log4cpp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\log4cpp.dll" "$(TargetDir)log4cpp.dll"
-</Command>
+      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\bin\$(PlatformTarget)\log4cpp.dll" "$(TargetDir)log4cpp.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -189,7 +202,7 @@
       <AdditionalDependencies>shlwapi.lib;Comctl32.lib;log4cpp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\log4cpp.dll" "$(TargetDir)log4cpp.dll"</Command>
+      <Command>copy "$(SolutionDir)C++\_lib\log4cpp\bin\$(PlatformTarget)\log4cpp.dll" "$(TargetDir)log4cpp.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

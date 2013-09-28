@@ -6,21 +6,20 @@
 #include "TaggableShellEx.ContextMenuHandler.h"
 #include "dllmain.h"
 #include "resource.h"
+#include "Taghelper.h"
 
-ContextMenuHandler::ContextMenuHandler() : _cRef(1),_pStream(NULL)
+ContextMenuHandler::ContextMenuHandler() : _cRef(1),m_pIDFolder(NULL),m_pDataObj(NULL),m_hRegKey(NULL)
 {
+	*m_szFile = NULL;
+
 	DllAddRef();
 #ifdef LOG4CPP
 	Utils::PrintLog(L"ContextMenuHandler.ctor");
 #endif
-
-	m_pIDFolder = (LPITEMIDLIST)malloc(sizeof(LPITEMIDLIST));
-	*m_szFile = NULL;
-	m_pDataObj = NULL;
-	m_hRegKey = NULL;
 }
 
-ContextMenuHandler::~ContextMenuHandler(void){   
+ContextMenuHandler::~ContextMenuHandler(void)
+{   
 #ifdef LOG4CPP
 	Utils::PrintLog(L"ContextMenuHandler.~ctor");
 #endif
@@ -74,8 +73,10 @@ HRESULT ContextMenuHandler::Initialize(LPCITEMIDLIST pIDFolder,
 									   HKEY hRegKey) 
 { 
 	// If Initialize has already been called, release the old PIDL
-	ILFree(m_pIDFolder);
-	m_pIDFolder = NULL;
+	if(m_pIDFolder!=NULL){
+		ILFree(m_pIDFolder);
+		m_pIDFolder = NULL;
+	}
 
 	// If Initialize has already been called, release the old
 	// IDataObject pointer.
@@ -109,9 +110,32 @@ HRESULT ContextMenuHandler::QueryContextMenu (
 	if ( uFlags & CMF_DEFAULTONLY )
 		return MAKE_HRESULT ( SEVERITY_SUCCESS, FACILITY_NULL, 0 );
 
-	InsertMenu ( hmenu, uMenuIndex, MF_BYPOSITION, uidFirstCmd,L"SimpleShlExt Test Item" );
+	// create and populate a submenu.
+	HMENU hSubmenu = CreatePopupMenu();
+	UINT uID = uidFirstCmd;
+	UINT uPosition = 0;
 
-	return MAKE_HRESULT ( SEVERITY_SUCCESS, FACILITY_NULL, 1 );
+	LPWSTR tags[MAXCOUNT_TAG];
+	int count = 0;
+	CTaghelper::GetTags(tags,&count);
+	for (int i = 0; i < count; i++)
+	{
+		InsertMenu ( hSubmenu, uPosition++, MF_BYPOSITION, uID++, tags[i] );
+	}
+
+	InsertMenu ( hSubmenu, uPosition++, MF_SEPARATOR, uID++, L"MF_SEPARATOR" );
+	InsertMenu ( hSubmenu, uPosition++, MF_BYPOSITION, uID++,::MyLoadString(IDS_CONTEXTMENU_SUB_NEWTAG));
+	InsertMenu ( hSubmenu, uPosition++, MF_BYPOSITION, uID++,::MyLoadString(IDS_CONTEXTMENU_SUB_SETTINGS));
+
+	MENUITEMINFO mii = { sizeof(MENUITEMINFO) };
+	mii.fMask = MIIM_SUBMENU | MIIM_STRING | MIIM_ID;
+	mii.wID = uID++;
+	mii.hSubMenu = hSubmenu;
+	mii.dwTypeData = ::MyLoadString(IDS_CONTEXTMENU_MAIN_TEXT);
+
+	InsertMenuItem  ( hmenu, uMenuIndex, true,&mii );
+
+	return MAKE_HRESULT ( SEVERITY_SUCCESS, FACILITY_NULL,uID - uidFirstCmd );
 }
 
 HRESULT ContextMenuHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserved, LPSTR pszName, UINT cchMax)
@@ -157,7 +181,14 @@ HRESULT ContextMenuHandler::InvokeCommand (
 		break;
 
 	default:
-		return E_INVALIDARG;
+		{
+			TCHAR szMsg[MAX_PATH + 32];
+
+			wsprintf ( szMsg, L"pCmdInfo->lpVerb: %d", LOWORD( pCmdInfo->lpVerb ) );
+
+			MessageBox ( pCmdInfo->hwnd, szMsg, L"SimpleShlExt", MB_ICONINFORMATION );
+			return E_INVALIDARG;
+		}
 		break;
 	}
 }

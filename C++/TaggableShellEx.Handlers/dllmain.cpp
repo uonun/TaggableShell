@@ -5,11 +5,9 @@
 //
 // Copyright (c) Microsoft Corporation. All rights reserved
 
-#include <windows.h>
-#include <shlobj.h>
-#include <Shlwapi.h>
 #include "dllmain.h"
-
+#include <filesystem>
+using namespace std::tr2::sys;
 
 typedef HRESULT (*PFNCREATEINSTANCE)(REFIID riid, void **ppvObject);
 struct CLASS_OBJECT_INIT
@@ -22,7 +20,7 @@ struct CLASS_OBJECT_INIT
 const CLASS_OBJECT_INIT c_rgClassObjectInit[] =
 {
 	{ &__uuidof(ContextMenuHandler), ContextMenuHandler_CreateInstance },
-	{ &__uuidof(PropertyPageHandler), PropertyPageHandler_CreateInstance }
+	//{ &__uuidof(PropertyPageHandler), PropertyPageHandler_CreateInstance }
 };
 
 
@@ -30,31 +28,74 @@ long g_cRefModule = 0;
 
 // Handle the the DLL's module
 HINSTANCE g_hInst = NULL;
-
+WCHAR g_DllFullName[MAX_PATH];
+WCHAR g_DllDirectory[MAX_PATH];
+WCHAR g_ProfileDirectory[MAX_PATH];
+WCHAR g_TagsFullName[MAX_PATH];
+#ifdef LOG4CPP
+WCHAR g_LogDirectory[MAX_PATH];
+WCHAR g_LogFullName[MAX_PATH];
+#endif
 ///////////////////////////////////////////////////////////////////////////
 
 // Standard DLL functions
 STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 {
 	::CoInitialize(NULL);
-	
+	locale("chs");
+	GetModuleFileName(hInstance,g_DllFullName, sizeof(g_DllFullName) / sizeof(g_DllFullName[0]) - 1);
+	std::tr2::sys::wpath p(g_DllFullName);
+	wpath dir = p.parent_path();
+	wsprintf ( g_DllDirectory, L"%s", dir.string().c_str() );
+	wsprintf ( g_ProfileDirectory, L"%s/%s\0", g_DllDirectory,FOLDER_PROFILE );
+	wsprintf ( g_TagsFullName, L"%s\\%s\0",g_ProfileDirectory,FILE_TAGS );
+	::Replace(g_TagsFullName,'/','\\');
 #ifdef LOG4CPP
-	Utils::PrintLog(L"DllMain, dwReason = %d. (DLL_PROCESS_DETACH = 0, DLL_PROCESS_ATTACH = 1, DLL_THREAD_ATTACH = 2, DLL_THREAD_DETACH = 3)",dwReason);
+	wsprintf ( g_LogDirectory, L"%s/%s\0", g_DllDirectory,FOLDER_LOG );
+	wsprintf ( g_LogFullName, L"%s/%s\0",g_LogDirectory,LOG_FILENAME );
+	::Replace(g_LogFullName,'/','\\');
+	OutputDebugString(L"Log file: ");
+	OutputDebugString(g_LogFullName);
+	OutputDebugString(L"\n");
 #endif
 
-	if (dwReason == DLL_PROCESS_ATTACH)
+	if (
+		(CreateDirectory(g_ProfileDirectory, NULL) || ERROR_ALREADY_EXISTS == GetLastError())
+#ifdef LOG4CPP
+		&&(CreateDirectory(g_LogDirectory, NULL) || ERROR_ALREADY_EXISTS == GetLastError())
+#endif
+		)
 	{
-		g_hInst = hInstance;
-		DisableThreadLibraryCalls(hInstance);
-	}	
-	return TRUE;
+		::PrintLog(L"DllMain, dwReason = %d. (DLL_PROCESS_DETACH = 0, DLL_PROCESS_ATTACH = 1, DLL_THREAD_ATTACH = 2, DLL_THREAD_DETACH = 3)",dwReason);
+		::PrintLog(L"g_DllDirectory:\t%s",g_DllDirectory);
+		::PrintLog(L"g_DllFullName:\t%s",g_DllFullName);
+		::PrintLog(L"g_ProfileDirectory:\t%s",g_ProfileDirectory);
+		::PrintLog(L"g_TagsFullName:\t%s",g_TagsFullName);
+#ifdef LOG4CPP
+		::PrintLog(L"g_LogDirectory:\t%s",g_LogDirectory);
+		::PrintLog(L"g_LogFullName:\t%s",g_LogFullName);
+#endif
+
+		if (dwReason == DLL_PROCESS_ATTACH)
+		{
+			g_hInst = hInstance;
+			DisableThreadLibraryCalls(hInstance);
+		}	
+		return TRUE;
+	}
+	else
+	{
+		// Failed to create log directory.
+		return FALSE;
+	}
+
 }
 
 STDAPI DllCanUnloadNow()
 {
 	// Only allow the DLL to be unloaded after all outstanding references have been released
 	auto a = (g_cRefModule == 0) ? S_OK : S_FALSE;
-	if(a== S_OK){
+	if(a == S_OK){
 		CoUninitialize();
 	}
 	return a;
@@ -96,9 +137,7 @@ public:
 
 	CClassFactory(PFNCREATEINSTANCE pfnCreate) : _cRef(1), _pfnCreate(pfnCreate)
 	{
-#ifdef LOG4CPP
-		Utils::PrintLog(L"CClassFactory.ctor");
-#endif
+		::PrintLog(L"CClassFactory.ctor");
 		DllAddRef();
 	}
 
@@ -159,30 +198,21 @@ private:
 
 STDAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void **ppv)
 {
-#ifdef LOG4CPP
-	Utils::PrintLog(L"DllGetClassObject");
-#endif
-
+	::PrintLog(L"DllGetClassObject");
 	auto hr = CClassFactory::CreateInstance(clsid, c_rgClassObjectInit, ARRAYSIZE(c_rgClassObjectInit), riid, ppv);
 	return hr;
 }
 
 STDAPI DllRegisterServer()
 {	
-#ifdef LOG4CPP
-	Utils::PrintLog(L"DllRegisterServer");
-#endif
-
+	::PrintLog(L"DllRegisterServer");
 	return S_OK;
 	//return RegisterHandler();
 }
 
 STDAPI DllUnregisterServer()
 {
-#ifdef LOG4CPP
-	Utils::PrintLog(L"DllUnregisterServer");
-#endif
-
+	::PrintLog(L"DllUnregisterServer");
 	return S_OK;
 	//return UnregisterHandler();
 }

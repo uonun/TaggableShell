@@ -13,12 +13,13 @@ PropertyPageHandler::PropertyPageHandler() : _cRef(1),_pStream(NULL)
 #ifdef LOG4CPP
 	Utils::PrintLog(L"PropertyPageHandler.ctor");
 #endif
-	
-	m_pIDFolder = (LPITEMIDLIST)malloc(sizeof(LPITEMIDLIST));
+
+	//m_pIDFolder = (LPITEMIDLIST)malloc(sizeof(LPITEMIDLIST));
+	m_pIDFolder = NULL;
 	*m_szFile = NULL;
 	m_pDataObj = NULL;
 	m_hRegKey = NULL;
-
+	g_DllRefCount = 0;
 }
 
 PropertyPageHandler::~PropertyPageHandler(void){   
@@ -33,8 +34,8 @@ HRESULT PropertyPageHandler_CreateInstance(REFIID riid, void **ppv)
 #ifdef LOG4CPP
 	Utils::PrintLog(L"PropertyPageHandler.PropertyPageHandler_CreateInstance");
 #endif
-    PropertyPageHandler *pNew = new(std::nothrow) PropertyPageHandler;
-    HRESULT hr = pNew ? S_OK : E_OUTOFMEMORY;
+	PropertyPageHandler *pNew = new(std::nothrow) PropertyPageHandler;
+	HRESULT hr = pNew ? S_OK : E_OUTOFMEMORY;
 	if (pNew)
 	{
 		hr = pNew->QueryInterface(riid, ppv);
@@ -71,12 +72,14 @@ IFACEMETHODIMP_(ULONG) PropertyPageHandler::Release()
 }
 
 HRESULT PropertyPageHandler::Initialize(LPCITEMIDLIST pIDFolder, 
-									   IDataObject *pDataObj, 
-									   HKEY hRegKey) 
+										IDataObject *pDataObj, 
+										HKEY hRegKey) 
 { 
 	// If Initialize has already been called, release the old PIDL
-	ILFree(m_pIDFolder);
-	m_pIDFolder = NULL;
+	if(m_pIDFolder!=NULL){
+		ILFree(m_pIDFolder);
+		m_pIDFolder = NULL;
+	}
 
 	// If Initialize has already been called, release the old
 	// IDataObject pointer.
@@ -157,35 +160,38 @@ STDMETHODIMP PropertyPageHandler::AddPages(LPFNADDPROPSHEETPAGE lpfnAddPage, LPA
 	PROPSHEETPAGE  psp;
 	HPROPSHEETPAGE hPage;
 
-	psp.dwSize        = sizeof(psp);
-	psp.dwFlags       = PSP_USEREFPARENT | PSP_USETITLE;// | PSP_USECALLBACK;
-	psp.hInstance     = ::g_hInst;
-	psp.pszTemplate   = MAKEINTRESOURCE(IDD_PAGEDLG);
-	psp.hIcon         = 0;
-	psp.pszTitle      = TEXT("Extension Page");
-	psp.pfnDlgProc    = (DLGPROC)PageDlgProc;
-	psp.pcRefParent   = &g_DllRefCount;
-	psp.pfnCallback   = PageCallbackProc;
-	psp.lParam        = (LPARAM)this;
+	// Set up the PROPSHEETPAGE struct.
+	ZeroMemory ( &psp, sizeof(PROPSHEETPAGE) );
 
-	hPage = CreatePropertySheetPage(&psp);
+	psp.dwSize      = sizeof(PROPSHEETPAGE);
+	psp.dwFlags     = PSP_USEREFPARENT | PSP_USETITLE | PSP_DEFAULT | PSP_USECALLBACK;
+	psp.hInstance   = ::g_hInst;
+	psp.pszTemplate = MAKEINTRESOURCE(IDD_PAGEDLG);
+	psp.pszIcon     = 0;
+	psp.pszTitle    = L"pszTitle";
+	psp.pfnDlgProc  = PageDlgProc;
+	psp.lParam      = (LPARAM) this;
+	psp.pfnCallback = PageCallbackProc;
+	psp.pcRefParent = (UINT*) &g_DllRefCount;
 
-	if(hPage) 
+	// Create the page & get a handle.
+	hPage = CreatePropertySheetPage ( &psp );
+
+	if ( NULL != hPage )
 	{
-		if(lpfnAddPage(hPage, lParam))
-		{
+		// Call the shell's callback function, so it adds the page to
+		// the property sheet.
+		if ( lpfnAddPage ( hPage, lParam )){
 			this->AddRef();
-			return S_OK;
 		}
 		else
 		{
-			DestroyPropertySheetPage(hPage);
+			DestroyPropertySheetPage ( hPage );
 		}
-	}
-	else
-	{
+	}else{
 		return E_OUTOFMEMORY;
 	}
-	return E_FAIL;
+
+	return S_OK;
 }
 

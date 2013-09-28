@@ -1,7 +1,4 @@
 #pragma once
-#include <windows.h>
-#include <shlwapi.h>
-#include <shlobj.h>
 #include "dllmain.h"
 
 class ContextMenuHandler:
@@ -39,12 +36,4 @@ private:
 
 	// IUnknown
 	long _cRef;
-
-
-	// IInitializeWithStream
-	DWORD _grfMode;
-	IStream *_pStream;
-
-	// IShellPropSheetExt
-	UINT g_DllRefCount;
 };
