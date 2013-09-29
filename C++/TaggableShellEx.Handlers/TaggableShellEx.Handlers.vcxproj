@@ -63,7 +63,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)C++\$(Configuration)\$(PlatformShortName)\</OutDir>
-    <TargetName>TaggableShell.ContextMenuHandler.$(PlatformShortName)</TargetName>
+    <TargetName>TaggableShell.CHandler.$(PlatformShortName)</TargetName>
     <IncludePath>$(SolutionDir)C++\lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(SolutionDir)C++\lib\log4cpp;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);</LibraryPath>
   </PropertyGroup>

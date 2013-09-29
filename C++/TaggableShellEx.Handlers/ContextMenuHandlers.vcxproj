@@ -21,8 +21,9 @@
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="TaggableShellEx.ContextMenuHandler.cpp" />
-    <ClCompile Include="TaggableShellEx.PropertyPageHandler.cpp" />
+    <ClCompile Include="TaggableShellEx.CHandler.cpp" />
+    <ClCompile Include="TaggableShellEx.CHandler.ContextMenu.cpp" />
+    <ClCompile Include="TaggableShellEx.CHandler.PropertyPage.cpp" />
     <ClCompile Include="Taghelper.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
@@ -30,8 +31,7 @@
     <ClInclude Include="dllmain.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="TaggableShellEx.ContextMenuHandler.h" />
-    <ClInclude Include="TaggableShellEx.PropertyPageHandler.h" />
+    <ClInclude Include="TaggableShellEx.CHandler.h" />
     <ClInclude Include="Taghelper.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Utils.h" />
@@ -39,6 +39,7 @@
   <ItemGroup>
     <None Include="onbuild.bat" />
     <None Include="Register.ContextMenu.reg" />
+    <None Include="Register.PropertyPage.reg" />
     <None Include="TaggableShellEx.Handlers.vcxproj" />
     <None Include="Export.def" />
     <None Include="Register.reg" />
@@ -99,12 +100,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformTarget)\</OutDir>
-    <TargetName>TaggableShell.Handlers.$(PlatformTarget)</TargetName>
+    <TargetName>TaggableShellEx.Handlers.$(PlatformTarget)</TargetName>
     <LibraryPath>..\_lib\log4cpp\bin\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\$(PlatformTarget)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>TaggableShell.Handlers.$(PlatformTarget)</TargetName>
+    <TargetName>TaggableShellEx.Handlers.$(PlatformTarget)</TargetName>
     <LibraryPath>..\_lib\log4cpp\bin\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformTarget)\</OutDir>
@@ -118,10 +119,12 @@
     <TargetName>TaggableShell.Handlers.$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>TaggableShell.Handlers.$(PlatformShortName)</TargetName>
+    <TargetName>TaggableShellEx.Handlers.$(PlatformTarget)</TargetName>
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)C++\_lib;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(SolutionDir)C++\_lib\log4cpp;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);</LibraryPath>
+    <IntDir>$(Configuration)\$(PlatformTarget)\</IntDir>
+    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformTarget)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

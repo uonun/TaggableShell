@@ -18,10 +18,8 @@
 //const WCHAR c_szDocInfoTip[] = L"prop:System.ItemType;System.Author;System.Size;System.DateModified;System.Document.PageCount";
 //const WCHAR c_szDocPreviewDetails[] = L"prop:*System.DateModified;System.Author;System.Keywords;System.Rating;*System.Size;System.Title;System.Comment;System.Category;*System.Document.PageCount;System.ContentStatus;System.ContentType;*System.OfflineAvailability;*System.OfflineStatus;System.Subject;*System.DateCreated;*System.SharedWith";
 
-class DECLSPEC_UUID("75B245A3-0EEC-425C-B4B5-3D4AD82D4D42") PropertyPageHandler;
-HRESULT PropertyPageHandler_CreateInstance(REFIID riid, void **ppv);
-class DECLSPEC_UUID("75B245A4-0EEC-425C-B4B5-3D4AD82D4D42") ContextMenuHandler;
-HRESULT ContextMenuHandler_CreateInstance(REFIID riid, void **ppv);
+class DECLSPEC_UUID("20130929-1982-0805-819F-6D66853DDD60") CHandler;
+HRESULT CHandler_CreateInstance(REFIID riid, void **ppv);
 
 HRESULT RegisterHandler();
 HRESULT UnregisterHandler();

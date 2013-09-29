@@ -24,13 +24,16 @@
     <ClCompile Include="Utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="TaggableShellEx.ContextMenuHandler.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TaggableShellEx.PropertyPageHandler.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Taghelper.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TaggableShellEx.CHandler.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TaggableShellEx.CHandler.ContextMenu.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TaggableShellEx.CHandler.PropertyPage.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,16 +50,13 @@
     <ClInclude Include="Utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="TaggableShellEx.ContextMenuHandler.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TaggableShellEx.PropertyPageHandler.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Taghelper.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TaggableShellEx.CHandler.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -69,6 +69,7 @@
     <None Include="TaggableShellEx.Handlers.vcxproj" />
     <None Include="Register.ContextMenu.reg" />
     <None Include="onbuild.bat" />
+    <None Include="Register.PropertyPage.reg" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TaggableShellEx.Handlers.rc">
