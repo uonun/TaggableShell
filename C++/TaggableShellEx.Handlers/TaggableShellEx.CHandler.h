@@ -42,4 +42,5 @@ private:
 
 	// IShellPropSheetExt
 	UINT g_DllRefCount;
+
 };

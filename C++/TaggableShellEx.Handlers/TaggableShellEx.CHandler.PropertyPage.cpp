@@ -27,6 +27,7 @@ INT_PTR CALLBACK PageDlgProc(
 			{
 			case PSN_APPLY:
 				//bRet = OnApply ( hwnd, (PSHNOTIFY*) phdr );
+				MessageBox(hwnd,L"Apply",L"Caption",MB_OK);
 				break;
 
 			case DTN_DATETIMECHANGE:
@@ -42,12 +43,22 @@ INT_PTR CALLBACK PageDlgProc(
 	return bRet;
 }
 
+// http://msdn.microsoft.com/en-us/library/windows/desktop/bb760813(v=vs.85).aspx
 UINT CALLBACK PageCallbackProc(
 	HWND hwnd,
 	_In_     UINT uMsg,
 	_Inout_  LPPROPSHEETPAGE ppsp
 	)
 {
+	switch ( uMsg )
+	{
+	case PSPCB_RELEASE:
+		CHandler* tmp = (CHandler*)ppsp->lParam;
+		tmp->Release();
+		MessageBox(hwnd,L"PSPCB_RELEASE",L"PSPCB_RELEASE",MB_OK);		
+		break;
+	}
+
 	return 1;   // use nonzero let the page be created
 }
 
@@ -73,7 +84,7 @@ STDMETHODIMP CHandler::AddPages(LPFNADDPROPSHEETPAGE lpfnAddPage, LPARAM lParam)
 	psp.pfnDlgProc  = PageDlgProc;
 	psp.lParam      = (LPARAM) this;
 	psp.pfnCallback = PageCallbackProc;
-	psp.pcRefParent = (UINT*) &g_DllRefCount;
+	psp.pcRefParent = (UINT*)&g_DllRefCount;
 
 	// Create the page & get a handle.
 	hPage = CreatePropertySheetPage ( &psp );

@@ -66,7 +66,6 @@
     <None Include="Export.def">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="TaggableShellEx.Handlers.vcxproj" />
     <None Include="Register.ContextMenu.reg" />
     <None Include="onbuild.bat" />
     <None Include="Register.PropertyPage.reg" />

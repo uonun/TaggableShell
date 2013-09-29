@@ -19,6 +19,7 @@ using namespace std;
 
 
 #ifdef LOG4CPP
+#pragma comment(lib, "log4cpp.lib")
 #define LOG_FILENAME					L"TaggableShell.Handlers.log"
 #endif
 
