@@ -2,6 +2,7 @@
 #include "dllmain.h"
 #include "resource.h"
 #include "TaggableShellEx.CHandler.h"
+#include "Taghelper.h"
 
 CHandler::CHandler() : 
 	_cRef(1) // IUnknown
@@ -92,5 +93,9 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 		m_pDataObj = pDataObj; 
 		pDataObj->AddRef(); 
 	}
+
+	// load tags
+	_tagHelper.LoadTags();
+
 	return S_OK; 
 }

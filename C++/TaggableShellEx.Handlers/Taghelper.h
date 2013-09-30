@@ -10,6 +10,14 @@ public:
 	CTaghelper(void);
 	virtual ~CTaghelper(void);
 
-	static void CTaghelper::GetTags(LPWSTR* tags,int* count);
+	void CTaghelper::LoadTags();
+
+	
+	int TagCount;					// The count of loaded tags. READ ONLY.
+	LPWSTR Tags[MAXCOUNT_TAG];		// The loaded tags. READ ONLY.
+
+private:
+	fstream* _pfile;
+	bool _cached;
 };
 

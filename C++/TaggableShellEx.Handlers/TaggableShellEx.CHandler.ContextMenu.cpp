@@ -15,19 +15,16 @@ HRESULT CHandler::QueryContextMenu (
 	// create and populate a submenu.
 	HMENU hSubmenu = CreatePopupMenu();
 	UINT uID = uidFirstCmd;
-	UINT uPosition = 0;
+	UINT uPosition = 0x1000;
 
-	LPWSTR tags[MAXCOUNT_TAG];
-	int count = 0;
-	CTaghelper::GetTags(tags,&count);
-	for (int i = 0; i < count; i++)
+	for (int i = 0; i < _tagHelper.TagCount; i++)
 	{
-		InsertMenu ( hSubmenu, uPosition++, MF_BYPOSITION | MF_CHECKED, uID++, tags[i] );
+		InsertMenu ( hSubmenu, uPosition|i, MF_BYCOMMAND | MF_CHECKED, uID++, _tagHelper.Tags[i] );
 	}
 
-	InsertMenu ( hSubmenu, uPosition++, MF_SEPARATOR, uID++, L"MF_SEPARATOR" );
-	InsertMenu ( hSubmenu, uPosition++, MF_BYPOSITION, uID++,::MyLoadString(IDS_CONTEXTMENU_SUB_NEWTAG));
-	InsertMenu ( hSubmenu, uPosition++, MF_BYPOSITION, uID++,::MyLoadString(IDS_CONTEXTMENU_SUB_SETTINGS));
+	InsertMenu ( hSubmenu, -1, MF_BYPOSITION | MF_SEPARATOR, uID++, L"MF_SEPARATOR" );
+	InsertMenu ( hSubmenu, -1, MF_BYPOSITION, uID++,::MyLoadString(IDS_CONTEXTMENU_SUB_NEWTAG));
+	InsertMenu ( hSubmenu, -1, MF_BYPOSITION, uID++,::MyLoadString(IDS_CONTEXTMENU_SUB_SETTINGS));
 
 	MENUITEMINFO mii = { sizeof(MENUITEMINFO) };
 	mii.fMask = MIIM_SUBMENU | MIIM_STRING | MIIM_ID;
@@ -82,7 +79,7 @@ HRESULT CHandler::InvokeCommand (
 		{
 			TCHAR szMsg[MAX_PATH + 32];
 
-			wsprintf ( szMsg, L"pCmdInfo->lpVerb: %d", LOWORD( pCmdInfo->lpVerb ) );
+			wsprintf ( szMsg, L"pCmdInfo->lpVerb: %s", _tagHelper.Tags[LOWORD( pCmdInfo->lpVerb )] );
 
 			MessageBox ( pCmdInfo->hwnd, szMsg, L"SimpleShlExt", MB_ICONINFORMATION );
 			return E_INVALIDARG;

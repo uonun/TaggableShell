@@ -1,5 +1,6 @@
 #pragma once
 #include "dllmain.h"
+#include "Taghelper.h"
 
 class CHandler:
 	public IContextMenu,		// ContextMenu
@@ -43,4 +44,6 @@ private:
 	// IShellPropSheetExt
 	UINT g_DllRefCount;
 
+	// ContextMenuHandler
+	CTaghelper _tagHelper;
 };
