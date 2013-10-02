@@ -29,6 +29,8 @@ using namespace std;
 #define FOLDER_PROFILE					L"Profile"
 #define FOLDER_LOG						L"Logs"
 #define FILE_TAGS						L"Tags.tagsex"
+#define CMD_NEWTAG						0x10000
+#define CMD_SETTINGS					0x10001
 
 // Handle the the DLL's module
 extern HINSTANCE g_hInst;

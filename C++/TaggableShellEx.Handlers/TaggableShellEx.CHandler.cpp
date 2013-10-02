@@ -63,6 +63,7 @@ IFACEMETHODIMP_(ULONG) CHandler::Release()
 	return cRef;
 }
 
+// http://msdn.microsoft.com/en-us/library/windows/desktop/cc144067(v=vs.85).aspx
 HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder, 
 							 IDataObject *pDataObj, 
 							 HKEY hRegKey) 
@@ -91,6 +92,7 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 	if (pDataObj) 
 	{ 
 		m_pDataObj = pDataObj; 
+
 		pDataObj->AddRef(); 
 	}
 

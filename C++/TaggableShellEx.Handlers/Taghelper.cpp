@@ -46,3 +46,36 @@ void CTaghelper::LoadTags()
 		_pfile->close();
 	}
 }
+
+HRESULT CTaghelper::SetTag(IShellItem & ppv, int tagIdx)
+{
+	HRESULT hr = S_FALSE;
+	IShellItem* s = NULL; 
+	s = &ppv;
+	wchar_t* name[MAX_PATH];
+	s->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING,name);
+	ofstream f;
+	f.open("F:\\works\\udnz.com.ShellEx.TaggableShell\\C++\\_Debug\\x64\\1.d",ios::out|ios::binary,_SH_DENYRW);
+	f << L"000000000000000000000";
+	f << name;
+	const int size = sizeof(IShellItem);
+	char tmp[size];
+	memcpy(tmp,s,size);
+	f << tmp;
+	f.close();
+
+
+
+
+	/*FILE *f;
+	int* fHandle;
+	int x = _wsopen_s(fHandle,L"F:\\works\\udnz.com.ShellEx.TaggableShell\\C++\\_Debug\\x64\\1.d",_O_APPEND |_O_CREAT|_O_WTEXT|_O_BINARY|_O_WRONLY,_S_IREAD | _S_IWRITE);
+	if(x > 0 || *fHandle == -1){
+
+	}else{
+
+	}*/
+
+
+	return hr;
+}
