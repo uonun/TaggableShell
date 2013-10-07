@@ -1,4 +1,5 @@
 #include "Taghelper.h"
+#include "strsafe.h"	// StringCchLength
 
 CTaghelper::CTaghelper(void): _cached(false),_pfile(new fstream())
 {
@@ -52,30 +53,44 @@ HRESULT CTaghelper::SetTag(IShellItem & ppv, int tagIdx)
 	HRESULT hr = S_FALSE;
 	IShellItem* s = NULL; 
 	s = &ppv;
-	wchar_t* name[MAX_PATH];
-	s->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING,name);
-	ofstream f;
-	f.open("F:\\works\\udnz.com.ShellEx.TaggableShell\\C++\\_Debug\\x64\\1.d",ios::out|ios::binary,_SH_DENYRW);
-	f << L"000000000000000000000";
+	LPWSTR name;
+	s->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING,(LPWSTR*)&name);
+
+	MessageBox(NULL,name,L"",MB_OK);
+	wofstream f;
+	f.open("F:\\works\\udnz.com.ShellEx.TaggableShell\\C++\\_Debug\\x64\\1.d",ios::out,_SH_DENYNO);
 	f << name;
-	const int size = sizeof(IShellItem);
-	char tmp[size];
-	memcpy(tmp,s,size);
-	f << tmp;
 	f.close();
 
 
 
+	HANDLE hFile = CreateFile(L"F:\\works\\udnz.com.ShellEx.TaggableShell\\C++\\_Debug\\x64\\1.d",                // name of the write
+		GENERIC_WRITE,          // open for writing
+		0,                      // do not share
+		NULL,                   // default security
+		OPEN_ALWAYS,             // create new file only
+		FILE_ATTRIBUTE_NORMAL,  // normal file
+		NULL);                  // no attr. template
 
-	/*FILE *f;
-	int* fHandle;
-	int x = _wsopen_s(fHandle,L"F:\\works\\udnz.com.ShellEx.TaggableShell\\C++\\_Debug\\x64\\1.d",_O_APPEND |_O_CREAT|_O_WTEXT|_O_BINARY|_O_WRONLY,_S_IREAD | _S_IWRITE);
-	if(x > 0 || *fHandle == -1){
+
+	size_t dwBytesToWrite=0;
+	StringCchLength(name,MAX_PATH,&dwBytesToWrite);
+	DWORD dwBytesWritten = 0;
+	BOOL bErrorFlag = FALSE;
+	bErrorFlag = WriteFile( 
+		hFile,           // open file handle
+		name,      // start of data to write
+		dwBytesToWrite,  // number of bytes to write
+		&dwBytesWritten, // number of bytes that were written
+		NULL);            // no overlapped structure
+
+	if (FALSE == bErrorFlag)
+	{
 
 	}else{
 
-	}*/
-
+	}
+	CloseHandle(hFile);
 
 	return hr;
 }

@@ -64,6 +64,7 @@ IFACEMETHODIMP_(ULONG) CHandler::Release()
 }
 
 // http://msdn.microsoft.com/en-us/library/windows/desktop/cc144067(v=vs.85).aspx
+// http://msdn.microsoft.com/en-us/library/cc144067%28v=VS.85%29.aspx
 HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder, 
 							 IDataObject *pDataObj, 
 							 HKEY hRegKey) 
@@ -92,8 +93,24 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 	if (pDataObj) 
 	{ 
 		m_pDataObj = pDataObj; 
-
 		pDataObj->AddRef(); 
+
+		STGMEDIUM   medium;
+        FORMATETC   fe = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
+        UINT        uCount;
+
+        if(SUCCEEDED(m_pDataObj->GetData(&fe, &medium)))
+        {
+            // Get the count of files dropped.
+            uCount = DragQueryFile((HDROP)medium.hGlobal, (UINT)-1, NULL, 0);
+
+            // Get the first file name from the CF_HDROP.
+            if(uCount)
+                DragQueryFile((HDROP)medium.hGlobal, 0, m_szFile, 
+                              sizeof(m_szFile)/sizeof(TCHAR));
+
+            ReleaseStgMedium(&medium);
+        }
 	}
 
 	// load tags
