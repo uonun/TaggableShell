@@ -14,7 +14,7 @@
 #include <string>
 #include <sstream>
 #include "resource.h"
-#include "Utils.h"
+#include <ctime>
 using namespace std;
 
 
@@ -24,11 +24,12 @@ using namespace std;
 #endif
 
 #define LOADSTRING_BUFFERSIZE			512
+#define MAXLENGTH_SQL					512					// sql sentance buffer
 #define TAG_LENGTH						10					// max length of each tag.
 #define MAXCOUNT_TAG					100
 #define FOLDER_PROFILE					L"Profile"
 #define FOLDER_LOG						L"Logs"
-#define FILE_TAGS						L"Tags.tagsex"
+#define FILE_USERDB						L"User.db"
 #define CMD_NEWTAG						0x10000
 #define CMD_SETTINGS					0x10001
 
@@ -39,7 +40,7 @@ extern WCHAR __loadStringBuffer[LOADSTRING_BUFFERSIZE];
 extern WCHAR g_DllDirectory[MAX_PATH];
 extern WCHAR g_DllFullName[MAX_PATH];
 extern WCHAR g_ProfileDirectory[MAX_PATH];
-extern WCHAR g_TagsFullName[MAX_PATH];
+extern WCHAR g_UserDb[MAX_PATH];
 #ifdef LOG4CPP
 extern WCHAR g_LogFullName[MAX_PATH];
 extern WCHAR g_LogDirectory[MAX_PATH];

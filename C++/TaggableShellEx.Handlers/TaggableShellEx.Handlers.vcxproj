@@ -20,6 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="sqlite-201310070036\src\shell.c" />
+    <ClCompile Include="sqlite-201310070036\src\sqlite3.c" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="TaggableShellEx.CHandler.cpp" />
     <ClCompile Include="TaggableShellEx.CHandler.ContextMenu.cpp" />
@@ -30,6 +32,8 @@
   <ItemGroup>
     <ClInclude Include="dllmain.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="sqlite-201310070036\src\sqlite3.h" />
+    <ClInclude Include="sqlite-201310070036\src\sqlite3ext.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TaggableShellEx.CHandler.h" />
     <ClInclude Include="Taghelper.h" />
@@ -151,7 +155,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)C++\_lib\log4cpp</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)C++\_lib\log4cpp;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

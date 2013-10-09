@@ -8,6 +8,7 @@ CHandler::CHandler() :
 	_cRef(1) // IUnknown
 	,m_pIDFolder(NULL),m_pDataObj(NULL),m_hRegKey(NULL)	// IShellExtInit
 	,g_DllRefCount(0) // IShellPropSheetExt
+	,ppv(NULL)
 {
 	// IShellExtInit
 	memset(m_szFile,0,sizeof(m_szFile)/sizeof(m_szFile[0]));
@@ -94,27 +95,28 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 	{ 
 		m_pDataObj = pDataObj; 
 		pDataObj->AddRef(); 
+		
+		// load tags
+		HRESULT	hr = SHGetItemFromDataObject(m_pDataObj,DOGIF_TRAVERSE_LINK,IID_PPV_ARGS(&ppv));
+		_tagHelper.LoadTags(*ppv);
 
 		STGMEDIUM   medium;
-        FORMATETC   fe = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
-        UINT        uCount;
+		FORMATETC   fe = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
+		UINT        uCount;
 
-        if(SUCCEEDED(m_pDataObj->GetData(&fe, &medium)))
-        {
-            // Get the count of files dropped.
-            uCount = DragQueryFile((HDROP)medium.hGlobal, (UINT)-1, NULL, 0);
+		if(SUCCEEDED(m_pDataObj->GetData(&fe, &medium)))
+		{
+			// Get the count of files dropped.
+			uCount = DragQueryFile((HDROP)medium.hGlobal, (UINT)-1, NULL, 0);
 
-            // Get the first file name from the CF_HDROP.
-            if(uCount)
-                DragQueryFile((HDROP)medium.hGlobal, 0, m_szFile, 
-                              sizeof(m_szFile)/sizeof(TCHAR));
+			// Get the first file name from the CF_HDROP.
+			if(uCount)
+				DragQueryFile((HDROP)medium.hGlobal, 0, m_szFile, 
+				sizeof(m_szFile)/sizeof(TCHAR));
 
-            ReleaseStgMedium(&medium);
-        }
+			ReleaseStgMedium(&medium);
+		}
 	}
-
-	// load tags
-	_tagHelper.LoadTags();
 
 	return S_OK; 
 }

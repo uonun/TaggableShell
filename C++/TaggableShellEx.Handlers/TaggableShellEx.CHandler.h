@@ -46,4 +46,7 @@ private:
 
 	// ContextMenuHandler
 	CTaghelper _tagHelper;
+
+	IShellItem* ppv; 
+
 };

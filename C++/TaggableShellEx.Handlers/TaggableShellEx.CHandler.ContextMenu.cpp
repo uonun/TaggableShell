@@ -19,7 +19,9 @@ HRESULT CHandler::QueryContextMenu (
 
 	for (int i = 0; i < _tagHelper.TagCount; i++)
 	{
-		if(!InsertMenu ( hSubmenu, uPosition|i, MF_BYCOMMAND | MF_CHECKED, uID++, _tagHelper.Tags[i] ))
+		if(!InsertMenu ( hSubmenu, uPosition|i, 
+			_tagHelper.Tags[i].bAsso ? MF_BYCOMMAND | MF_CHECKED : MF_BYCOMMAND,
+			uID++, _tagHelper.Tags[i].Tag ))
 		{
 			::PrintLog(L"Fail to add tag into the submenu: %s",_tagHelper.Tags[i]);
 		}
@@ -95,16 +97,7 @@ HRESULT CHandler::InvokeCommand (
 				{
 					if(cmd < _tagHelper.TagCount)
 					{
-						IShellItem* ppv = NULL; 
-						HRESULT	hr = SHGetItemFromDataObject(m_pDataObj,DOGIF_TRAVERSE_LINK,IID_PPV_ARGS(&ppv));
-						if(hr == S_OK){
-							_tagHelper.SetTag(*ppv,cmd);
-						}
-
-
-						TCHAR szMsg[MAX_PATH + 32];
-						wsprintf ( szMsg, L"pCmdInfo->lpVerb: %s", _tagHelper.Tags[cmd] );
-						MessageBox ( pCmdInfo->hwnd, szMsg, L"SimpleShlExt", MB_ICONINFORMATION );
+						_tagHelper.SetTag(cmd);
 					}
 				}
 				break;

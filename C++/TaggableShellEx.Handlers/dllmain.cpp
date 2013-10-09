@@ -30,7 +30,7 @@ HINSTANCE g_hInst = NULL;
 WCHAR g_DllFullName[MAX_PATH];
 WCHAR g_DllDirectory[MAX_PATH];
 WCHAR g_ProfileDirectory[MAX_PATH];
-WCHAR g_TagsFullName[MAX_PATH];
+WCHAR g_UserDb[MAX_PATH];
 #ifdef LOG4CPP
 WCHAR g_LogDirectory[MAX_PATH];
 WCHAR g_LogFullName[MAX_PATH];
@@ -46,9 +46,7 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 	std::tr2::sys::wpath p(g_DllFullName);
 	wpath dir = p.parent_path();
 	wsprintf ( g_DllDirectory, L"%s", dir.string().c_str() );
-	wsprintf ( g_ProfileDirectory, L"%s/%s\0", g_DllDirectory,FOLDER_PROFILE );
-	wsprintf ( g_TagsFullName, L"%s\\%s\0",g_ProfileDirectory,FILE_TAGS );
-	::Replace(g_TagsFullName,'/','\\');
+
 #ifdef LOG4CPP
 	wsprintf ( g_LogDirectory, L"%s/%s\0", g_DllDirectory,FOLDER_LOG );
 	wsprintf ( g_LogFullName, L"%s/%s\0",g_LogDirectory,LOG_FILENAME );
@@ -58,36 +56,42 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 	OutputDebugString(L"\n");
 #endif
 
-	if (
-		(CreateDirectory(g_ProfileDirectory, NULL) || ERROR_ALREADY_EXISTS == GetLastError())
-#ifdef LOG4CPP
-		&&(CreateDirectory(g_LogDirectory, NULL) || ERROR_ALREADY_EXISTS == GetLastError())
-#endif
-		)
+	if (dwReason == DLL_PROCESS_ATTACH)
 	{
-		::PrintLog(L"DllMain, dwReason = %d. (DLL_PROCESS_DETACH = 0, DLL_PROCESS_ATTACH = 1, DLL_THREAD_ATTACH = 2, DLL_THREAD_DETACH = 3)",dwReason);
-		::PrintLog(L"g_DllDirectory:\t%s",g_DllDirectory);
-		::PrintLog(L"g_DllFullName:\t%s",g_DllFullName);
-		::PrintLog(L"g_ProfileDirectory:\t%s",g_ProfileDirectory);
-		::PrintLog(L"g_TagsFullName:\t%s",g_TagsFullName);
+		wsprintf ( g_ProfileDirectory, L"%s/%s\0", g_DllDirectory,FOLDER_PROFILE );
+		wsprintf ( g_UserDb, L"%s/%s\0", g_ProfileDirectory,FILE_USERDB );
+		::Replace(g_UserDb,'/','\\');
+
+		if (
+			(CreateDirectory(g_ProfileDirectory, NULL) || ERROR_ALREADY_EXISTS == GetLastError())
 #ifdef LOG4CPP
-		::PrintLog(L"g_LogDirectory:\t%s",g_LogDirectory);
-		::PrintLog(L"g_LogFullName:\t%s",g_LogFullName);
+			&&(CreateDirectory(g_LogDirectory, NULL) || ERROR_ALREADY_EXISTS == GetLastError())
+#endif
+			)
+		{
+			::PrintLog(L"===================================================================================================");
+			::PrintLog(L"DllMain, dwReason = %d. (DLL_PROCESS_DETACH = 0, DLL_PROCESS_ATTACH = 1, DLL_THREAD_ATTACH = 2, DLL_THREAD_DETACH = 3)",dwReason);
+			::PrintLog(L"g_DllDirectory:\t%s",g_DllDirectory);
+			::PrintLog(L"g_DllFullName:\t%s",g_DllFullName);
+			::PrintLog(L"g_ProfileDirectory:\t%s",g_ProfileDirectory);
+			::PrintLog(L"g_UserDb:\t%s",g_UserDb);
+#ifdef LOG4CPP
+			::PrintLog(L"g_LogDirectory:\t%s",g_LogDirectory);
+			::PrintLog(L"g_LogFullName:\t%s",g_LogFullName);
 #endif
 
-		if (dwReason == DLL_PROCESS_ATTACH)
-		{
 			g_hInst = hInstance;
 			DisableThreadLibraryCalls(hInstance);
-		}	
-		return TRUE;
+		}
+		else
+		{
+			// Failed to create log directory.
+			return FALSE;
+		}
+	}else{
+		::PrintLog(L"DllMain Exit.\r\n\r\n\r\n",dwReason);
 	}
-	else
-	{
-		// Failed to create log directory.
-		return FALSE;
-	}
-
+	return TRUE;
 }
 
 STDAPI DllCanUnloadNow()

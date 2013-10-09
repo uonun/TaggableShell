@@ -5,6 +5,7 @@
 #include <shlobj.h>
 #include <Shlwapi.h>
 #include <shellapi.h>
+#include "Utils.h"
 
 // stuff from the Windows SDK that we will use
 //class DECLSPEC_UUID("8d80504a-0826-40c5-97e1-ebc68f953792") DocFilePropertyHandler;
