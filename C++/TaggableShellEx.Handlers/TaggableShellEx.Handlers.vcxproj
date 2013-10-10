@@ -19,37 +19,37 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="sqlite-201310070036\src\shell.c" />
     <ClCompile Include="sqlite-201310070036\src\sqlite3.c" />
-    <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="TaggableShellEx.CHandler.cpp" />
-    <ClCompile Include="TaggableShellEx.CHandler.ContextMenu.cpp" />
-    <ClCompile Include="TaggableShellEx.CHandler.PropertyPage.cpp" />
-    <ClCompile Include="Taghelper.cpp" />
-    <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="src\dllmain.cpp" />
+    <ClCompile Include="src\stdafx.cpp" />
+    <ClCompile Include="src\TaggableShellEx.CHandler.ContextMenu.cpp" />
+    <ClCompile Include="src\TaggableShellEx.CHandler.cpp" />
+    <ClCompile Include="src\TaggableShellEx.CHandler.PropertyPage.cpp" />
+    <ClCompile Include="src\TaggableShellEx.Taghelper.cpp" />
+    <ClCompile Include="src\TaggableShellEx.Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="dllmain.h" />
-    <ClInclude Include="resource.h" />
+    <ClInclude Include="include\dllmain.h" />
+    <ClInclude Include="include\resource.h" />
+    <ClInclude Include="include\stdafx.h" />
+    <ClInclude Include="include\TaggableShellEx.CHandler.h" />
+    <ClInclude Include="include\TaggableShellEx.Taghelper.h" />
+    <ClInclude Include="include\TaggableShellEx.Utils.h" />
+    <ClInclude Include="include\targetver.h" />
     <ClInclude Include="sqlite-201310070036\src\sqlite3.h" />
     <ClInclude Include="sqlite-201310070036\src\sqlite3ext.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="TaggableShellEx.CHandler.h" />
-    <ClInclude Include="Taghelper.h" />
-    <ClInclude Include="targetver.h" />
-    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="onbuild.bat" />
     <None Include="Register.ContextMenu.reg" />
     <None Include="Register.PropertyPage.reg" />
-    <None Include="Export.def" />
     <None Include="Register.reg" />
+    <None Include="src\Export.def" />
     <None Include="UnRegister.reg" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="TaggableShellEx.Handlers.rc" />
+    <ResourceCompile Include="src\TaggableShellEx.Handlers.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7B7293B6-EDCA-4A43-A75A-25C515AB47D0}</ProjectGuid>
@@ -161,7 +161,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>shlwapi.lib;Comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>Export.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>./src/Export.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>onbuild.bat $(Configuration) $(PlatformTarget)</Command>

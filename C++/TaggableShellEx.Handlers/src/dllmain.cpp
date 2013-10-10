@@ -5,7 +5,7 @@
 //
 // Copyright (c) Microsoft Corporation. All rights reserved
 
-#include "dllmain.h"
+#include "../include/dllmain.h"
 #include <filesystem>
 using namespace std::tr2::sys;
 

@@ -1,10 +1,11 @@
-#include "Utils.h"
+#include "../include/TaggableShellEx.Utils.h"
 
 #ifdef LOG4CPP
 #include "log4cpp/Category.hh"
 #include "log4cpp/RollingFileAppender.hh"
 #include "log4cpp/BasicLayout.hh"
 #include "log4cpp/Priority.hh"
+#include "log4cpp/PatternLayout.hh"
 using namespace log4cpp;
 #endif
 
@@ -42,6 +43,7 @@ void WStr2Str(const LPWSTR & s1,LPSTR & s2)
 	}
 }
 
+// Print logs, depends on g_LogDirectory, g_LogFullName
 void PrintLog(const char *format, ...)
 {
 	char buf[4096], *p = buf;
@@ -54,6 +56,7 @@ void PrintLog(const char *format, ...)
 	PrintLog(f,L"");
 }
 
+// Print logs, depends on g_LogDirectory, g_LogFullName
 void PrintLog(const wchar_t *format, ...)
 {
 	wchar_t buf[4096], *p = buf;
@@ -83,41 +86,36 @@ void PrintLog(const wchar_t *format, ...)
 	OutputDebugString(ss.str().c_str());
 
 #ifdef LOG4CPP
-	///////////////////////////////////////////////////////////////////
-	//std::string的目标
-	std::string szDst; 
-	//WideCharToMultiByte的运用 
-	DWORD dwNum = WideCharToMultiByte(CP_OEMCP,NULL,buf,-1,NULL,0,NULL,FALSE);
-	//psText为char*的临时数组，作为赋值给std::string的中间变量 
-	char *psText;
-	psText = new char[dwNum];
-	// WideCharToMultiByte的再次运用 
-	WideCharToMultiByte (CP_OEMCP,NULL,buf,-1,psText,dwNum,NULL,FALSE);
-	//std::string赋值 
-	szDst = psText; //大功告成
-	//psText的清除 
-	delete []psText;
+	if(CreateDirectory(g_LogDirectory, NULL) || ERROR_ALREADY_EXISTS == GetLastError())
+	{
+		///////////////////////////////////////////////////////////////////
+		//std::string的目标
+		std::string szDst; 
+		//WideCharToMultiByte的运用 
+		DWORD dwNum = WideCharToMultiByte(CP_OEMCP,NULL,buf,-1,NULL,0,NULL,FALSE);
+		//psText为char*的临时数组，作为赋值给std::string的中间变量 
+		char *psText;
+		psText = new char[dwNum];
+		// WideCharToMultiByte的再次运用 
+		WideCharToMultiByte (CP_OEMCP,NULL,buf,-1,psText,dwNum,NULL,FALSE);
+		//std::string赋值 
+		szDst = psText; //大功告成
+		//psText的清除 
+		delete []psText;
 
-	log4cpp::Category &_log = log4cpp::Category::getRoot();
-
-	//////////////////////////
-	dwNum = WideCharToMultiByte(CP_OEMCP,NULL,g_LogFullName,-1,NULL,0,NULL,FALSE);
-	char *psText2;
-	psText2 = new char[dwNum];
-	WideCharToMultiByte (CP_OEMCP,NULL,g_LogFullName,-1,psText2,dwNum,NULL,FALSE);
-	string logPath;
-	logPath = psText2;	
-	delete []psText2;
-	//////////////////////////
-
-	log4cpp::RollingFileAppender* osAppender = new log4cpp::RollingFileAppender("main_log","1.log");
-	osAppender->setLayout(new log4cpp::BasicLayout());
-	_log.addAppender(osAppender);
-	_log.setPriority(log4cpp::Priority::DEBUG);
-	//ostringstream oss;
-	//oss << "Got sub item: "<<szDst;
-	_log.debug(szDst);
-	log4cpp::Category::shutdown();    
+		auto logPath = ::UnicodeToANSI(g_LogFullName);
+		log4cpp::Category &_log = log4cpp::Category::getRoot();
+		log4cpp::RollingFileAppender* osAppender = new log4cpp::RollingFileAppender("TaggableShell_Logs",logPath);
+		log4cpp::PatternLayout* pLayout = new log4cpp::PatternLayout();
+		pLayout->setConversionPattern("%d: %p %c %x: %m%n");
+		osAppender->setLayout(pLayout);
+		_log.addAppender(osAppender);
+		_log.setPriority(log4cpp::Priority::DEBUG);
+		//ostringstream oss;
+		//oss << "Got sub item: "<<szDst;
+		_log.debug(szDst);
+		log4cpp::Category::shutdown();    
+	}
 #endif
 }
 

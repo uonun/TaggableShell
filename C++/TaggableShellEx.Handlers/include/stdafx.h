@@ -9,6 +9,12 @@
 
 #define WIN32_LEAN_AND_MEAN             //  从 Windows 头文件中排除极少使用的信息
 
+// 导入静态库     
+#pragma comment(lib, "Comctl32.lib")
+// 开启视觉效果 Copy from MSDN     
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include <Windows.h>  
 #include <string>
@@ -20,7 +26,7 @@ using namespace std;
 
 #ifdef LOG4CPP
 #pragma comment(lib, "log4cpp.lib")
-#define LOG_FILENAME					L"TaggableShell.Handlers.log"
+#define LOG_FILENAME					L"TaggableShell.log"
 #endif
 
 #define LOADSTRING_BUFFERSIZE			512

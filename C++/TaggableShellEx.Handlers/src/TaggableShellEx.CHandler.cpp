@@ -1,8 +1,8 @@
 #pragma once
-#include "dllmain.h"
-#include "resource.h"
-#include "TaggableShellEx.CHandler.h"
-#include "Taghelper.h"
+#include "../include/dllmain.h"
+#include "../include/resource.h"
+#include "../include/TaggableShellEx.CHandler.h"
+#include "../include/TaggableShellEx.Taghelper.h"
 
 CHandler::CHandler() : 
 	_cRef(1) // IUnknown
@@ -10,16 +10,18 @@ CHandler::CHandler() :
 	,g_DllRefCount(0) // IShellPropSheetExt
 	,ppv(NULL)
 {
+	::PrintLog(L"CHandler.ctor");
+
 	// IShellExtInit
 	memset(m_szFile,0,sizeof(m_szFile)/sizeof(m_szFile[0]));
 
 	DllAddRef();
-	::PrintLog(L"CHandler.ctor");
 }
 
 CHandler::~CHandler(void)
 {   
 	::PrintLog(L"CHandler.~ctor");
+
 	DllRelease();
 }
 

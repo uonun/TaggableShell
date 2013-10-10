@@ -1,13 +1,11 @@
 #include "MainForm.h"
 #include <shlwapi.h>
-
 MainForm* MainForm::_instance = NULL;
 
 #pragma region Constructor
 MainForm::MainForm(void)
 {
 	setlocale( LC_ALL, "zh-CN" );
-
 	Utils::PrintLog(L"/////////////////////////////////////////////");
 	Utils::PrintLog(L"///////////APPLICATION START/////////////////");
 	Utils::PrintLog(L"/////////////////////////////////////////////");

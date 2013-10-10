@@ -1,7 +1,7 @@
 #pragma once
-#include "dllmain.h"
-#include "Taghelper.h"
-#include "TaggableShellEx.CHandler.h"
+#include "../include/dllmain.h"
+#include "../include/TaggableShellEx.Taghelper.h"
+#include "../include/TaggableShellEx.CHandler.h"
 
 
 INT_PTR CALLBACK PageDlgProc(     
@@ -65,9 +65,7 @@ UINT CALLBACK PageCallbackProc(
 
 STDMETHODIMP CHandler::AddPages(LPFNADDPROPSHEETPAGE lpfnAddPage, LPARAM lParam)
 {
-#ifdef LOG4CPP
-	Utils::PrintLog(L"PropertyPageHandler.AddPages");
-#endif
+	::PrintLog(L"PropertyPageHandler.AddPages");
 
 	PROPSHEETPAGE  psp;
 	HPROPSHEETPAGE hPage;

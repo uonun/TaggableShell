@@ -5,7 +5,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 using namespace std;
-#include ".\sqlite-201310070036\src\sqlite3.h"
+#include "../sqlite-201310070036/src/sqlite3.h"
 
 
 typedef struct tagTAG4FILE {

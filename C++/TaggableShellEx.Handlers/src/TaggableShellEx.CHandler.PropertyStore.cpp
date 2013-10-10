@@ -1,7 +1,7 @@
 #pragma once
-#include "dllmain.h"
-#include "Taghelper.h"
-#include "TaggableShellEx.CHandler.h"
+#include "../include/dllmain.h"
+#include "../include/TaggableShellEx.Taghelper.h"
+#include "../include/TaggableShellEx.CHandler.h"
 #include <propsys.h>     // Property System APIs and interfaces
 #include <propkey.h>     // System PROPERTYKEY definitions
 

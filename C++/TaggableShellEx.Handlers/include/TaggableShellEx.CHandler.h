@@ -1,6 +1,6 @@
 #pragma once
 #include "dllmain.h"
-#include "Taghelper.h"
+#include "TaggableShellEx.Taghelper.h"
 
 class CHandler:
 	public IContextMenu,		// ContextMenu

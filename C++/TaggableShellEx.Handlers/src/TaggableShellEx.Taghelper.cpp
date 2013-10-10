@@ -1,4 +1,4 @@
-#include "Taghelper.h"
+#include "../include/TaggableShellEx.Taghelper.h"
 //#include "strsafe.h"	// StringCchLength
 
 char * FID_NOT_EXIST = "-1";
@@ -12,12 +12,14 @@ CTaghelper::CTaghelper(void):
 	,TagCount(0)
 	,db(0)
 {
+	::PrintLog(L"CTaghelper.ctor");
 	::WStr2Str(g_UserDb,_dbFile);
 }
 
 
 CTaghelper::~CTaghelper(void)
 {
+	::PrintLog(L"CTaghelper.~ctor");
 	sqlite3_close(db);  
 	db = 0; 
 }
@@ -67,8 +69,8 @@ void CTaghelper::LoadTags(IShellItem & ppv)
 			_targetFileNameInSQL = ::Replace(tmp,"'","''");
 
 			char * sSQLFormater = "Select t.[TAGNAME], \
-(select count(*) from asso_file_tag a inner join files f on f.[ID]=a.[FILEID] where f.[FULLPATH]='%s' and a.[TAGID]=t.[ID])as asso \
-from [tags] t order by t.[DISPLAY_ORDER];";
+								  (select count(*) from asso_file_tag a inner join files f on f.[ID]=a.[FILEID] where f.[FULLPATH]='%s' and a.[TAGID]=t.[ID])as asso \
+								  from [tags] t order by t.[DISPLAY_ORDER];";
 			char sSQL[MAXLENGTH_SQL];
 			memset(sSQL,0,MAXLENGTH_SQL * sizeof(char));
 			sprintf ( sSQL,sSQLFormater,_targetFileNameInSQL );
