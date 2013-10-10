@@ -65,17 +65,6 @@ void PrintLog(const wchar_t *format, ...)
 	p += _vsnwprintf(p, sizeof buf - 1, format, args);
 	va_end(args);
 
-	//#pragma region NewLine
-	//	while ( p > buf && *p != '\0' )
-	//	{
-	//		p++;
-	//	}
-	//	*p = '\0';
-	//	*p++ = '\r';
-	//	*p++ = '\n';
-	//	*p = '\0';
-	//#pragma endregion
-
 	// http://www.tutorialspoint.com/cplusplus/cpp_date_time.htm
 	time_t now(time(NULL));
 	tm *gmtm = gmtime(&now);

@@ -142,10 +142,30 @@ HRESULT CTaghelper::SetTag(int tagIdx)
 				TID = InsertTag(*db,tagIdx);
 			}
 		}else{
-			sSQLFormater = "DELETE FROM [ASSO_FILE_TAG] WHERE FILEID='%s' AND TAGID='%s'";
-		}
-		sprintf ( sSQL,sSQLFormater,FID,TID );
 
+			sSQLFormater = "DELETE FROM [ASSO_FILE_TAG] WHERE FILEID='%s' AND TAGID='%s'";
+
+			// check any other tag associated with current file.
+			BOOL anyAsso = false;
+			for (int i = 0; i < TagCount; i++)
+			{
+				if(i!=tagIdx && Tags[i].bAsso)
+				{
+					anyAsso = true;
+					break;
+				}
+			}
+
+			// delete the record for current file in the table [FILES]
+			if(!anyAsso){
+				char sSQL_tmp[MAXLENGTH_SQL];
+				sprintf ( sSQL_tmp,"%s;DELETE FROM [FILES] WHERE ID='%s'",sSQLFormater,FID );
+				sSQLFormater = sSQL_tmp;
+				::PrintLog("No any tag associated with current file, about to delete from table [FILE]: ID = %d, %s",FID,_targetFileName);
+			}
+		}
+
+		sprintf ( sSQL,sSQLFormater,FID,TID );
 		auto sSQLUTF8=ANSIToUTF8(sSQL);
 		::PrintLog("SetTag: %s",sSQLUTF8);
 		sqlite3_exec( db, sSQLUTF8, NULL, 0, 0 );
