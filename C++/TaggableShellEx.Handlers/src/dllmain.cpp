@@ -6,8 +6,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved
 
 #include "../include/dllmain.h"
-#include <filesystem>
-using namespace std::tr2::sys;
 
 typedef HRESULT (*PFNCREATEINSTANCE)(REFIID riid, void **ppvObject);
 struct CLASS_OBJECT_INIT
@@ -59,8 +57,10 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 	if (dwReason == DLL_PROCESS_ATTACH)
 	{
 		wsprintf ( g_ProfileDirectory, L"%s/%s\0", g_DllDirectory,FOLDER_PROFILE );
-		wsprintf ( g_UserDb, L"%s/%s\0", g_ProfileDirectory,FILE_USERDB );
-		::Replace(g_UserDb,'/','\\');
+
+		std::tr2::sys::wpath p_g_ProfileDirectory(g_ProfileDirectory); 
+		auto directory_string_ProfileDirectory = p_g_ProfileDirectory.directory_string(); // change the "/" to "\"
+		wsprintf ( g_UserDb, L"%s\\%s\0", directory_string_ProfileDirectory.c_str(),FILE_USERDB );
 
 		if (
 			(CreateDirectory(g_ProfileDirectory, NULL) || ERROR_ALREADY_EXISTS == GetLastError())

@@ -9,9 +9,9 @@ void PrintLog(const wchar_t *format, ...);
 void Str2WStr(const LPSTR & s1,LPWSTR & s2);
 void WStr2Str(const LPWSTR & s1,LPSTR & s2);
 
-void Replace(wchar_t* path,char from,char to);
-char* Replace(char* src, char* sub, char* dst);
-wchar_t* Replace(wchar_t* src, wchar_t* sub, wchar_t* dst);
+char * Replace(const char* src, char* sub, char* dst);
+//wchar_t* Replace(wchar_t* src, wchar_t* sub, wchar_t* dst);
+string& replace_all_distinct(string&   str,const   string&   old_value,const   string&   new_value);
 
 wchar_t * ANSIToUnicode( const char* str );
 char * UnicodeToANSI( const wchar_t* str );

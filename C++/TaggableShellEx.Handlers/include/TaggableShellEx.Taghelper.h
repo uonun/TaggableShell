@@ -30,7 +30,7 @@ private:
 	char * GetTagID(sqlite3 & db, int & targetTagIdx);
 	char * InsertFile(sqlite3 & db);
 	char * InsertTag(sqlite3 & db, int & targetTagIdx);
-	
+
 	bool _cached;
 	char * _dbFile;
 	LPWSTR _targetFileName;			// the file full path of target item.

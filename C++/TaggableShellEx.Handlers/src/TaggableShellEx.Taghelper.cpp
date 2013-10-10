@@ -1,5 +1,4 @@
 #include "../include/TaggableShellEx.Taghelper.h"
-//#include "strsafe.h"	// StringCchLength
 
 char * FID_NOT_EXIST = "-1";
 char * TID_NOT_EXIST = "-1";
@@ -7,7 +6,7 @@ char * TID_NOT_EXIST = "-1";
 CTaghelper::CTaghelper(void): 
 	_cached(false)
 	,_dbFile(NULL)
-	,_targetFileName(L""), _targetFileNameInSQL("")
+	,_targetFileName(L"")
 	,_targetShellItem(NULL)
 	,TagCount(0)
 	,db(0)
@@ -243,8 +242,13 @@ char * CTaghelper::InsertFile(sqlite3 & db)
 	char * sSQLFormater;
 	char sSQL[MAXLENGTH_SQL];
 
-	sSQLFormater = "INSERT INTO [FILES] (parent_dir,fullpath,filename,ext,remark) values ('parent_dir','%s','filename','ext','remark')";
-	sprintf ( sSQL,sSQLFormater,_targetFileNameInSQL );
+	std::tr2::sys::path p(::UnicodeToANSI(_targetFileName));
+	LPSTR parent_dir = ::Replace(p.parent_path().string().c_str(),"'","''");
+	LPSTR itemname = ::Replace(p.filename().c_str(),"'","''");
+	LPSTR ext = ::Replace(p.extension().c_str(),"'","''");
+
+	sSQLFormater = "INSERT INTO [FILES] (parent_dir,fullpath,itemname,ext,remark) values ('%s','%s','%s','%s','')";
+	sprintf ( sSQL,sSQLFormater,parent_dir,_targetFileNameInSQL,itemname,ext);
 
 	auto sSQLUTF8=ANSIToUTF8(sSQL);
 	::PrintLog("InsertFile: %s",sSQLUTF8);

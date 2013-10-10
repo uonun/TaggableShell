@@ -21,7 +21,10 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include <sstream>
 #include "resource.h"
 #include <ctime>
+#include <filesystem>
+
 using namespace std;
+using namespace std::tr2::sys;
 
 
 #ifdef LOG4CPP

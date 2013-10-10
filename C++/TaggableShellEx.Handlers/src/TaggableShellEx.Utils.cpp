@@ -119,61 +119,26 @@ void PrintLog(const wchar_t *format, ...)
 #endif
 }
 
-// change the chars from "from" to "to" until '\0'
-void Replace(LPWSTR path,char from,char to){
-	int n=0;
-	do
-	{
-		if(path[n]==from)
-			path[n]=to;
-	} while (path[++n]!='\0');
+//参数，src 字符串源，sub想要替换的字符串，dst，用来替换的字符串
+char * Replace(const char* src, char* sub, char* dst)
+{
+	string s(src);
+	auto a = replace_all_distinct(s,"'","''");
+	int textlen =a.length();
+	char * tmp=(char *)malloc(textlen * sizeof(char));;	
+	memset(tmp,0,(textlen + 1)*sizeof(char));
+	memcpy(tmp,a.c_str(),textlen);
+	return tmp;
 }
 
-//参数，src 字符串源，sub想要替换的字符串，dst，用来替换的字符串
-char* Replace(char* src, char* sub, char* dst)
-{
-	//记录当前指针位置
-	int pos =0;
-	//记录偏移
-
-	int offset =0;
-	//字符串长度
-	int srcLen, subLen, dstLen;
-	//返回内容
-
-	char*pRet = NULL;
-
-	//求得各字符串长度
-	srcLen = strlen(src);
-	subLen = strlen(sub);
-	dstLen = strlen(dst);
-	//申请替换后的字符串缓冲区。用dst替换sub，所以应该是srclen-sublen+dstlen，+1流出'\0'位置
-	pRet = (char*)malloc(srcLen + dstLen - subLen +1);//(外部是否该空间)if (NULL != pRet)
-	{
-		//strstr查找sub字符串出现的指针。该指针减去src地址。得到相对位置
-		auto idx = strstr(src, sub);
-		if(idx != NULL){
-			pos = strstr(src, sub) - src;
-			//拷贝src字符串，从首地址开始，pos个字符。
-			memcpy(pRet, src, pos);
-			//增加偏移位置到pos
-			offset += pos;
-			//拷贝dst到返回内容中。
-			memcpy(pRet + offset, dst, dstLen);
-			//重新定位偏移
-			offset += dstLen;
-			//拷贝src中，sub字符串后面的字符串到pRet中
-			memcpy(pRet + offset, src + pos + subLen, srcLen - pos - subLen);
-			//重新定位偏移
-			offset += srcLen - pos - subLen;
-			//最后添加字符串结尾标记'\0'
-			*(pRet + offset) ='\0';
-		}else{
-			pRet = src;
-		}
-	}
-	//返回新构造的字符串
-	return pRet;
+string& replace_all_distinct(string&   str,const   string&   old_value,const   string&   new_value)   
+{   
+	for(string::size_type   pos(0);   pos!=string::npos;   pos+=new_value.length())   {   
+		if(   (pos=str.find(old_value,pos))!=string::npos   )   
+			str.replace(pos,old_value.length(),new_value);   
+		else   break;   
+	}   
+	return   str;   
 }
 
 wchar_t * ANSIToUnicode( const char* str )
