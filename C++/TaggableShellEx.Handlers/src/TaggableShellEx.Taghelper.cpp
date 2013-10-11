@@ -147,7 +147,7 @@ HRESULT CTaghelper::SetTag(int tagIdx)
 
 			// check any other tag associated with current file.
 			BOOL anyAsso = false;
-			for (int i = 0; i < TagCount; i++)
+			for (unsigned int i = 0; i < TagCount; i++)
 			{
 				if(i!=tagIdx && Tags[i].bAsso)
 				{

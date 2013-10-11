@@ -1,14 +1,15 @@
 #pragma once
+#include "resource.h"
 #include "../include/dllmain.h"
-#include "../include/resource.h"
 #include "../include/TaggableShellEx.CHandler.h"
 #include "../include/TaggableShellEx.Taghelper.h"
 
 CHandler::CHandler() : 
 	_cRef(1) // IUnknown
 	,m_pIDFolder(NULL),m_pDataObj(NULL),m_hRegKey(NULL)	// IShellExtInit
-	,g_DllRefCount(0) // IShellPropSheetExt
-	,ppv(NULL)
+	,_dllRefCount(0) // IShellPropSheetExt
+	,_hSubmenu(NULL) // IContextMenu
+	,_targetFile(NULL)
 {
 	::PrintLog(L"CHandler.ctor");
 
@@ -99,8 +100,8 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 		pDataObj->AddRef(); 
 		
 		// load tags
-		HRESULT	hr = SHGetItemFromDataObject(m_pDataObj,DOGIF_TRAVERSE_LINK,IID_PPV_ARGS(&ppv));
-		_tagHelper.LoadTags(*ppv);
+		HRESULT	hr = SHGetItemFromDataObject(m_pDataObj,DOGIF_TRAVERSE_LINK,IID_PPV_ARGS(&_targetFile));
+		_tagHelper.LoadTags(*_targetFile);
 
 		STGMEDIUM   medium;
 		FORMATETC   fe = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};

@@ -2,6 +2,11 @@
 #include "dllmain.h"
 #include "TaggableShellEx.Taghelper.h"
 
+// CMD-IDs for ContextMenu, must be consecutive from 0x1
+#define CMD_NEWTAG						0x1
+#define CMD_SETTINGS					0x2
+#define CMD_ABOUT						0x3
+
 class CHandler:
 	public IContextMenu,		// ContextMenu
 	public IShellPropSheetExt,	// PropertyPage
@@ -42,11 +47,11 @@ private:
 	HKEY           m_hRegKey;             //The file or folder's registry key
 
 	// IShellPropSheetExt
-	UINT g_DllRefCount;
+	UINT _dllRefCount;
 
-	// ContextMenuHandler
+	// IContextMenu
+	HMENU _hSubmenu;
+
 	CTaghelper _tagHelper;
-
-	IShellItem* ppv; 
-
+	IShellItem* _targetFile; 
 };

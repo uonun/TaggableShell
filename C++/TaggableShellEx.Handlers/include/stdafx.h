@@ -36,11 +36,10 @@ using namespace std::tr2::sys;
 #define MAXLENGTH_SQL					512					// sql sentance buffer
 #define TAG_LENGTH						10					// max length of each tag.
 #define MAXCOUNT_TAG					100
+
 #define FOLDER_PROFILE					L"Profile"
 #define FOLDER_LOG						L"Logs"
 #define FILE_USERDB						L"User.db"
-#define CMD_NEWTAG						0x10000
-#define CMD_SETTINGS					0x10001
 
 // Handle the the DLL's module
 extern HINSTANCE g_hInst;

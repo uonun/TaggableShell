@@ -10,10 +10,11 @@ using namespace log4cpp;
 #endif
 
 
-WCHAR __loadStringBuffer[LOADSTRING_BUFFERSIZE];
-
-LPWSTR MyLoadString(__in UINT uID){
-	int n = LoadString(::g_hInst,uID,__loadStringBuffer,sizeof(__loadStringBuffer)/sizeof(__loadStringBuffer[0]));
+wchar_t * MyLoadString(__in UINT uID){
+	UINT len = LOADSTRING_BUFFERSIZE * sizeof(wchar_t);
+	wchar_t * __loadStringBuffer = (wchar_t *)malloc(len);
+	memset(__loadStringBuffer,0,len);
+	int n = LoadString(::g_hInst,uID,__loadStringBuffer,len);
 	return __loadStringBuffer;
 }
 
@@ -114,12 +115,25 @@ char * Replace(const char* src, char* sub, char* dst)
 	string s(src);
 	auto a = replace_all_distinct(s,"'","''");
 	int textlen =a.length();
-	char * tmp=(char *)malloc(textlen * sizeof(char));;	
+	char * tmp=(char *)malloc(textlen * sizeof(char));
 	memset(tmp,0,(textlen + 1)*sizeof(char));
 	memcpy(tmp,a.c_str(),textlen);
 	return tmp;
 }
 
+//  replace_all(string("12212"),"12","21") => 22211   
+string&   replace_all(string&   str,const   string&   old_value,const   string&   new_value)   
+{   
+	while(true)   {   
+		string::size_type   pos(0);   
+		if(   (pos=str.find(old_value))!=string::npos   )   
+			str.replace(pos,old_value.length(),new_value);   
+		else   break;   
+	}   
+	return   str;   
+}
+
+//  replace_all_distinct(string("12212"),"12","21") => 21221   
 string& replace_all_distinct(string&   str,const   string&   old_value,const   string&   new_value)   
 {   
 	for(string::size_type   pos(0);   pos!=string::npos;   pos+=new_value.length())   {   

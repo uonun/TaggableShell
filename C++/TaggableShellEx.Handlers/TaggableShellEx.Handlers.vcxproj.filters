@@ -56,9 +56,6 @@
     <ClInclude Include="include\dllmain.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\resource.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="include\stdafx.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -72,6 +69,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\targetver.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resource.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

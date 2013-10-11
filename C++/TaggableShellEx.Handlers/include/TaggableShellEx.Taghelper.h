@@ -22,7 +22,7 @@ public:
 	void LoadTags(IShellItem & ppv);
 	HRESULT SetTag(int tagIdx);
 
-	int TagCount;					// The count of loaded tags. READ ONLY.
+	unsigned int TagCount;					// The count of loaded tags. READ ONLY.
 	TAG4FILE Tags[MAXCOUNT_TAG];		// The loaded tags. READ ONLY.
 
 private:

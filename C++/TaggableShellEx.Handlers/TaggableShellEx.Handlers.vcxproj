@@ -31,7 +31,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\dllmain.h" />
-    <ClInclude Include="include\resource.h" />
     <ClInclude Include="include\stdafx.h" />
     <ClInclude Include="include\TaggableShellEx.CHandler.h" />
     <ClInclude Include="include\TaggableShellEx.Taghelper.h" />
@@ -39,6 +38,7 @@
     <ClInclude Include="include\targetver.h" />
     <ClInclude Include="sqlite-201310070036\src\sqlite3.h" />
     <ClInclude Include="sqlite-201310070036\src\sqlite3ext.h" />
+    <ClInclude Include="src\resource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="onbuild.bat" />
