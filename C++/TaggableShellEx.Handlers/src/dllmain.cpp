@@ -71,6 +71,7 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 		{
 			::PrintLog(L"===================================================================================================");
 			::PrintLog(L"DllMain, dwReason = %d. (DLL_PROCESS_DETACH = 0, DLL_PROCESS_ATTACH = 1, DLL_THREAD_ATTACH = 2, DLL_THREAD_DETACH = 3)",dwReason);
+			::PrintLog(L"Version: %d", GetVersion());
 			::PrintLog(L"g_DllDirectory:\t%s",g_DllDirectory);
 			::PrintLog(L"g_DllFullName:\t%s",g_DllFullName);
 			::PrintLog(L"g_ProfileDirectory:\t%s",g_ProfileDirectory);

@@ -45,6 +45,9 @@
     <ClCompile Include="src\TaggableShellEx.Utils.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\TaggableShellEx.Form.NewTag.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite-201310070036\src\sqlite3.h">
@@ -72,6 +75,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="src\resource.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\TaggableShellEx.Form.NewTag.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

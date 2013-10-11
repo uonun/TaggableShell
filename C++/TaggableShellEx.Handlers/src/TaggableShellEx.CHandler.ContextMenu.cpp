@@ -2,6 +2,7 @@
 #include "../include/dllmain.h"
 #include "../include/TaggableShellEx.Taghelper.h"
 #include "../include/TaggableShellEx.CHandler.h"
+#include "../include/TaggableShellEx.Form.NewTag.h"
 
 
 HRESULT CHandler::QueryContextMenu (
@@ -15,16 +16,6 @@ HRESULT CHandler::QueryContextMenu (
 	// create and populate a submenu.
 	_hSubmenu = CreatePopupMenu();
 	UINT uIdx = 0;
-
-	//MENUITEMINFO mm = { sizeof(MENUITEMINFO) };
-	//mm.fMask = MIIM_DATA | MIIM_STRING | MIIM_ID;
-	//mm.wID = CMD_NEWTAG;
-	//mm.dwItemData = CMD_NEWTAG;
-	//mm.dwTypeData = L"AAAAAAAAAAAA";
-	//InsertMenuItem  ( _hSubmenu, CMD_NEWTAG,false,&mm );
-
-
-	//_tagsOffsetInMenu = uID - uidFirstCmd;
 
 	for (unsigned int i = 0; i < _tagHelper.TagCount; i++)
 	{
@@ -106,6 +97,10 @@ HRESULT CHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserve
 	return E_INVALIDARG;
 }
 
+//LRESULT CALLBACK DlgProc(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
+//	return 0;
+//}
+
 // http://msdn.microsoft.com/en-us/library/windows/desktop/bb776096(v=vs.85).aspx
 HRESULT CHandler::InvokeCommand (
 	LPCMINVOKECOMMANDINFO pCmdInfo )
@@ -122,10 +117,13 @@ HRESULT CHandler::InvokeCommand (
 	}
 	else
 	{	
+		HWND hdlg ;
 		switch (cmd - _tagHelper.TagCount)
 		{
 		case CMD_NEWTAG:
-			MessageBox ( pCmdInfo->hwnd, L"CMD_NEWTAG", L"SimpleShlExt", MB_ICONINFORMATION );
+			{
+				hdlg =	CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_NEWTAG),pCmdInfo->hwnd,FormNewTag::DlgProc);	
+			}
 			break;
 		case CMD_SETTINGS:
 			MessageBox ( pCmdInfo->hwnd, L"CMD_SETTINGS", L"SimpleShlExt", MB_ICONINFORMATION );
@@ -135,12 +133,27 @@ HRESULT CHandler::InvokeCommand (
 			break;
 		default:
 			{
-
+				return E_FAIL;
 			}
 			break;
 		}
 
-		return E_FAIL;
+		if(hdlg!=NULL){
+			ShowWindow(hdlg, SW_SHOW);
+			UpdateWindow(pCmdInfo->hwnd);
+
+			MSG msg;     
+			while(GetMessage(&msg, NULL, 0, 0))     
+			{     
+				TranslateMessage(&msg);     
+				DispatchMessage(&msg);     
+			}
+		}else{
+			DWORD e = GetLastError();
+			::PrintLog(L"Can not create window. cmd = %d, error = %d",cmd - _tagHelper.TagCount,e);
+			MessageBox(pCmdInfo->hwnd,L"Can not create window",L"Error",MB_OK);
+			return E_FAIL;
+		}
 	}
 
 
