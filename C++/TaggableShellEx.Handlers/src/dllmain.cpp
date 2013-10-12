@@ -40,6 +40,7 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 {
 	::CoInitialize(NULL);
 	locale("chs");
+
 	GetModuleFileName(hInstance,g_DllFullName, sizeof(g_DllFullName) / sizeof(g_DllFullName[0]) - 1);
 	std::tr2::sys::wpath p(g_DllFullName);
 	wpath dir = p.parent_path();
@@ -71,16 +72,15 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 		{
 			::PrintLog(L"===================================================================================================");
 			::PrintLog(L"DllMain, dwReason = %d. (DLL_PROCESS_DETACH = 0, DLL_PROCESS_ATTACH = 1, DLL_THREAD_ATTACH = 2, DLL_THREAD_DETACH = 3)",dwReason);
-			::PrintLog(L"Version: %d", GetVersion());
-			::PrintLog(L"g_DllDirectory:\t%s",g_DllDirectory);
-			::PrintLog(L"g_DllFullName:\t%s",g_DllFullName);
-			::PrintLog(L"g_ProfileDirectory:\t%s",g_ProfileDirectory);
-			::PrintLog(L"g_UserDb:\t%s",g_UserDb);
+			::PrintLog(L"OS Version: %s", GetOSVersionStr());
+			::PrintLog(L"	g_DllDirectory:			%s",g_DllDirectory);
+			::PrintLog(L"	g_DllFullName:			%s",g_DllFullName);
+			::PrintLog(L"	g_ProfileDirectory:		%s",g_ProfileDirectory);
+			::PrintLog(L"	g_UserDb:				%s",g_UserDb);
 #ifdef LOG4CPP
-			::PrintLog(L"g_LogDirectory:\t%s",g_LogDirectory);
-			::PrintLog(L"g_LogFullName:\t%s",g_LogFullName);
+			::PrintLog(L"	g_LogDirectory:			%s",g_LogDirectory);
+			::PrintLog(L"	g_LogFullName:			%s",g_LogFullName);
 #endif
-
 			g_hInst = hInstance;
 			DisableThreadLibraryCalls(hInstance);
 		}

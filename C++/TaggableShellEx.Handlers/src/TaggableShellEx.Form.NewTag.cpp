@@ -8,6 +8,7 @@ FormNewTag::FormNewTag(void)
 
 FormNewTag::~FormNewTag(void)
 {
+
 }
 
 #pragma region Messages

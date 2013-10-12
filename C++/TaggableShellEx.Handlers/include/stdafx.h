@@ -32,9 +32,9 @@ using namespace std::tr2::sys;
 #define LOG_FILENAME					L"TaggableShell.log"
 #endif
 
-#define LOADSTRING_BUFFERSIZE			512
+#define LOADSTRING_BUFFERSIZE			1024 * 10
 #define MAXLENGTH_SQL					512					// sql sentance buffer
-#define TAG_LENGTH						10					// max length of each tag.
+#define MAXLENGTH_EACHTAG				10					// max length of each tag.
 #define MAXCOUNT_TAG					100
 
 #define FOLDER_PROFILE					L"Profile"
