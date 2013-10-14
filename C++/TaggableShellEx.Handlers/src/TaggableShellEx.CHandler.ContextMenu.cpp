@@ -1,8 +1,7 @@
 #pragma once
 #include "../include/dllmain.h"
-#include "../include/TaggableShellEx.Taghelper.h"
 #include "../include/TaggableShellEx.CHandler.h"
-#include "../include/TaggableShellEx.Form.NewTag.h"
+#include "../include/TaggableShellEx.Form.TagManager.h"
 
 
 HRESULT CHandler::QueryContextMenu (
@@ -17,18 +16,18 @@ HRESULT CHandler::QueryContextMenu (
 	_hSubmenu = CreatePopupMenu();
 	UINT uIdx = 0;
 
-	for (unsigned int i = 0; i < _tagHelper.TagCount; i++)
+	for (unsigned int i = 0; i < this->TagHelper.TagCount; i++)
 	{
 		if(!InsertMenu (
 			_hSubmenu, uIdx++, 
-			_tagHelper.Tags[i].bAsso ? MF_BYPOSITION | MF_CHECKED : MF_BYPOSITION,
-			uidFirstCmd + i, _tagHelper.Tags[i].Tag ))
+			this->TagHelper.Tags[i].bAsso ? MF_BYPOSITION | MF_CHECKED : MF_BYPOSITION,
+			uidFirstCmd + i, this->TagHelper.Tags[i].Tag ))
 		{
-			::PrintLog(L"Fail to add tag into the submenu: %s",_tagHelper.Tags[i]);
+			::PrintLog(L"Fail to add tag into the submenu: %s",this->TagHelper.Tags[i]);
 		}
 	}
 
-	UINT _firstSpecialCmdID = uidFirstCmd + _tagHelper.TagCount;
+	UINT _firstSpecialCmdID = uidFirstCmd + this->TagHelper.TagCount;
 
 	// MF_BYCOMMAND  MF_BYPOSITION
 	InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION | MF_SEPARATOR, _firstSpecialCmdID , L"MF_SEPARATOR" );
@@ -60,14 +59,14 @@ HRESULT CHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserve
 		memset(info,0,size);
 
 		if( _hSubmenu != NULL ){
-			if( idCmd < _tagHelper.TagCount)
+			if( idCmd < this->TagHelper.TagCount)
 			{
 				LPWSTR formater = ::MyLoadString(IDS_COMMANDSTRING_TAG_FORMATER);
-				wsprintf ( info,formater,_tagHelper.Tags[idCmd].Tag );
+				wsprintf ( info,formater,this->TagHelper.Tags[idCmd].Tag );
 			}
 			else
 			{	
-				switch (idCmd - _tagHelper.TagCount)
+				switch (idCmd - this->TagHelper.TagCount)
 				{
 				case CMD_NEWTAG:
 					info = ::MyLoadString(IDS_COMMANDSTRING_CMD_NEWTAG);
@@ -97,9 +96,16 @@ HRESULT CHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserve
 	return E_INVALIDARG;
 }
 
-//LRESULT CALLBACK DlgProc(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
-//	return 0;
-//}
+static FormTagManager *fTagManager = NULL;
+
+LRESULT CALLBACK DlgProc_TagManager(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
+	if(NULL == fTagManager)
+	{
+		::PrintLog(L"Creating FormTagManager.");
+		fTagManager = new FormTagManager();
+	}
+	return fTagManager->DlgProc(hwnd,uMsg,wParam,lParam);
+}
 
 // http://msdn.microsoft.com/en-us/library/windows/desktop/bb776096(v=vs.85).aspx
 HRESULT CHandler::InvokeCommand (
@@ -111,18 +117,18 @@ HRESULT CHandler::InvokeCommand (
 
 	// Get the command index.
 	auto cmd =LOWORD( pCmdInfo->lpVerb );
-	if( cmd < _tagHelper.TagCount)
+	if( cmd < this->TagHelper.TagCount)
 	{
-		_tagHelper.SetTag(cmd);
+		this->TagHelper.SetTag(cmd);
 	}
 	else
 	{	
 		HWND hdlg ;
-		switch (cmd - _tagHelper.TagCount)
+		switch (cmd - this->TagHelper.TagCount)
 		{
 		case CMD_NEWTAG:
 			{
-				hdlg =	CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_NEWTAG),pCmdInfo->hwnd,FormNewTag::DlgProc);	
+				hdlg =	CreateDialogParam(g_hInst,MAKEINTRESOURCE(IDD_TAG_MANAGER),pCmdInfo->hwnd,DlgProc_TagManager,(LPARAM)this);	
 			}
 			break;
 		case CMD_SETTINGS:
@@ -150,7 +156,7 @@ HRESULT CHandler::InvokeCommand (
 			}
 		}else{
 			DWORD e = GetLastError();
-			::PrintLog(L"Can not create window. cmd = %d, error = %d",cmd - _tagHelper.TagCount,e);
+			::PrintLog(L"Can not create window. cmd = %d, error = %d",cmd - this->TagHelper.TagCount,e);
 			MessageBox(pCmdInfo->hwnd,L"Can not create window",L"Error",MB_OK);
 			return E_FAIL;
 		}

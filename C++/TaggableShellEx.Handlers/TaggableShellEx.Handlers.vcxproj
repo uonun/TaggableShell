@@ -26,7 +26,7 @@
     <ClCompile Include="src\TaggableShellEx.CHandler.ContextMenu.cpp" />
     <ClCompile Include="src\TaggableShellEx.CHandler.cpp" />
     <ClCompile Include="src\TaggableShellEx.CHandler.PropertyPage.cpp" />
-    <ClCompile Include="src\TaggableShellEx.Form.NewTag.cpp" />
+    <ClCompile Include="src\TaggableShellEx.Form.TagManager.cpp" />
     <ClCompile Include="src\TaggableShellEx.Taghelper.cpp" />
     <ClCompile Include="src\TaggableShellEx.Utils.cpp" />
   </ItemGroup>
@@ -34,7 +34,7 @@
     <ClInclude Include="include\dllmain.h" />
     <ClInclude Include="include\stdafx.h" />
     <ClInclude Include="include\TaggableShellEx.CHandler.h" />
-    <ClInclude Include="include\TaggableShellEx.Form.NewTag.h" />
+    <ClInclude Include="include\TaggableShellEx.Form.TagManager.h" />
     <ClInclude Include="include\TaggableShellEx.Taghelper.h" />
     <ClInclude Include="include\TaggableShellEx.Utils.h" />
     <ClInclude Include="include\targetver.h" />

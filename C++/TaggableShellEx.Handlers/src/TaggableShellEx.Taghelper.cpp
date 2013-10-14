@@ -26,7 +26,7 @@ CTaghelper::~CTaghelper(void)
 	delete _dbFile;
 	_dbFile = NULL;
 
-	for (int i = 0; i < TagCount; i++)
+	for (UINT i = 0; i < TagCount; i++)
 	{
 		if(NULL !=Tags[i].Tag)
 		{

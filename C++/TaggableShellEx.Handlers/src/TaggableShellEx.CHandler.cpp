@@ -2,7 +2,6 @@
 #include "resource.h"
 #include "../include/dllmain.h"
 #include "../include/TaggableShellEx.CHandler.h"
-#include "../include/TaggableShellEx.Taghelper.h"
 
 CHandler::CHandler() : 
 	_cRef(1) // IUnknown
@@ -101,7 +100,7 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 		
 		// load tags
 		HRESULT	hr = SHGetItemFromDataObject(m_pDataObj,DOGIF_TRAVERSE_LINK,IID_PPV_ARGS(&_targetFile));
-		_tagHelper.LoadTags(*_targetFile);
+		this->TagHelper.LoadTags(*_targetFile);
 
 		STGMEDIUM   medium;
 		FORMATETC   fe = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};

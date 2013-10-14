@@ -19,7 +19,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include <Windows.h>  
 #include <string>
 #include <sstream>
-#include "resource.h"
+#include "../src/resource.h"
 #include <ctime>
 #include <filesystem>
 
@@ -40,6 +40,14 @@ using namespace std::tr2::sys;
 #define FOLDER_PROFILE					L"Profile"
 #define FOLDER_LOG						L"Logs"
 #define FILE_USERDB						L"User.db"
+
+// CMD-IDs for ContextMenu, must be consecutive from 0x1
+#define CMD_NEWTAG						0x1
+#define CMD_SETTINGS					0x2
+#define CMD_ABOUT						0x3
+
+// My messages
+#define MSG_TRANSFER_INSTANCES			WM_USER + 0x10
 
 // Handle the the DLL's module
 extern HINSTANCE g_hInst;

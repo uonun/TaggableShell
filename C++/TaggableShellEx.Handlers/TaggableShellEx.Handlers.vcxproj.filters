@@ -45,7 +45,7 @@
     <ClCompile Include="src\TaggableShellEx.Utils.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\TaggableShellEx.Form.NewTag.cpp">
+    <ClCompile Include="src\TaggableShellEx.Form.TagManager.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -77,7 +77,7 @@
     <ClInclude Include="src\resource.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\TaggableShellEx.Form.NewTag.h">
+    <ClInclude Include="include\TaggableShellEx.Form.TagManager.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

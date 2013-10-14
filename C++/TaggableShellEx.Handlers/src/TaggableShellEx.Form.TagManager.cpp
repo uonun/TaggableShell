@@ -1,28 +1,56 @@
-#include "..\include\TaggableShellEx.Form.NewTag.h"
+#include "..\include\TaggableShellEx.Form.TagManager.h"
 
-
-FormNewTag::FormNewTag(void)
+FormTagManager::FormTagManager(void) : _handler(NULL)
 {
+	::PrintLog(L"FormTagManager.ctor.");
 }
 
 
-FormNewTag::~FormNewTag(void)
+FormTagManager::~FormTagManager(void)
 {
+	::PrintLog(L"FormTagManager.~ctor.");
+}
 
+void FormTagManager::LoadTags(void)
+{
+	::PrintLog(L"FormTagManager.LoadTags.");
+
+	auto &_tagHelper = this->_handler->TagHelper;
+
+	HWND lv = GetDlgItem(_hwnd, IDC_NEWTAG_LIST_TAGS);
+	if( lv != NULL && _tagHelper.TagCount > 0)
+	{
+		//IImageList *imgList;
+		//HRESULT hr = SHGetImageList(SHIL_SMALL,IID_IImageList,(void **)&imgList);
+		//TreeView_SetImageList(lv,imgList,TVSIL_NORMAL);
+		//imgList->Release();
+
+		for (unsigned int i = 0; i < _tagHelper.TagCount; i++)
+		{
+			LVITEM item = {0};
+			item.pszText = _tagHelper.Tags[i].Tag;
+			item.mask = LVIF_TEXT;
+			ListView_InsertItem(lv,&item);
+		}
+	}
 }
 
 #pragma region Messages
-LRESULT CALLBACK FormNewTag::DlgProc(     
+LRESULT CALLBACK FormTagManager::DlgProc(     
 	_In_  HWND hwnd,     
 	_In_  UINT uMsg,     
 	_In_  WPARAM wParam,     
 	_In_  LPARAM lParam     
 	)     
-{     
+{
 	switch(uMsg)     
 	{   
 	case WM_INITDIALOG:
 		{
+			// init
+			this->_handler = (CHandler *)lParam;
+			this->_hwnd = hwnd;
+
 			::PrintLog(L"Message: WM_INITDIALOG");
 			SetWindowText(hwnd,::MyLoadString(IDS_DLG_NEWTAG_CAPTION));
 			SetWindowText(GetDlgItem(hwnd, IDC_NEWTAG_STATIC_TagsExist),::MyLoadString(IDS_DLG_NEWTAG_LABEL_TAGSEXISTED));
@@ -30,8 +58,14 @@ LRESULT CALLBACK FormNewTag::DlgProc(
 			SetWindowText(GetDlgItem(hwnd, IDC_NEWTAG_CHECK_AttachNewTagToFiles),::MyLoadString(IDS_DLG_NEWTAG_CHECKBOX_ATTACHNEWTAGTOFILE));
 			SetWindowText(GetDlgItem(hwnd, IDC_NEWTAG_BU_ADD),::MyLoadString(IDS_DLG_NEWTAG_BU_ADD));
 			SetWindowText(GetDlgItem(hwnd, IDC_NEWTAG_BU_CANCEL),::MyLoadString(IDS_DLG_NEWTAG_BU_CANCEL));
+
+
+			LoadTags();
 			return 0;
 		}
+	case MSG_TRANSFER_INSTANCES:
+		::PrintLog(L"Message: MSG_TRANSFER_INSTANCES: wParam: %d, lParam: %d",wParam, lParam);
+		return 0;
 	case WM_SYSCOMMAND:
 		{
 			if(wParam == SC_CLOSE)
