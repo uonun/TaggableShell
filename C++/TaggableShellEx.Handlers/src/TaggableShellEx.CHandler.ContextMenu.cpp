@@ -18,11 +18,13 @@ HRESULT CHandler::QueryContextMenu (
 
 	for (unsigned int i = 0; i < this->TagHelper.TagCount; i++)
 	{
-		if(!InsertMenu (
-			_hSubmenu, uIdx++, 
+		if(AppendMenu (
+			_hSubmenu,  
 			this->TagHelper.Tags[i].bAsso ? MF_BYPOSITION | MF_CHECKED : MF_BYPOSITION,
 			uidFirstCmd + i, this->TagHelper.Tags[i].Tag ))
 		{
+			uIdx++;
+		}else{
 			::PrintLog(L"Fail to add tag into the submenu: %s",this->TagHelper.Tags[i]);
 		}
 	}
@@ -96,14 +98,9 @@ HRESULT CHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserve
 	return E_INVALIDARG;
 }
 
-static FormTagManager *fTagManager = NULL;
-
 LRESULT CALLBACK DlgProc_TagManager(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
-	if(NULL == fTagManager)
-	{
-		::PrintLog(L"Creating FormTagManager.");
-		fTagManager = new FormTagManager();
-	}
+	auto fTagManager = FormTagManager::instance();
+	_ASSERT_EXPR(NULL != fTagManager,L"fTagManager could not be NULL.");
 	return fTagManager->DlgProc(hwnd,uMsg,wParam,lParam);
 }
 
@@ -123,12 +120,29 @@ HRESULT CHandler::InvokeCommand (
 	}
 	else
 	{	
-		HWND hdlg ;
+		HWND hdlg = NULL;
+		//HWND parent = pCmdInfo->hwnd;
+		HWND parent = GetDesktopWindow();
+		BOOL createNew = true;
+
+		// the caption of window, must be same as it when the window got msg WM_INITDIALOG.
+		LPWSTR windowCaption = NULL;
+
 		switch (cmd - this->TagHelper.TagCount)
 		{
 		case CMD_NEWTAG:
 			{
-				hdlg =	CreateDialogParam(g_hInst,MAKEINTRESOURCE(IDD_TAG_MANAGER),pCmdInfo->hwnd,DlgProc_TagManager,(LPARAM)this);	
+				windowCaption = ::MyLoadString(IDS_DLG_TAGMANAGER_CAPTION);
+				hdlg = FindWindowEx(parent, NULL, WINDOWCLASS_DLG, windowCaption);
+				if ( NULL == hdlg ){
+					hdlg = CreateDialogParam(g_hInst,MAKEINTRESOURCE(IDD_TAG_MANAGER),parent,DlgProc_TagManager,(LPARAM)this);
+					createNew = true;
+					::PrintLog(L"New window created: %s, handle = 0x%x",windowCaption, hdlg);
+				}else
+				{
+					createNew = false;
+					::PrintLog(L"Got existed window: %s, handle = 0x%x",windowCaption, hdlg);
+				}
 			}
 			break;
 		case CMD_SETTINGS:
@@ -144,15 +158,24 @@ HRESULT CHandler::InvokeCommand (
 			break;
 		}
 
-		if(hdlg!=NULL){
+		if(hdlg != NULL){
 			ShowWindow(hdlg, SW_SHOW);
-			UpdateWindow(pCmdInfo->hwnd);
+			UpdateWindow(hdlg);
 
-			MSG msg;     
-			while(GetMessage(&msg, NULL, 0, 0))     
-			{     
-				TranslateMessage(&msg);     
-				DispatchMessage(&msg);     
+			if( createNew ){
+				SetWindowPos(hdlg,HWND_TOP,150,100,0,0,SWP_NOSIZE|SWP_SHOWWINDOW);
+
+				// message queue.
+				MSG msg;     
+				while(GetMessage(&msg, NULL, 0, 0))     
+				{     
+					TranslateMessage(&msg);     
+					DispatchMessage(&msg);     
+				}
+			}
+			else
+			{
+				SetWindowPos(hdlg,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW);
 			}
 		}else{
 			DWORD e = GetLastError();
@@ -161,7 +184,6 @@ HRESULT CHandler::InvokeCommand (
 			return E_FAIL;
 		}
 	}
-
 
 	return S_OK;
 }

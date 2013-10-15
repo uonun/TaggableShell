@@ -74,10 +74,10 @@
     <ClInclude Include="include\targetver.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="src\resource.h">
+    <ClInclude Include="include\TaggableShellEx.Form.TagManager.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\TaggableShellEx.Form.TagManager.h">
+    <ClInclude Include="src\resource.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

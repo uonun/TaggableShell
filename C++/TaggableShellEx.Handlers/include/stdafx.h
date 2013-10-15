@@ -17,6 +17,7 @@ name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
 processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include <Windows.h>  
+#include <Windowsx.h>
 #include <string>
 #include <sstream>
 #include "../src/resource.h"
@@ -40,6 +41,8 @@ using namespace std::tr2::sys;
 #define FOLDER_PROFILE					L"Profile"
 #define FOLDER_LOG						L"Logs"
 #define FILE_USERDB						L"User.db"
+
+#define WINDOWCLASS_DLG					L"#32770"		// the class name of dialog. for FindWindow/FindWindowEx
 
 // CMD-IDs for ContextMenu, must be consecutive from 0x1
 #define CMD_NEWTAG						0x1

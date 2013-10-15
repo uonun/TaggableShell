@@ -9,6 +9,7 @@ class CHandler:
 {
 public:
 	CHandler(void);
+	~CHandler(void);
 
 	// IUnknown
 	IFACEMETHODIMP QueryInterface(REFIID riid, void ** ppv);
@@ -32,7 +33,6 @@ public:
 	CTaghelper TagHelper;
 
 private:
-	~CHandler(void);
 
 	// IUnknown
 	long _cRef;

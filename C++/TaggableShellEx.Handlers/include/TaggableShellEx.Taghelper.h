@@ -10,8 +10,11 @@ using namespace std;
 
 typedef struct tagTAG4FILE
 {
-	bool bAsso;
-	LPWSTR Tag;
+	bool bAsso;	
+	LPWSTR Tag;		// the name of current tag in database.
+	UINT TagID;		// the ID of current tag in database.
+	UINT TagIdx;	// the index of current tag in CTaghelper::Tags
+	UINT UseCount;	// the count of files associated with current tag.
 }TAG4FILE,*LPTAG4FILE;
 
 class CTaghelper
@@ -26,11 +29,13 @@ public:
 	unsigned int TagCount;				// The count of loaded tags. READ ONLY.
 	TAG4FILE Tags[MAXCOUNT_TAG];		// The loaded tags. READ ONLY.
 
+	BOOL IsTagExists(LPCWSTR & tag);
+
 private:
 	char * GetFileID(sqlite3 & db);
-	char * GetTagID(sqlite3 & db, int & targetTagIdx);
-	char * InsertFile(sqlite3 & db);
-	char * InsertTag(sqlite3 & db, int & targetTagIdx);
+	char * GetTagID(sqlite3 & db, LPWSTR & tag);
+	char * InsertFile(sqlite3 & db, LPWSTR & targetFile);
+	char * InsertTag(sqlite3 & db, LPWSTR & newTag);
 
 	bool _cached;
 	LPSTR _dbFile;

@@ -29,6 +29,7 @@ WCHAR g_DllFullName[MAX_PATH];
 WCHAR g_DllDirectory[MAX_PATH];
 WCHAR g_ProfileDirectory[MAX_PATH];
 WCHAR g_UserDb[MAX_PATH];
+
 #ifdef LOG4CPP
 WCHAR g_LogDirectory[MAX_PATH];
 WCHAR g_LogFullName[MAX_PATH];
