@@ -41,6 +41,8 @@ using namespace std::tr2::sys;
 #define FOLDER_PROFILE					L"Profile"
 #define FOLDER_LOG						L"Logs"
 #define FILE_USERDB						L"User.db"
+#define FID_NOT_EXIST					"-1"
+#define TID_NOT_EXIST					"-1"
 
 #define WINDOWCLASS_DLG					L"#32770"		// the class name of dialog. for FindWindow/FindWindowEx
 
@@ -48,6 +50,12 @@ using namespace std::tr2::sys;
 #define CMD_NEWTAG						0x1
 #define CMD_SETTINGS					0x2
 #define CMD_ABOUT						0x3
+
+#define COLOR_MY_DEFAULT					COLOR_WINDOWTEXT
+#define COLOR_MY_ERROR						RGB(0xFF,0,0)
+#define COLOR_MY_WARNING					RGB(0xFF,0x80,0)
+#define COLOR_MY_NOTE						RGB(0x3C,0x3C,0x3C)
+#define COLOR_MY_OK							RGB(0,0x80,0)
 
 // My messages
 #define MSG_TRANSFER_INSTANCES			WM_USER + 0x10

@@ -100,7 +100,12 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 		
 		// load tags
 		HRESULT	hr = SHGetItemFromDataObject(m_pDataObj,DOGIF_TRAVERSE_LINK,IID_PPV_ARGS(&_targetFile));
-		this->TagHelper.LoadTags(*_targetFile);
+		// HACK: Only 1 files
+		const UINT fileCount = 1;
+		IShellItem* items[fileCount];
+		items[0] = _targetFile;
+		this->TagHelper.SetCurrentFiles(items,fileCount);
+		this->TagHelper.LoadTags();
 
 		STGMEDIUM   medium;
 		FORMATETC   fe = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};

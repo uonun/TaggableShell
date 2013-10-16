@@ -4,6 +4,7 @@ FormTagManager* FormTagManager::p_instance_ = NULL;
 
 FormTagManager::FormTagManager(void):
 	_cRef(1)
+	,_msgColor(COLOR_MY_DEFAULT)
 {
 	::PrintLog(L"FormTagManager.ctor.");
 }
@@ -34,7 +35,8 @@ IFACEMETHODIMP_(ULONG) FormTagManager::Release()
 			if( x == 0 ){
 				this->_handler = NULL;
 			}
-		}catch(int e)
+		}
+		catch(int e)
 		{
 			this->_handler = NULL;
 		}
@@ -49,6 +51,13 @@ IFACEMETHODIMP_(ULONG) FormTagManager::Release()
 	return cRef;
 }
 
+void FormTagManager::ShowMsg(LPWSTR msg, COLORREF color)
+{
+	_ASSERT_EXPR(NULL != msg,L"msg could not be NULL.");
+	_msgColor = color;
+	SetDlgItemText(_hwnd, IDC_STATIC_ERROR_INFO, msg);
+}
+
 void FormTagManager::LoadTags(void)
 {
 	::PrintLog(L"FormTagManager.LoadTags.");
@@ -56,39 +65,24 @@ void FormTagManager::LoadTags(void)
 	auto &_tagHelper = _handler->TagHelper;
 
 	HWND lv = GetDlgItem(_hwnd, IDC_TAGMANAGER_LIST_TAGS);
-	if( lv != NULL && _tagHelper.TagCount > 0)
+	if( lv != NULL )
 	{
-		IImageList *imgList;
-		HRESULT hr = SHGetImageList(SHIL_SMALL,IID_IImageList,(void **)&imgList);
-		ListView_SetImageList(lv,imgList,LVSIL_SMALL);
-		imgList->Release();
+		ListView_DeleteAllItems(lv);
 
-		UINT cIdx = 0;
-		LVCOLUMN c = {0};
-		c.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME);
-		c.mask = LVCF_TEXT | LVCF_MINWIDTH | LVCF_WIDTH;
-		c.cxMin = 80;
-		c.cx = 115;
-		ListView_InsertColumn(lv,cIdx++,&c);
-
-		c.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT);
-		c.mask = LVCF_TEXT | LVCF_MINWIDTH | LVCF_WIDTH | LVCF_FMT;
-		c.cxMin = 30;
-		c.cx = 40;
-		c.fmt = LVCFMT_RIGHT;
-		ListView_InsertColumn(lv,cIdx++,&c);
-
-		LVITEM item = {0};
-		for (unsigned int i = 0; i < _tagHelper.TagCount; i++)
+		if ( _tagHelper.TagCount > 0 )
 		{
-			item.pszText = LPSTR_TEXTCALLBACK;
-			item.mask = LVIF_TEXT | LVIF_IMAGE|LVIF_STATE;
-			item.iItem = i;
-			item.stateMask = 0;
-			item.iSubItem  = 0;
-			item.state     = 0;
-			item.iImage = 0;
-			ListView_InsertItem(lv,&item);
+			LVITEM item = {0};
+			for (unsigned int i = 0; i < _tagHelper.TagCount; i++)
+			{
+				item.pszText = LPSTR_TEXTCALLBACK;
+				item.mask = LVIF_TEXT | LVIF_IMAGE|LVIF_STATE;
+				item.iItem = i;
+				item.stateMask = 0;
+				item.iSubItem  = 0;
+				item.state     = 0;
+				item.iImage = 0;
+				ListView_InsertItem(lv,&item);
+			}
 		}
 	}
 }
@@ -104,13 +98,24 @@ void FormTagManager::AddTag(void)
 	HWND editCtl = GetDlgItem(_hwnd, IDC_TAGMANAGER_EDIT_TagWord);
 	if(editCtl != NULL)
 	{
-		wchar_t key[MAXLENGTH_EACHTAG];
+		wchar_t tmp[MAXLENGTH_EACHTAG];
+		LPWSTR key = tmp;
 		UINT keyLength;
 		BOOL x = IsNewTagOk(key,keyLength,editCtl);
+
 		if( TRUE == x)
 		{
 			::PrintLog(L"Got new tag =[ %s ], adding to database.", key);
-			//_handler->TagHelper.
+			auto TID = _handler->TagHelper.InsertTag(key,10);
+			if(TID==TID_NOT_EXIST)
+			{
+				ShowMsg(L"添加失败",COLOR_MY_ERROR);
+			}
+			else
+			{
+				LoadTags();
+				ShowMsg(L"添加成功",COLOR_MY_OK);
+			}
 		}else{
 			::PrintLog(L"Got new tag =[ %s ], but it is not available.", key);
 
@@ -179,7 +184,32 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 
 			Button_Enable(GetDlgItem(_hwnd,IDC_TAGMANAGER_BU_ADD),false);
 
-			LoadTags();
+			HWND lv = GetDlgItem(_hwnd, IDC_TAGMANAGER_LIST_TAGS);
+			if( lv != NULL )
+			{
+				IImageList *imgList;
+				HRESULT hr = SHGetImageList(SHIL_SMALL,IID_IImageList,(void **)&imgList);
+				ListView_SetImageList(lv,imgList,LVSIL_SMALL);
+				imgList->Release();
+
+				UINT cIdx = 0;
+				LVCOLUMN c = {0};
+				c.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME);
+				c.mask = LVCF_TEXT | LVCF_MINWIDTH | LVCF_WIDTH;
+				c.cxMin = 80;
+				c.cx = 115;
+				ListView_InsertColumn(lv,cIdx++,&c);
+
+				c.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT);
+				c.mask = LVCF_TEXT | LVCF_MINWIDTH | LVCF_WIDTH | LVCF_FMT;
+				c.cxMin = 30;
+				c.cx = 40;
+				c.fmt = LVCFMT_RIGHT;
+				ListView_InsertColumn(lv,cIdx++,&c);
+
+				LoadTags();
+			}
+
 			LoadSelectedFiles();
 
 			return 0;
@@ -192,7 +222,7 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 			// change the text color of static label ERROR_INFO
 			if( (UINT)lParam == (UINT)GetDlgItem(_hwnd,IDC_STATIC_ERROR_INFO)){
 				HDC hdcStatic = (HDC) wParam;
-				SetTextColor(hdcStatic, RGB(255,0,0));
+				SetTextColor(hdcStatic, _msgColor);
 
 				// the background color will be changed to white, that is not what I want, so, restore the background color manual.
 				auto oldBkColor = GetSysColor(CTLCOLOR_DLG);
@@ -248,11 +278,11 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 
 					if ( x == TRUE || keyLength == 0)
 					{
-						SetDlgItemText(_hwnd, IDC_STATIC_ERROR_INFO,L"");
+						ShowMsg(L"");
 					}
 					else
 					{
-						SetDlgItemText(_hwnd, IDC_STATIC_ERROR_INFO,::MyLoadString(IDS_ERR_PLS_ENTER_TEXT_OF_TAG));
+						ShowMsg(::MyLoadString(IDS_ERR_PLS_ENTER_TEXT_OF_TAG),COLOR_MY_ERROR);
 					}
 				}
 				break;
@@ -299,8 +329,6 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 		}
 	case WM_DESTROY:     
 		{
-			::PrintLog(L"Message: WM_DESTROY");
-			// UNDONE: Exception throwed once, not sure why.
 			PostQuitMessage(0);
 			return 0;     
 		}

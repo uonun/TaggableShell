@@ -23,26 +23,27 @@ public:
 	CTaghelper(void);
 	virtual ~CTaghelper(void);
 
-	void LoadTags(IShellItem & ppv);
+	void SetCurrentFiles(IShellItem** ppv,const int count);
+	void LoadTags(bool ignoreCache = false);
 	HRESULT SetTag(int tagIdx);
 
 	unsigned int TagCount;				// The count of loaded tags. READ ONLY.
 	TAG4FILE Tags[MAXCOUNT_TAG];		// The loaded tags. READ ONLY.
 
 	BOOL IsTagExists(LPCWSTR & tag);
+	char * GetFileID();
+	char * GetTagID(LPWSTR & tag);
+	char * InsertFile(LPWSTR & targetFile);
+	char * InsertTag(LPWSTR & newTag,const int useCount);
 
 private:
-	char * GetFileID(sqlite3 & db);
-	char * GetTagID(sqlite3 & db, LPWSTR & tag);
-	char * InsertFile(sqlite3 & db, LPWSTR & targetFile);
-	char * InsertTag(sqlite3 & db, LPWSTR & newTag);
 
 	bool _cached;
 	LPSTR _dbFile;
 	LPWSTR _targetFileName;			// the file full path of target item.
 	LPSTR _targetFileNameInSQL;		// the file full path of target item with "'" replaced to "''" for SQL.
 	IShellItem* _targetShellItem;
-	sqlite3 * db;  
+	sqlite3 * _db;
 
 };
 

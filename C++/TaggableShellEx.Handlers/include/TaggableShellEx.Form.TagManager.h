@@ -34,6 +34,8 @@ private :
 	HWND _hwnd;
 	long _cRef;
 
+	COLORREF _msgColor;
+	void ShowMsg(LPWSTR msg,COLORREF color = RGB(0,0,0));
 	void LoadTags(void);
 	void LoadSelectedFiles(void);
 	void AddTag(void);
