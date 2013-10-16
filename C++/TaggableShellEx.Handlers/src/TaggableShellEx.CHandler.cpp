@@ -5,15 +5,17 @@
 
 CHandler::CHandler() : 
 	_cRef(1) // IUnknown
-	,m_pIDFolder(NULL),m_pDataObj(NULL),m_hRegKey(NULL)	// IShellExtInit
+	,m_pIDFolder(NULL),m_pDataObj(NULL)	// IShellExtInit
 	,_dllRefCount(0) // IShellPropSheetExt
 	,_hSubmenu(NULL) // IContextMenu
-	,_targetFile(NULL)
+	,FileCount(0)
 {
 	::PrintLog(L"CHandler.ctor");
 
-	// IShellExtInit
-	memset(m_szFile,0,sizeof(m_szFile)/sizeof(m_szFile[0]));
+	for (UINT i = 0; i < FileCount; i++)
+	{
+		m_szFiles[i] = NULL;
+	}
 
 	DllAddRef();
 }
@@ -21,6 +23,14 @@ CHandler::CHandler() :
 CHandler::~CHandler(void)
 {   
 	::PrintLog(L"CHandler.~ctor");
+
+	for (UINT i = 0; i < FileCount; i++)
+	{
+		if (m_szFiles[i] != NULL){
+			delete m_szFiles[i];
+			m_szFiles[i] = NULL;
+		}
+	}
 
 	DllRelease();
 }
@@ -97,29 +107,35 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 	{ 
 		m_pDataObj = pDataObj; 
 		pDataObj->AddRef(); 
-		
-		// load tags
-		HRESULT	hr = SHGetItemFromDataObject(m_pDataObj,DOGIF_TRAVERSE_LINK,IID_PPV_ARGS(&_targetFile));
-		// HACK: Only 1 files
-		const UINT fileCount = 1;
-		IShellItem* items[fileCount];
-		items[0] = _targetFile;
-		this->TagHelper.SetCurrentFiles(items,fileCount);
-		this->TagHelper.LoadTags();
+
+		//// load tags
+		//HRESULT	hr = SHGetItemFromDataObject(m_pDataObj,DOGIF_TRAVERSE_LINK,IID_PPV_ARGS(&_targetFile));
+		//// HACK: Only 1 files
+		//const UINT fileCount = 1;
+		//IShellItem* items[fileCount];
+		//items[0] = _targetFile;
+		//this->TagHelper.SetCurrentFiles(items,fileCount);
+		//this->TagHelper.LoadTags();
 
 		STGMEDIUM   medium;
 		FORMATETC   fe = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
-		UINT        uCount;
 
 		if(SUCCEEDED(m_pDataObj->GetData(&fe, &medium)))
 		{
 			// Get the count of files dropped.
-			uCount = DragQueryFile((HDROP)medium.hGlobal, (UINT)-1, NULL, 0);
+			FileCount = DragQueryFile((HDROP)medium.hGlobal, (UINT)-1, NULL, 0);
 
-			// Get the first file name from the CF_HDROP.
-			if(uCount)
-				DragQueryFile((HDROP)medium.hGlobal, 0, m_szFile, 
-				sizeof(m_szFile)/sizeof(TCHAR));
+			if( FileCount > 0 )
+			{
+				for (UINT i = 0; i < FileCount; i++)
+				{
+					m_szFiles[i] = new TCHAR[MAX_PATH];
+					DragQueryFile((HDROP)medium.hGlobal, i, m_szFiles[i], MAX_PATH * sizeof(TCHAR));
+				}
+
+				this->TagHelper.SetCurrentFiles(m_szFiles,FileCount);
+				this->TagHelper.LoadTags();
+			}
 
 			ReleaseStgMedium(&medium);
 		}

@@ -2,14 +2,10 @@
 
 CTaghelper::CTaghelper(void): 
 	_cached(false)
-	,_targetShellItem(NULL)
-	,TagCount(0)
+	,TagCount(0),FileCount(0)
 	,_db(0)
 {
 	::PrintLog(L"CTaghelper.ctor");
-
-	_targetFileNameInSQL = new char[MAXLENGTH_SQL]; // will be deleted automatically. not need to delete in ~ctor.
-	memset(_targetFileNameInSQL,0,MAXLENGTH_SQL * sizeof(_targetFileNameInSQL[0]));
 
 	::WStr2Str(g_UserDb,_dbFile);
 }
@@ -59,34 +55,40 @@ int _callback_exec_load_tags(void * tagHelper,int argc, char ** argv, char ** as
 	return 0;  
 }
 
-void CTaghelper::SetCurrentFiles(IShellItem** ppv,const int count)
+void CTaghelper::SetCurrentFiles(LPWSTR* ppv,const int count)
 {
-	for (int i = 0; i < count; i++)
+	_ASSERT_EXPR( ppv != NULL, L"ppv can not be NULL.");
+
+	FileCount = count;
+	if( FileCount > 0)
 	{
-		_targetShellItem = ppv[i];
+		for (int i = 0; i < count; i++)
+		{
+			TargetFileNames[i] = ppv[i];
 
-		HRESULT hr = _targetShellItem->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING,(LPWSTR*)&_targetFileName);
-		/*
-		SIGDN_NORMALDISPLAY:				新建文本文档.txt
-		SIGDN_PARENTRELATIVEPARSING:		新建文本文档.txt
-		SIGDN_DESKTOPABSOLUTEPARSING:		E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
-		SIGDN_PARENTRELATIVEEDITING:		新建文本文档.txt
-		SIGDN_DESKTOPABSOLUTEEDITING:		E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
-		SIGDN_FILESYSPATH:					E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
-		SIGDN_URL:							file:///E:/Works/UDNZ/udnz.com.ShellEx.TaggableShell/C++/_Debug/x64/新建文本文档.txt
-		SIGDN_PARENTRELATIVEFORADDRESSBAR:	新建文本文档.txt
-		SIGDN_PARENTRELATIVE:				新建文本文档.txt
-		SIGDN_PARENTRELATIVEFORUI:			新建文本文档.txt
-		*/
+			//HRESULT hr = _targetShellItem->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING,(LPWSTR*)&_targetFileName);
+			/*
+			SIGDN_NORMALDISPLAY:				新建文本文档.txt
+			SIGDN_PARENTRELATIVEPARSING:		新建文本文档.txt
+			SIGDN_DESKTOPABSOLUTEPARSING:		E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
+			SIGDN_PARENTRELATIVEEDITING:		新建文本文档.txt
+			SIGDN_DESKTOPABSOLUTEEDITING:		E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
+			SIGDN_FILESYSPATH:					E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
+			SIGDN_URL:							file:///E:/Works/UDNZ/udnz.com.ShellEx.TaggableShell/C++/_Debug/x64/新建文本文档.txt
+			SIGDN_PARENTRELATIVEFORADDRESSBAR:	新建文本文档.txt
+			SIGDN_PARENTRELATIVE:				新建文本文档.txt
+			SIGDN_PARENTRELATIVEFORUI:			新建文本文档.txt
+			*/
 
-		if(hr == S_OK){
-			::UnicodeToANSI(_targetFileName,_targetFileNameInSQL);
-			string s(_targetFileNameInSQL);
+			_targetFileNamesInSQL[i] = new char[MAXLENGTH_SQL]; // will be deleted automatically. not need to delete in ~ctor.
+			memset(_targetFileNamesInSQL[i],0,MAXLENGTH_SQL * sizeof(_targetFileNamesInSQL[i][0]));
+
+			::UnicodeToANSI(TargetFileNames[i],_targetFileNamesInSQL[i]);
+			string s(_targetFileNamesInSQL[i]);
 			::replace_all_distinct(s,"'","''");
-			memcpy(_targetFileNameInSQL,s.c_str(),s.length());
+			memcpy(_targetFileNamesInSQL[i],s.c_str(),s.length());
 		}
 	}
-
 	return;
 }
 
@@ -94,14 +96,27 @@ void CTaghelper::LoadTags(bool ignoreCache)
 {
 	if(ignoreCache || !_cached || TagCount == 0){
 
-		TagCount = 0;		
+		TagCount = 0;
 
-		char * sSQLFormater = "Select t.[ID],t.[TAGNAME],t.[USECOUNT], \
-							  (select count(*) from asso_file_tag a inner join files f on f.[ID]=a.[FILEID] where f.[FULLPATH]='%s' and a.[TAGID]=t.[ID])as asso \
-							  from [tags] t order by t.[USECOUNT] DESC;";
+		char * sSQLFormater = NULL;
 		char sSQL[MAXLENGTH_SQL];
 		memset(sSQL,0,MAXLENGTH_SQL * sizeof(char));
-		sprintf ( sSQL,sSQLFormater,_targetFileNameInSQL );
+
+		if( FileCount == 1)
+		{
+			sSQLFormater = "Select t.[ID],t.[TAGNAME],t.[USECOUNT], \
+						   (select count(*) from asso_file_tag a inner join files f on f.[ID]=a.[FILEID] where f.[FULLPATH]='%s' and a.[TAGID]=t.[ID])as asso \
+						   from [TAGS] t order by t.[USECOUNT] DESC;";
+			sprintf ( sSQL,sSQLFormater,_targetFileNamesInSQL[0] );
+		}
+		else
+		{
+			sSQLFormater = "Select t.[ID],t.[TAGNAME],t.[USECOUNT], \
+						   '%s' as asso \
+						   from [TAGS] t order by t.[USECOUNT] DESC;";
+
+			sprintf ( sSQL,sSQLFormater,"0" );
+		}
 
 		char * pErrMsg = 0;
 		int ret = 0;
@@ -131,8 +146,6 @@ void CTaghelper::LoadTags(bool ignoreCache)
 	}
 }
 
-
-
 HRESULT CTaghelper::SetTag(int tagIdx)
 {
 	HRESULT hr = S_FALSE;
@@ -150,56 +163,85 @@ HRESULT CTaghelper::SetTag(int tagIdx)
 	else
 	{	
 		auto &currentTag = Tags[tagIdx];
-		BOOL isAsso = currentTag.bAsso;
-
-		char * FID = NULL;
-		FID = GetFileID();
 
 		char * TID = NULL;
 		TID = GetTagID(currentTag.Tag);
+		if( string(TID)==string(TID_NOT_EXIST) ){
+			TID = InsertTag(currentTag.Tag,1);
+		}
+
+		_ASSERT_EXPR(string(TID)!=string(TID_NOT_EXIST),L"TID is not available!");
 
 		char * sSQLFormater = NULL;
 		char sSQL[MAXLENGTH_SQL];
 
-		if(!isAsso)
+		if( FileCount == 1)
 		{
-			sSQLFormater = "INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%s','%s');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%s";
-			if(FID==FID_NOT_EXIST ){
-				FID = InsertFile(_targetFileName);
-			}
-			if(TID==TID_NOT_EXIST){
-				TID = InsertTag(currentTag.Tag,1);
-			}
-		}else{
+			char * FID = NULL;
+			FID = GetFileID(_targetFileNamesInSQL[0]);
 
-			sSQLFormater = "DELETE FROM [ASSO_FILE_TAG] WHERE FILEID='%s' AND TAGID='%s';UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]-1 WHERE [ID]=%s";
+			BOOL isAsso = currentTag.bAsso;
 
-			// check any other tag associated with current file.
-			BOOL anyAsso = false;
-			for (unsigned int i = 0; i < TagCount; i++)
+			if(!isAsso)
 			{
-				if(i!=tagIdx && Tags[i].bAsso)
+				sSQLFormater = "INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%s','%s');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%s";
+				if( string(FID)==string(FID_NOT_EXIST) ){
+					FID = InsertFile(TargetFileNames[0]);
+				}
+
+				_ASSERT_EXPR(string(FID)!=string(FID_NOT_EXIST),L"FID is not available!");
+
+			}else{
+
+				sSQLFormater = "DELETE FROM [ASSO_FILE_TAG] WHERE FILEID='%s' AND TAGID='%s';UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]-1 WHERE [ID]=%s";
+
+				// check any other tag associated with current file.
+				BOOL anyAsso = false;
+				for (unsigned int i = 0; i < TagCount; i++)
 				{
-					anyAsso = true;
-					break;
+					if(i!=tagIdx && Tags[i].bAsso)
+					{
+						anyAsso = true;
+						break;
+					}
+				}
+
+				// delete the record for current file in the table [FILES]
+				if(!anyAsso){
+					char sSQL_tmp[MAXLENGTH_SQL];
+					sprintf ( sSQL_tmp,"%s;DELETE FROM [FILES] WHERE ID='%s'",sSQLFormater,FID );
+					sSQLFormater = sSQL_tmp;
+					::PrintLog("No any tag associated with current file, about to delete from table [FILE]: ID = %d, %s",FID,TargetFileNames[0]);
 				}
 			}
 
-			// delete the record for current file in the table [FILES]
-			if(!anyAsso){
-				char sSQL_tmp[MAXLENGTH_SQL];
-				sprintf ( sSQL_tmp,"%s;DELETE FROM [FILES] WHERE ID='%s'",sSQLFormater,FID );
-				sSQLFormater = sSQL_tmp;
-				::PrintLog("No any tag associated with current file, about to delete from table [FILE]: ID = %d, %s",FID,_targetFileName);
+			sprintf ( sSQL,sSQLFormater,FID,TID,TID );
+			ANSIToUTF8(sSQL);
+			::PrintLog("SetTag: %s",sSQL);
+			sqlite3_exec( _db, sSQL, NULL, 0, 0 );
+		}
+		else if( FileCount > 1)
+		{
+			char * FID = NULL;
+			for (UINT i = 0; i < FileCount; i++)
+			{
+				if ( !IsAsso(TargetFileNames[i],currentTag.Tag) )
+				{
+					FID = GetFileID(_targetFileNamesInSQL[i]);
+					if( string(FID)==string(FID_NOT_EXIST) ){
+						FID = InsertFile(TargetFileNames[i]);
+					}
+
+					_ASSERT_EXPR( string(FID)!=string(FID_NOT_EXIST) ,L"FID is not available!");
+
+					sSQLFormater = "INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%s','%s');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%s";
+					sprintf ( sSQL,sSQLFormater,FID,TID,TID );
+					ANSIToUTF8(sSQL);
+					::PrintLog("SetTag: %s",sSQL);
+					sqlite3_exec( _db, sSQL, NULL, 0, 0 );
+				}
 			}
 		}
-
-		_ASSERT_EXPR(FID != FID_NOT_EXIST && TID != TID_NOT_EXIST,L"FID/TID is not available!");
-
-		sprintf ( sSQL,sSQLFormater,FID,TID,TID );
-		ANSIToUTF8(sSQL);
-		::PrintLog("SetTag: %s",sSQL);
-		sqlite3_exec( _db, sSQL, NULL, 0, 0 );
 	}
 
 	sqlite3_free_table(pazResult);
@@ -209,17 +251,17 @@ HRESULT CTaghelper::SetTag(int tagIdx)
 }
 
 // get file id in _db, return FID_NOT_EXIST if not exists.
-char * CTaghelper::GetFileID()
+// the parameter fileNameInSQL can not contains "'"!
+char * CTaghelper::GetFileID(LPSTR fileNameInSQL)
 {
-	char * FID;
-	FID = FID_NOT_EXIST;
+	char * FID = FID_NOT_EXIST;
 
-	char * sSQLFormater;
+	char * sSQLFormater = NULL;
 	char sSQL[MAXLENGTH_SQL];
 
 	// get file ID
 	sSQLFormater = "SELECT [ID] FROM [FILES] WHERE [FULLPATH]='%s'";
-	sprintf ( sSQL,sSQLFormater,_targetFileNameInSQL );
+	sprintf ( sSQL,sSQLFormater,fileNameInSQL );
 
 	char** pazResult = 0;
 	int pnRow = 0;
@@ -327,15 +369,17 @@ char * CTaghelper::InsertFile(LPWSTR & targetFile)
 	sSQLFormater = "INSERT INTO [FILES] (parent_dir,fullpath,itemname,ext,remark) values ('%s','%s','%s','%s','')";
 	sprintf ( sSQL,sSQLFormater,parent_dir.c_str(),targetFileInSQL,itemname.c_str(),ext.c_str());
 
-	delete targetFileInSQL;
-	targetFileInSQL = NULL;
-
 	ANSIToUTF8(sSQL);
 
 	::PrintLog("InsertFile: %s",sSQL);
 	sqlite3_exec( _db, sSQL, NULL, 0, 0 );
 
-	return GetFileID();
+	char* id = GetFileID(targetFileInSQL);
+	
+	delete targetFileInSQL;
+	targetFileInSQL = NULL;
+
+	return id;
 }
 
 char * CTaghelper::InsertTag(LPWSTR & newTag, const int useCount)
@@ -377,12 +421,18 @@ char * CTaghelper::InsertTag(LPWSTR & newTag, const int useCount)
 	return GetTagID(newTag);
 }
 
+BOOL CTaghelper::IsAsso(LPCWSTR file, LPCWSTR tag)
+{
+	return FALSE;
+}
+
 BOOL CTaghelper::IsTagExists(LPCWSTR & tag)
 {
 	if(TagCount > 0)
 	{
 		for (UINT i = 0; i < TagCount; i++)
 		{
+			// UNDONE: check if the new tag exists already.
 			if(tag == Tags[i].Tag)
 			{
 				return TRUE;

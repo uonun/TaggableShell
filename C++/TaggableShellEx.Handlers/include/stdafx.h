@@ -37,6 +37,7 @@ using namespace std::tr2::sys;
 #define MAXLENGTH_SQL					512					// sql sentance buffer
 #define MAXLENGTH_EACHTAG				10					// max length of each tag.
 #define MAXCOUNT_TAG					100
+#define MAXCOUNT_ITEM					0xFFFF				// max count of selected shell items.
 
 #define FOLDER_PROFILE					L"Profile"
 #define FOLDER_LOG						L"Logs"

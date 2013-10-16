@@ -163,8 +163,6 @@ HRESULT CHandler::InvokeCommand (
 			UpdateWindow(hdlg);
 
 			if( createNew ){
-				SetWindowPos(hdlg,HWND_TOP,150,100,0,0,SWP_NOSIZE|SWP_SHOWWINDOW);
-
 				// message queue.
 				MSG msg;     
 				while(GetMessage(&msg, NULL, 0, 0))     

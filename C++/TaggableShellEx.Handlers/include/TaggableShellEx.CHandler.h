@@ -31,6 +31,7 @@ public:
 	STDMETHODIMP ReplacePage(UINT uPageID,LPFNADDPROPSHEETPAGE pfnReplacePage,LPARAM lParam){ return E_NOTIMPL; }
 
 	CTaghelper TagHelper;
+	UINT	   FileCount;
 
 private:
 
@@ -39,16 +40,12 @@ private:
 
 	// IShellExtInit
 	LPITEMIDLIST  m_pIDFolder;           //The folder's PIDL
-	TCHAR          m_szFile[MAX_PATH];    //The file name
+	TCHAR*        m_szFiles[MAXCOUNT_ITEM];    //The file names
 	IDataObject   *m_pDataObj;            //The IDataObject pointer
-	HKEY           m_hRegKey;             //The file or folder's registry key
 
 	// IShellPropSheetExt
 	UINT _dllRefCount;
 
 	// IContextMenu
-	HMENU _hSubmenu;
-
-	IShellItem* _targetFile; 
-	
+	HMENU _hSubmenu;	
 };
