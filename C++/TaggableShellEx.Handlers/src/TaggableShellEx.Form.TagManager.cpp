@@ -80,7 +80,7 @@ void FormTagManager::LoadTags(void)
 				item.stateMask = 0;
 				item.iSubItem  = 0;
 				item.state     = 0;
-				item.iImage = 0;
+				item.iImage = I_IMAGECALLBACK;
 				ListView_InsertItem(lv,&item);
 			}
 		}
@@ -90,6 +90,30 @@ void FormTagManager::LoadTags(void)
 void FormTagManager::LoadSelectedFiles(void)
 {
 	::PrintLog(L"FormTagManager.LoadSelectedFiles.");
+
+	auto &_tagHelper = _handler->TagHelper;
+
+	HWND lv = GetDlgItem(_hwnd, IDC_TAGMANAGER_LIST_SelectedFiles);
+	if( lv != NULL )
+	{
+		ListView_DeleteAllItems(lv);
+
+		if ( _tagHelper.FileCount > 0 )
+		{
+			LVITEM item = {0};
+			for (unsigned int i = 0; i < _tagHelper.FileCount; i++)
+			{
+				item.pszText = LPSTR_TEXTCALLBACK;
+				item.mask = LVIF_TEXT | LVIF_IMAGE | LVIF_STATE;
+				item.iItem = i;
+				item.stateMask = 0;
+				item.iSubItem  = 0;
+				item.state     = 0;
+				item.iImage = I_IMAGECALLBACK;
+				ListView_InsertItem(lv,&item);
+			}
+		}
+	}
 }
 
 void FormTagManager::AddTag(void)
@@ -106,9 +130,12 @@ void FormTagManager::AddTag(void)
 		if( TRUE == x)
 		{
 			::PrintLog(L"Got new tag =[ %s ], adding to database.", key);
-			auto TID = _handler->TagHelper.InsertTag(key,10);
+			BOOL isAttchWithFilesChecked = Button_GetCheck(GetDlgItem(_hwnd, IDC_TAGMANAGER_CHECK_AttachNewTagToFiles)) == BST_CHECKED;
+			int count = isAttchWithFilesChecked ? _handler->TagHelper.FileCount : 0;
+			auto TID = _handler->TagHelper.InsertTag(key,count);
 			if(TID==TID_NOT_EXIST)
 			{
+				// TODO: move the magic string to resource file.
 				ShowMsg(L"Ìí¼ÓÊ§°Ü",COLOR_MY_ERROR);
 			}
 			else
@@ -146,6 +173,15 @@ BOOL FormTagManager::IsNewTagOk(_Out_ wchar_t* key,_Out_  UINT & keyLength, HWND
 	return result;
 }
 
+int FormTagManager::GetImgIdxInList(LPWSTR & pszPath)
+{
+	SHFILEINFOW sfi = {0};
+	auto hr = SHGetFileInfo(pszPath, -1,&sfi,sizeof(sfi), SHGFI_ICON|SHGFI_LARGEICON);
+	int imgIdx = sfi.iIcon;
+	DestroyIcon(sfi.hIcon); // we do not need the handle of icon, free the memory.
+	return imgIdx;
+}
+
 static HBRUSH hbrBkgnd = NULL;
 
 #pragma region Messages
@@ -175,7 +211,13 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 			SetWindowText(_hwnd,::MyLoadString(IDS_DLG_TAGMANAGER_CAPTION));
 			SetDlgItemText(_hwnd, IDC_TAGMANAGER_STATIC_TagsExist,::MyLoadString(IDS_DLG_TAGMANAGER_LABEL_TAGSEXISTED));
 			SetDlgItemText(_hwnd, IDC_TAGMANAGER_STATIC_NewTag,::MyLoadString(IDS_DLG_TAGMANAGER_LABEL_NEWTAG));
-			SetDlgItemText(_hwnd, IDC_TAGMANAGER_CHECK_AttachNewTagToFiles,::MyLoadString(IDS_DLG_TAGMANAGER_CHECKBOX_ATTACHNEWTAGTOFILE));
+
+			LPWSTR tmpFormater = ::MyLoadString(IDS_DLG_TAGMANAGER_CHECKBOX_ATTACHNEWTAGTOFILE);
+			wchar_t str[LOADSTRING_BUFFERSIZE];
+			wsprintf ( str,tmpFormater,this->_handler->TagHelper.FileCount );
+			SetDlgItemText(_hwnd, IDC_TAGMANAGER_CHECK_AttachNewTagToFiles,str);
+			Button_SetCheck(GetDlgItem(_hwnd, IDC_TAGMANAGER_CHECK_AttachNewTagToFiles),BST_CHECKED);
+
 			SetDlgItemText(_hwnd, IDC_TAGMANAGER_BU_EDIT,::MyLoadString(IDS_DLG_TAGMANAGER_BU_EDIT));
 			SetDlgItemText(_hwnd, IDC_TAGMANAGER_BU_DEL,::MyLoadString(IDS_DLG_TAGMANAGER_BU_DEL));
 			SetDlgItemText(_hwnd, IDC_TAGMANAGER_BU_ADD,::MyLoadString(IDS_DLG_TAGMANAGER_BU_ADD));
@@ -184,7 +226,9 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 
 			Button_Enable(GetDlgItem(_hwnd,IDC_TAGMANAGER_BU_ADD),false);
 
-			HWND lv = GetDlgItem(_hwnd, IDC_TAGMANAGER_LIST_TAGS);
+			HWND lv = NULL;
+			// init tag list
+			lv = GetDlgItem(_hwnd, IDC_TAGMANAGER_LIST_TAGS);
 			if( lv != NULL )
 			{
 				IImageList *imgList;
@@ -210,7 +254,25 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 				LoadTags();
 			}
 
-			LoadSelectedFiles();
+			// init file list
+			lv = GetDlgItem(_hwnd, IDC_TAGMANAGER_LIST_SelectedFiles);
+			if( lv != NULL )
+			{
+				IImageList *imgList;
+				HRESULT hr = SHGetImageList(SHIL_SMALL,IID_IImageList,(void **)&imgList);
+				ListView_SetImageList(lv,imgList,LVSIL_SMALL);
+				imgList->Release();
+
+				UINT cIdx = 0;
+				LVCOLUMN c = {0};
+				c.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_FILES_HEADER_SELECTEDITEMS);
+				c.mask = LVCF_TEXT | LVCF_MINWIDTH | LVCF_WIDTH;
+				c.cxMin = 100;
+				c.cx = 600;
+				ListView_InsertColumn(lv,cIdx++,&c);
+
+				LoadSelectedFiles();
+			}
 
 			return 0;
 		}
@@ -308,17 +370,47 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 			{
 			case LVN_GETDISPINFO:
 				{
-					plvdi = (NMLVDISPINFO*)lParam;
-					switch (plvdi->item.iSubItem)
+					switch (wParam)
 					{
-					case 0:
-						plvdi->item.pszText = _handler->TagHelper.Tags[plvdi->item.iItem].Tag;
-						break;
+					case IDC_TAGMANAGER_LIST_TAGS:
+						{
+							plvdi = (NMLVDISPINFO*)lParam;
+							switch (plvdi->item.iSubItem)
+							{
+							case 0:
+								{
+									plvdi->item.pszText = _handler->TagHelper.Tags[plvdi->item.iItem].Tag;
+									plvdi->item.iImage = 0;
+								}
+								break;
 
-					case 1:
-						_itow_s((int) _handler->TagHelper.Tags[plvdi->item.iItem].UseCount,plvdi->item.pszText,10,10);
-						break;
+							case 1:
+								_itow_s((int) _handler->TagHelper.Tags[plvdi->item.iItem].UseCount,plvdi->item.pszText,10,10);
+								break;
 
+							default:
+								break;
+							}
+							break;
+						}
+					case IDC_TAGMANAGER_LIST_SelectedFiles:
+						{
+							plvdi = (NMLVDISPINFO*)lParam;
+							switch (plvdi->item.iSubItem)
+							{
+							case 0:
+								{
+									LPWSTR fileName = _handler->TagHelper.TargetFileNames[plvdi->item.iItem];
+									auto imgIdx = GetImgIdxInList(fileName);
+									plvdi->item.pszText = fileName;
+									plvdi->item.iImage = imgIdx;
+									break;
+								}
+							default:
+								break;
+							}
+							break;
+						}
 					default:
 						break;
 					}

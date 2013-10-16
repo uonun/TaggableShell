@@ -40,5 +40,6 @@ private :
 	void LoadSelectedFiles(void);
 	void AddTag(void);
 	BOOL IsNewTagOk(_Out_ wchar_t* key,_Out_  UINT & keyLength, HWND editCtl = NULL);
+	int GetImgIdxInList(LPWSTR & pszPath);
 };
 
