@@ -55,7 +55,8 @@ using namespace std::tr2::sys;
 #define COLOR_MY_DEFAULT					COLOR_WINDOWTEXT
 #define COLOR_MY_ERROR						RGB(0xFF,0,0)
 #define COLOR_MY_WARNING					RGB(0xFF,0x80,0)
-#define COLOR_MY_NOTE						RGB(0x3C,0x3C,0x3C)
+#define COLOR_MY_NOTE						RGB(0,0,0xFF)
+#define COLOR_MY_REMARK						RGB(0x3C,0x3C,0x3C)
 #define COLOR_MY_OK							RGB(0,0x80,0)
 
 // My messages

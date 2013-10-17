@@ -63,7 +63,7 @@ HRESULT CHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserve
 		if( _hSubmenu != NULL ){
 			if( idCmd < this->TagHelper.TagCount)
 			{
-				LPWSTR formater = ::MyLoadString(IDS_COMMANDSTRING_TAG_FORMATER);
+				LPWSTR formater = ::MyLoadString(IDS_COMMANDSTRING_TAG);
 				wsprintf ( info,formater,this->TagHelper.Tags[idCmd].Tag );
 			}
 			else
@@ -167,7 +167,10 @@ HRESULT CHandler::InvokeCommand (
 				MSG msg;     
 				while(GetMessage(&msg, NULL, 0, 0))     
 				{     
-					TranslateMessage(&msg);     
+					TranslateMessage(&msg);    
+					if (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP ) {
+						SendMessage (hdlg, msg.message, msg.wParam, msg.lParam);
+					}
 					DispatchMessage(&msg);     
 				}
 			}

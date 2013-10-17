@@ -432,8 +432,7 @@ BOOL CTaghelper::IsTagExists(LPCWSTR & tag)
 	{
 		for (UINT i = 0; i < TagCount; i++)
 		{
-			// UNDONE: check if the new tag exists already.
-			if(tag == Tags[i].Tag)
+			if(wstring(tag) == wstring(Tags[i].Tag))
 			{
 				return TRUE;
 			}
