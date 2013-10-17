@@ -53,6 +53,9 @@
   <ItemGroup>
     <ResourceCompile Include="src\TaggableShellEx.Handlers.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\ReviewＮotes.txt" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7B7293B6-EDCA-4A43-A75A-25C515AB47D0}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

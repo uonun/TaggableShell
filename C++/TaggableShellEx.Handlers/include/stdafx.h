@@ -33,19 +33,18 @@ using namespace std::tr2::sys;
 #define LOG_FILENAME					L"TaggableShell.log"
 #endif
 
-#define LOADSTRING_BUFFERSIZE			1024 * 10
-#define MAXLENGTH_SQL					512					// sql sentance buffer
-#define MAXLENGTH_EACHTAG				10					// max length of each tag.
+#define LOADSTRING_BUFFERSIZE			1024 * 100
+#define MAXLENGTH_SQL					100000				// The maximum number of bytes in the text of an SQL statement is limited to SQLITE_MAX_SQL_LENGTH which defaults to 1000000. You can redefine this limit to be as large as the smaller of SQLITE_MAX_LENGTH and 1073741824
+#define MAXLENGTH_EACHTAG				100					// max length of each tag.
 #define MAXCOUNT_TAG					100
 #define MAXCOUNT_ITEM					0xFFFF				// max count of selected shell items.
 
 #define FOLDER_PROFILE					L"Profile"
 #define FOLDER_LOG						L"Logs"
 #define FILE_USERDB						L"User.db"
-#define FID_NOT_EXIST					"-1"
-#define TID_NOT_EXIST					"-1"
+#define DB_RECORD_NOT_EXIST				UINT_MAX
 
-#define WINDOWCLASS_DLG					L"#32770"		// the class name of dialog. for FindWindow/FindWindowEx
+#define WINDOWCLASS_DLG					L"#32770"			// the class name of dialog. for FindWindow/FindWindowEx
 
 // CMD-IDs for ContextMenu, must be consecutive from 0x1
 #define CMD_NEWTAG						0x1

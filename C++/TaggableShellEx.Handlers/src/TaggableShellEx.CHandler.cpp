@@ -81,7 +81,9 @@ IFACEMETHODIMP_(ULONG) CHandler::Release()
 HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder, 
 							 IDataObject *pDataObj, 
 							 HKEY hRegKey) 
-{ 
+{
+	HRESULT hr = S_FALSE;
+
 	// If Initialize has already been called, release the old PIDL
 	if(m_pIDFolder!=NULL){
 		ILFree(m_pIDFolder);
@@ -108,15 +110,6 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 		m_pDataObj = pDataObj; 
 		pDataObj->AddRef(); 
 
-		//// load tags
-		//HRESULT	hr = SHGetItemFromDataObject(m_pDataObj,DOGIF_TRAVERSE_LINK,IID_PPV_ARGS(&_targetFile));
-		//// HACK: Only 1 files
-		//const UINT fileCount = 1;
-		//IShellItem* items[fileCount];
-		//items[0] = _targetFile;
-		//this->TagHelper.SetCurrentFiles(items,fileCount);
-		//this->TagHelper.LoadTags();
-
 		STGMEDIUM   medium;
 		FORMATETC   fe = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 
@@ -133,13 +126,18 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 					DragQueryFile((HDROP)medium.hGlobal, i, m_szFiles[i], MAX_PATH * sizeof(TCHAR));
 				}
 
-				this->TagHelper.SetCurrentFiles(m_szFiles,FileCount);
-				this->TagHelper.LoadTags();
+				if ( this->TagHelper.OpenDb() )
+				{
+					this->TagHelper.SetCurrentFiles(m_szFiles,FileCount);
+					this->TagHelper.LoadTags();
+
+					hr = S_OK;
+				}
 			}
 
 			ReleaseStgMedium(&medium);
 		}
 	}
 
-	return S_OK; 
+	return hr; 
 }

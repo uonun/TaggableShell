@@ -1,11 +1,26 @@
 #include "../include/TaggableShellEx.Taghelper.h"
 
+/*
+1. delete records from ASSO_FILE_TAG where file,tag does not exist any more.
+2. delete records from FILE which is associated with no any tag.
+3. update USECOUNT of tags.
+*/
+const LPSTR sSQL_CLEARNUP 
+	= "\
+	  DELETE FROM [ASSO_FILE_TAG] WHERE [TAGID] NOT IN(SELECT [ID] FROM [TAGS]) OR [FILEID] NOT IN (SELECT [ID] FROM [FILES]);\r\n\
+	  DELETE FROM [FILES] WHERE [ID] NOT IN (SELECT [FILEID] FROM [ASSO_FILE_TAG]);\r\n\
+	  UPDATE [TAGS] SET [USECOUNT]=(SELECT COUNT(*) FROM [ASSO_FILE_TAG] A WHERE A.[TAGID]=[TAGS].[ID]);\
+	  ";
+
 CTaghelper::CTaghelper(void): 
 	_cached(false)
 	,TagCount(0),FileCount(0)
-	,_db(0)
+	,_db(NULL)
 {
 	::PrintLog(L"CTaghelper.ctor");
+
+	for each (LPWSTR var in TargetFileNames) { var = NULL; }
+	for each (LPSTR var in _targetFileNamesInSQL) { var = NULL; }
 
 	::WStr2Str(g_UserDb,_dbFile);
 }
@@ -29,7 +44,27 @@ CTaghelper::~CTaghelper(void)
 	}
 
 	sqlite3_close(_db);  
-	_db = 0; 
+	_db = NULL; 
+}
+
+BOOL CTaghelper::OpenDb()
+{
+	if ( NULL == _db ){
+		_ASSERT_EXPR(_dbFile != NULL,L"_dbFile can not be NULL.");
+		int ret = sqlite3_open_v2(_dbFile, &_db,SQLITE_OPEN_READWRITE,NULL);  
+		if ( ret == SQLITE_OK )  
+		{
+			::PrintLog( L"Successfully connected to database.");  
+		}
+		else
+		{  
+			::PrintLog("Could not open database(0x%x): %s",ret, sqlite3_errmsg(_db));
+			sqlite3_close(_db);  
+			_db = NULL; 
+		}
+	}
+
+	return NULL != _db;
 }
 
 int _callback_exec_load_tags(void * tagHelper,int argc, char ** argv, char ** aszColName)  
@@ -99,8 +134,7 @@ void CTaghelper::LoadTags(bool ignoreCache)
 		TagCount = 0;
 
 		char * sSQLFormater = NULL;
-		char sSQL[MAXLENGTH_SQL];
-		memset(sSQL,0,MAXLENGTH_SQL * sizeof(char));
+		char sSQL[MAXLENGTH_SQL] = {0};
 
 		if( FileCount == 1)
 		{
@@ -117,89 +151,75 @@ void CTaghelper::LoadTags(bool ignoreCache)
 
 			sprintf ( sSQL,sSQLFormater,"0" );
 		}
+		
+		// attach the SQL for clean up.
+		strcat(sSQL,";\r\n");
+		strcat(sSQL,sSQL_CLEARNUP);
 
 		char * pErrMsg = 0;
 		int ret = 0;
-		ret = sqlite3_open(_dbFile, &_db);  
+
+		ANSIToUTF8(sSQL);
+		::PrintLog("LoadTags: %s",sSQL);
+		ret = sqlite3_exec( _db,sSQL, _callback_exec_load_tags, this, &pErrMsg );  
 		if ( ret != SQLITE_OK )  
 		{  
-			::PrintLog("Could not open database: %s", sqlite3_errmsg(_db));  
+			::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+			sqlite3_free(pErrMsg);  
 		}
-		else
-		{
-			::PrintLog( L"Successfully connected to database.");  
-
-			ANSIToUTF8(sSQL);
-			::PrintLog("LoadTags: %s",sSQL);
-			ret = sqlite3_exec( _db,sSQL, _callback_exec_load_tags, this, &pErrMsg );  
-
-			if ( ret != SQLITE_OK )  
-			{  
-				::PrintLog("SQL error: %s\n", pErrMsg);  
-				sqlite3_free(pErrMsg);  
-			}
-
-			sqlite3_close(_db);  
-			_db = 0; 
-			_cached = true;
-		}
+		_cached = true;
 	}
 }
 
-HRESULT CTaghelper::SetTag(int tagIdx)
+HRESULT CTaghelper::SetTagByRecordId(UINT tagIdInDb)
 {
+	_ASSERT_EXPR( tagIdInDb > 0,L"tagIdInDb must be greater than 0.");
+
 	HRESULT hr = S_FALSE;
-	char** pazResult = 0;
-	int pnRow = 0;
-	int pnColumn = 0;
-	char * pzErrmsg = 0;
-	int ret = 0;  
 
-	ret = sqlite3_open(_dbFile, &_db);  
-	if ( ret != SQLITE_OK )  
-	{  
-		::PrintLog("Could not open database: %s", sqlite3_errmsg(_db));  
-	}
-	else
-	{	
-		auto &currentTag = Tags[tagIdx];
-
-		char * TID = NULL;
-		TID = GetTagID(currentTag.Tag);
-		if( string(TID)==string(TID_NOT_EXIST) ){
-			TID = InsertTag(currentTag.Tag,1);
+	TAG4FILE * currentTag = NULL;
+	for (UINT i = 0; i < TagCount; i++)
+	{
+		if( Tags[i].TagID == tagIdInDb )
+		{
+			currentTag = &Tags[i];
+			break;
 		}
+	}
 
-		_ASSERT_EXPR(string(TID)!=string(TID_NOT_EXIST),L"TID is not available!");
+	// found the tag
+	if ( currentTag != NULL ){
 
-		char * sSQLFormater = NULL;
-		char sSQL[MAXLENGTH_SQL];
+		char * pErrMsg = 0;
+		int ret = 0;  
+
+		UINT TID = tagIdInDb;
+
+		char sSQLFormater[MAXLENGTH_SQL] = {0};
+		char sSQL[MAXLENGTH_SQL] = {0};
 
 		if( FileCount == 1)
 		{
-			char * FID = NULL;
-			FID = GetFileID(_targetFileNamesInSQL[0]);
-
-			BOOL isAsso = currentTag.bAsso;
-
+			BOOL isAsso = currentTag->bAsso;
+			UINT FID = GetFileID(_targetFileNamesInSQL[0]);
 			if(!isAsso)
 			{
-				sSQLFormater = "INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%s','%s');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%s";
-				if( string(FID)==string(FID_NOT_EXIST) ){
+				strcat(sSQLFormater,"INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%d','%d');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%d;");
+				if( FID == DB_RECORD_NOT_EXIST ){
 					FID = InsertFile(TargetFileNames[0]);
 				}
 
-				_ASSERT_EXPR(string(FID)!=string(FID_NOT_EXIST),L"FID is not available!");
+				_ASSERT_EXPR(FID > 0,L"FID is not available!");
 
 			}else{
 
-				sSQLFormater = "DELETE FROM [ASSO_FILE_TAG] WHERE FILEID='%s' AND TAGID='%s';UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]-1 WHERE [ID]=%s";
+				strcat(sSQLFormater,"DELETE FROM [ASSO_FILE_TAG] WHERE FILEID='%d' AND TAGID='%d';UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]-1 WHERE [ID]=%d;");
 
 				// check any other tag associated with current file.
 				BOOL anyAsso = false;
 				for (unsigned int i = 0; i < TagCount; i++)
 				{
-					if(i!=tagIdx && Tags[i].bAsso)
+					if( Tags[i].TagID != tagIdInDb && Tags[i].bAsso)
 					{
 						anyAsso = true;
 						break;
@@ -209,8 +229,8 @@ HRESULT CTaghelper::SetTag(int tagIdx)
 				// delete the record for current file in the table [FILES]
 				if(!anyAsso){
 					char sSQL_tmp[MAXLENGTH_SQL];
-					sprintf ( sSQL_tmp,"%s;DELETE FROM [FILES] WHERE ID='%s'",sSQLFormater,FID );
-					sSQLFormater = sSQL_tmp;
+					sprintf ( sSQL_tmp,"DELETE FROM [FILES] WHERE ID='%d';",FID );
+					strcat(sSQLFormater,sSQL_tmp);
 					::PrintLog("No any tag associated with current file, about to delete from table [FILE]: ID = %d, %s",FID,TargetFileNames[0]);
 				}
 			}
@@ -218,43 +238,62 @@ HRESULT CTaghelper::SetTag(int tagIdx)
 			sprintf ( sSQL,sSQLFormater,FID,TID,TID );
 			ANSIToUTF8(sSQL);
 			::PrintLog("SetTag: %s",sSQL);
-			sqlite3_exec( _db, sSQL, NULL, 0, 0 );
+			ret = sqlite3_exec( _db, sSQL, NULL, 0, &pErrMsg );
+			if( ret != SQLITE_OK)
+			{
+				::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+				sqlite3_free(pErrMsg);  
+			}
 		}
 		else if( FileCount > 1)
 		{
-			char * FID = NULL;
+			UINT FID = DB_RECORD_NOT_EXIST;
 			for (UINT i = 0; i < FileCount; i++)
 			{
-				if ( !IsAsso(TargetFileNames[i],currentTag.Tag) )
+				FID = GetFileID(_targetFileNamesInSQL[i]);
+				if( FID == DB_RECORD_NOT_EXIST ){
+					FID = InsertFile(TargetFileNames[i]);
+				}
+
+				_ASSERT_EXPR(FID > 0,L"FID is not available!");
+
+				if ( !IsAsso(TargetFileNames[i],currentTag->Tag) )
 				{
-					FID = GetFileID(_targetFileNamesInSQL[i]);
-					if( string(FID)==string(FID_NOT_EXIST) ){
-						FID = InsertFile(TargetFileNames[i]);
-					}
-
-					_ASSERT_EXPR( string(FID)!=string(FID_NOT_EXIST) ,L"FID is not available!");
-
-					sSQLFormater = "INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%s','%s');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%s";
+					strcat(sSQLFormater,"INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%d','%d');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%d;");
 					sprintf ( sSQL,sSQLFormater,FID,TID,TID );
 					ANSIToUTF8(sSQL);
 					::PrintLog("SetTag: %s",sSQL);
-					sqlite3_exec( _db, sSQL, NULL, 0, 0 );
+					ret = sqlite3_exec( _db, sSQL, NULL, 0, &pErrMsg );
+					if( ret != SQLITE_OK)
+					{
+						::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+						sqlite3_free(pErrMsg);  
+					}
 				}
 			}
 		}
+
+		hr = S_OK;
+
+	}else{
+		// can not find the tag
+		hr = S_FALSE;
 	}
 
-	sqlite3_free_table(pazResult);
-	sqlite3_close(_db);  
-	_db = 0; 
 	return hr;
 }
 
-// get file id in _db, return FID_NOT_EXIST if not exists.
-// the parameter fileNameInSQL can not contains "'"!
-char * CTaghelper::GetFileID(LPSTR fileNameInSQL)
+HRESULT CTaghelper::SetTagByIdx(UINT tagIdx)
 {
-	char * FID = FID_NOT_EXIST;
+	_ASSERT_EXPR( tagIdx < TagCount,L"tagIdx must be less than TagCount.");
+	return SetTagByRecordId(Tags[tagIdx].TagID);
+}
+
+// get file id in _db, return DB_RECORD_NOT_EXIST if fail.
+// the parameter fileNameInSQL can not contains "'"!
+UINT CTaghelper::GetFileID(LPSTR fileNameInSQL)
+{
+	UINT FID = DB_RECORD_NOT_EXIST;
 
 	char * sSQLFormater = NULL;
 	char sSQL[MAXLENGTH_SQL];
@@ -263,36 +302,44 @@ char * CTaghelper::GetFileID(LPSTR fileNameInSQL)
 	sSQLFormater = "SELECT [ID] FROM [FILES] WHERE [FULLPATH]='%s'";
 	sprintf ( sSQL,sSQLFormater,fileNameInSQL );
 
-	char** pazResult = 0;
-	int pnRow = 0;
-	int pnColumn = 0;
-	char * pzErrmsg = 0;
-	int ret = 0;  
-
 	// utf8 used in database
 	ANSIToUTF8(sSQL);
 	::PrintLog("GetFileID: %s",sSQL);
-	ret = sqlite3_get_table(_db,sSQL,&pazResult,&pnRow,&pnColumn,&pzErrmsg);
+
+	char** pazResult = 0;
+	int pnRow = 0;
+	int pnColumn = 0;
+	char * pErrMsg = 0;
+	int ret = 0;  
+	ret = sqlite3_get_table(_db,sSQL,&pazResult,&pnRow,&pnColumn,&pErrMsg);
 
 	if ( ret != SQLITE_OK )  
 	{
-		sqlite3_free(pzErrmsg);  
+		::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+		sqlite3_free(pErrMsg);  
 	}
 	else
 	{
 		// record exists
 		if(pnRow > 0 && pnColumn > 0)
 		{
-			FID = pazResult[1];
-			::PrintLog("Got file id: %s",FID);
+			int id = atoi(pazResult[1]);
+			if( id > 0 ) 
+				FID = id;
+			::PrintLog("Got file id: %d",FID);
+		}else{
+			::PrintLog("Fail to get file id.");
 		}
+
+		sqlite3_free_table(pazResult);
 	}
+
 	return FID;
 }
 
-char * CTaghelper::GetTagID(LPWSTR & tag)
+UINT CTaghelper::GetTagID(LPWSTR & tag)
 {
-	char * TID = TID_NOT_EXIST;
+	UINT TID = DB_RECORD_NOT_EXIST;
 
 	char * sSQLFormater = NULL;
 	char sSQL[MAXLENGTH_SQL];
@@ -306,33 +353,39 @@ char * CTaghelper::GetTagID(LPWSTR & tag)
 	sprintf ( sSQL,sSQLFormater,tagInSQL );
 	delete tagInSQL;
 
-	char** pazResult = 0;
-	int pnRow = 0;
-	int pnColumn = 0;
-	char * pzErrmsg = 0;
-	int ret = 0;  
-
 	// utf8 used in database
 	ANSIToUTF8(sSQL);
 	::PrintLog("GetTagID: %s",sSQL);
-	ret = sqlite3_get_table(_db,sSQL,&pazResult,&pnRow,&pnColumn,&pzErrmsg);
+
+	char** pazResult = 0;
+	int pnRow = 0;
+	int pnColumn = 0;
+	char * pErrMsg = 0;
+	int ret = 0;  
+	ret = sqlite3_get_table(_db,sSQL,&pazResult,&pnRow,&pnColumn,&pErrMsg);
 	if ( ret != SQLITE_OK )  
 	{
-		sqlite3_free(pzErrmsg);  
+		::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+		sqlite3_free(pErrMsg);  
 	}
 	else
 	{
 		if(pnRow > 0 && pnColumn > 0)
 		{
-			TID = pazResult[1];
-			::PrintLog("Got tag id: %s",TID);
+			int id = atoi(pazResult[1]);
+			if( id > 0 ) 
+				TID = id;
+			::PrintLog("Got tag id: %d",TID);
+		}else{
+			::PrintLog("Fail to get tag id.");
 		}
+		sqlite3_free_table(pazResult);
 	}
 
 	return TID;
 }
 
-char * CTaghelper::InsertFile(LPWSTR & targetFile)
+UINT CTaghelper::InsertFile(LPWSTR & targetFile)
 {
 	_ASSERT_EXPR(NULL != targetFile,"_targetFile could not be NULL");
 
@@ -371,58 +424,108 @@ char * CTaghelper::InsertFile(LPWSTR & targetFile)
 
 	ANSIToUTF8(sSQL);
 
+	UINT id;
+	char* pErrMsg = 0;
+	int ret = 0;  
 	::PrintLog("InsertFile: %s",sSQL);
-	sqlite3_exec( _db, sSQL, NULL, 0, 0 );
+	ret = sqlite3_exec( _db, sSQL, NULL, 0, &pErrMsg );
+	if ( ret != SQLITE_OK )  
+	{
+		::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+		sqlite3_free(pErrMsg);  
+	}
+	else
+	{
+		id = GetFileID(targetFileInSQL);	
+	}
 
-	char* id = GetFileID(targetFileInSQL);
-	
 	delete targetFileInSQL;
 	targetFileInSQL = NULL;
 
 	return id;
 }
 
-char * CTaghelper::InsertTag(LPWSTR & newTag, const int useCount)
+UINT CTaghelper::InsertTag(LPWSTR & newTag, const int useCount)
 {
+	char * sSQLFormater = NULL;
+	char sSQL[MAXLENGTH_SQL] = {0};
+
+	sSQLFormater = "INSERT INTO [TAGS] (TAGNAME,USECOUNT,DISPLAY_ORDER) values ('%s','%d','0');";
+	LPSTR tagInSQL = new char[MAXLENGTH_EACHTAG];
+	::UnicodeToANSI(newTag,tagInSQL);
+	::Replace(tagInSQL,"'","''");
+	sprintf ( sSQL,sSQLFormater,tagInSQL,useCount );
+	delete tagInSQL;
+
+	ANSIToUTF8(sSQL);
+
+	UINT id=0;
 	char * pErrMsg = 0;
 	int ret = 0;
-	ret = sqlite3_open(_dbFile, &_db);  
+	::PrintLog("InsertTag: %s",sSQL);
+	ret = sqlite3_exec( _db,sSQL, NULL, NULL, &pErrMsg );  
 	if ( ret != SQLITE_OK )  
 	{  
-		::PrintLog("Could not open database: %s", sqlite3_errmsg(_db));  
+		::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+		sqlite3_free(pErrMsg);  
 	}
 	else
-	{	
-		char * sSQLFormater = NULL;
-		char sSQL[MAXLENGTH_SQL];
+	{
+		// reload tags.
+		LoadTags(true);
 
-		sSQLFormater = "INSERT INTO [TAGS] (TAGNAME,USECOUNT,DISPLAY_ORDER) values ('%s','%d','0');";
-		LPSTR tagInSQL = new char[MAXLENGTH_SQL];
-		::UnicodeToANSI(newTag,tagInSQL);
-		::Replace(tagInSQL,"'","''");
-		sprintf ( sSQL,sSQLFormater,tagInSQL,useCount );
-		delete tagInSQL;
+		id = GetTagID(newTag);
+	}
 
-		ANSIToUTF8(sSQL);
+	return id;
+}
 
-		::PrintLog("InsertTag: %s",sSQL);
-		ret = sqlite3_exec( _db,sSQL, NULL, NULL, &pErrMsg );  
-		if ( ret == SQLITE_OK )  
+void CTaghelper::DeleteTags(wchar_t** tags, const int count)
+{
+	_ASSERT_EXPR(tags != NULL, L"tags could not be NULL");
+	_ASSERT_EXPR(count > 0,L"count must be greater than 0.");
+
+	LPWSTR t = NULL;
+	char tagInSQL[MAXLENGTH_EACHTAG] = {0};
+	char sSQL[MAXLENGTH_SQL] = {0};
+	strcat(sSQL,"DELETE FROM [TAGS] WHERE 1=0 ");
+	for (int i = 0; i < count; i++)
+	{
+		t = tags[i];
+		if( t != NULL )
 		{
-			// reload tags.
-			LoadTags(true);
-		}
-		else
-		{  
-			::PrintLog("SQL error: %s\n", pErrMsg);  
-			sqlite3_free(pErrMsg);  
+			::UnicodeToANSI(t,tagInSQL);
+			::Replace(tagInSQL,"'","''");
+			strcat(sSQL," OR [TAGNAME]='");
+			strcat(sSQL,tagInSQL);
+			strcat(sSQL,"' ");
 		}
 	}
-	return GetTagID(newTag);
+
+	// attach the SQL for clean up.
+	strcat(sSQL,";\r\n");
+	strcat(sSQL,sSQL_CLEARNUP);
+
+	char * pErrMsg = 0;
+	int ret = 0;
+	ANSIToUTF8(sSQL);
+	::PrintLog("Delete Tags: %s",sSQL);
+	ret = sqlite3_exec( _db,sSQL, NULL, NULL, &pErrMsg );  
+	if ( ret != SQLITE_OK )  
+	{  
+		::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+		sqlite3_free(pErrMsg);			
+	}
+	else
+	{
+		// reload tags.
+		LoadTags(true);
+	}
 }
 
 BOOL CTaghelper::IsAsso(LPCWSTR file, LPCWSTR tag)
 {
+	// TODO: check is associated already.
 	return FALSE;
 }
 

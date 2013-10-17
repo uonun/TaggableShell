@@ -41,7 +41,9 @@ private :
 	HWND _hEditCtlNewTag;
 	HWND _hCheckAttachToFiles;
 	HWND _hBuAdd;
-
+	HWND _hBuEdit;
+	HWND _hBuDel;
+	
 	void InitText();
 	void InitTagList(IImageList *imgList);
 	void InitFileList(IImageList *imgList);
@@ -51,8 +53,11 @@ private :
 	
 	void LoadTags(void);
 	void LoadSelectedFiles(void);
-	void AddTag(void);
+
 	BOOL IsNewTagOk(_Out_ wchar_t* key,_Out_  UINT & keyLength);
+	void AddTag();
+	void EditTag();
+	void DelTags();
 
 	void OnNewTagChanged(WPARAM wParam, LPARAM lParam);
 

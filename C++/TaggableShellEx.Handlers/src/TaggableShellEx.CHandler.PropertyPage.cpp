@@ -78,7 +78,7 @@ STDMETHODIMP CHandler::AddPages(LPFNADDPROPSHEETPAGE lpfnAddPage, LPARAM lParam)
 	psp.hInstance   = ::g_hInst;
 	psp.pszTemplate = MAKEINTRESOURCE(IDD_PAGEDLG);
 	psp.pszIcon     = 0;
-	psp.pszTitle    = MAKEINTRESOURCE(IDS_PROPERTYPAGE_CAPTION);
+	psp.pszTitle    = MAKEINTRESOURCE(IDS_DLG_PROPERTYPAGE_CAPTION);
 	psp.pfnDlgProc  = PageDlgProc;
 	psp.lParam      = (LPARAM) this;
 	psp.pfnCallback = PageCallbackProc;

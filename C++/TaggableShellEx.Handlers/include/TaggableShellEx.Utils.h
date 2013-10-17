@@ -22,9 +22,9 @@ string& replace_all(string& str,const string& old_value,const string& new_value)
 string& replace_all_distinct(string& str,const string& old_value,const string& new_value);
 
 wchar_t * ANSIToUnicode( const char* str, wchar_t * & result );
-char * UnicodeToANSI( const wchar_t* str, char * & result );
+char * UnicodeToANSI( const wchar_t* str, char * result );
 wchar_t * UTF8ToUnicode( const char* str, wchar_t * & result );
-char * UnicodeToUTF8( const wchar_t* str, char * & result );
+char * UnicodeToUTF8( const wchar_t* str, char * result );
 char* w2m(const wchar_t* wcs, char * & result);
 wchar_t* m2w(const char* mbs, wchar_t * & result);
 char* ANSIToUTF8(char* str);

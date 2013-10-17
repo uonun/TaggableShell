@@ -7,7 +7,7 @@ FormTagManager::FormTagManager(void):
 	_cRef(1)
 	,_handler(0)
 	,_hwnd(0)
-	,_hErrorInfo(0),_hListTags(0),_hListFiles(0),_hEditCtlNewTag(0),_hCheckAttachToFiles(0),_hBuAdd(0)
+	,_hErrorInfo(0),_hListTags(0),_hListFiles(0),_hEditCtlNewTag(0),_hCheckAttachToFiles(0),_hBuAdd(0),_hBuEdit(0),_hBuDel(0)
 	,_msgColor(COLOR_MY_DEFAULT)
 {
 	::PrintLog(L"FormTagManager.ctor.");
@@ -81,7 +81,7 @@ void FormTagManager::LoadTags(void)
 			item.stateMask = 0;
 			item.iSubItem  = 0;
 			item.state     = 0;
-			item.iImage = I_IMAGECALLBACK;
+			item.iImage = I_IMAGECALLBACK;			
 			ListView_InsertItem(_hListTags,&item);
 		}
 	}
@@ -127,20 +127,117 @@ void FormTagManager::AddTag(void)
 		::PrintLog(L"Got new tag =[ %s ], adding to database.", key);
 		BOOL isAttchWithFilesChecked = Button_GetCheck(_hCheckAttachToFiles) == BST_CHECKED;
 		int count = isAttchWithFilesChecked ? _handler->TagHelper.FileCount : 0;
-		auto TID = _handler->TagHelper.InsertTag(key,count);
-		if(TID==TID_NOT_EXIST)
+		UINT TID = _handler->TagHelper.InsertTag(key,count);
+		if( TID != DB_RECORD_NOT_EXIST )
+		{
+			if( isAttchWithFilesChecked )
+			{
+				_handler->TagHelper.SetTagByRecordId(TID);
+			}
+			LoadTags();
+
+			ShowMsg(L"添加成功",COLOR_MY_OK);
+		}
+		else
 		{
 			// TODO: move the magic string to resource file.
 			ShowMsg(L"添加失败",COLOR_MY_ERROR);
 		}
-		else
-		{
-			LoadTags();
-			ShowMsg(L"添加成功",COLOR_MY_OK);
-		}
 	}else{
 		::PrintLog(L"Got new tag =[ %s ], but it is not available.", key);
 		ShowMsg(::MyLoadString(IDS_MSG_TAG_UNAVAILABLE),COLOR_MY_ERROR);
+	}
+}
+
+void FormTagManager::EditTag(void)
+{
+	::PrintLog(L"FormTagManager.EditTag.");
+}
+
+void FormTagManager::DelTags(void)
+{
+	::PrintLog(L"FormTagManager.DelTags.");
+
+	LPWSTR selectedTags[MAXCOUNT_TAG] = {0};
+
+	int count = 0;
+	int searchFrom = -1;
+	int selectedIdx = -1;
+
+	// find first
+	selectedIdx = ListView_GetNextItem(_hListTags,searchFrom,LVIS_SELECTED);
+	while (selectedIdx > -1){
+		selectedTags[count] = new wchar_t[MAXLENGTH_EACHTAG];
+		memset(selectedTags[count],0,MAXLENGTH_EACHTAG * sizeof(wchar_t));
+
+		ListView_GetItemText(_hListTags,selectedIdx,0,selectedTags[count],MAXLENGTH_EACHTAG);
+
+		searchFrom = selectedIdx;
+		count++;
+
+		// find next
+		selectedIdx = ListView_GetNextItem(_hListTags,searchFrom,LVIS_SELECTED);
+	}
+
+	try{
+		if ( NULL != selectedTags && count > 0)
+		{
+			wchar_t msg[LOADSTRING_BUFFERSIZE];
+			const int maxShown = 20;
+			const UINT len = (MAXCOUNT_TAG + 3) * MAXLENGTH_EACHTAG;	// 3 for \0\r\n.
+			wchar_t tmp[len];
+			memset(tmp,0,len * sizeof(tmp[0]));
+			for (int i = 0; i < count && i < maxShown; i++)
+			{
+				StrCat(tmp,selectedTags[i]);
+				if(i < count -1 )
+					StrCat(tmp,L"\r\n");
+			}
+
+			if( maxShown < count ){
+				wsprintf(msg,::MyLoadString(IDS_MSG_MORE_N_HIDDEN),count-maxShown);
+				StrCat(tmp,L"\r\n");
+				StrCat(tmp,msg);
+			}
+
+			wsprintf(msg,::MyLoadString(IDS_MSG_CONFRIM_DEL_TAG),tmp);
+			int result = MessageBox(_hwnd,msg,::MyLoadString(IDS_MSGBOX_CAPTION_WARNING),MB_YESNO|MB_ICONWARNING|MB_DEFBUTTON1);
+			if( IDYES == result )
+			{
+				this->_handler->TagHelper.DeleteTags((wchar_t**)selectedTags,count);
+				LoadTags();
+			}
+			else
+			{
+				MessageBox(_hwnd,L"CANCEL",L"Warning",MB_OK);
+			}
+		}
+		else
+		{
+			// should not be occured.
+			::PrintLog(L"Selected none while deleting. Should not be occured here.");
+		}
+
+		for (int i = 0; i < count; i++)
+		{
+			if( NULL != selectedTags[i])
+			{
+				delete [] selectedTags[i];
+				selectedTags[i] = NULL;
+			}
+		}
+	}
+	catch(int e)
+	{
+
+		for (int i = 0; i < count; i++)
+		{
+			if( NULL != selectedTags[i])
+			{
+				delete [] selectedTags[i];
+				selectedTags[i] = NULL;
+			}
+		}
 	}
 }
 
@@ -311,6 +408,10 @@ void FormTagManager::WM_NOTIFY_LIST_Tags(WPARAM & wParam, LPARAM & lParam)
 			break;
 		}
 	}
+
+	UINT count = ListView_GetSelectedCount(_hListTags);
+	Button_Enable(_hBuEdit,count > 0);
+	Button_Enable(_hBuDel,count > 0);
 }
 
 void FormTagManager::WM_NOTIFY_LIST_Files(WPARAM & wParam, LPARAM & lParam)
@@ -356,6 +457,8 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 			_hEditCtlNewTag = GetDlgItem(_hwnd,IDC_TAGMANAGER_EDIT_TagWord);
 			_hCheckAttachToFiles = GetDlgItem(_hwnd, IDC_TAGMANAGER_CHECK_AttachNewTagToFiles);
 			_hBuAdd = GetDlgItem(_hwnd,IDC_TAGMANAGER_BU_ADD);
+			_hBuEdit = GetDlgItem(_hwnd,IDC_TAGMANAGER_BU_EDIT);
+			_hBuDel = GetDlgItem(_hwnd,IDC_TAGMANAGER_BU_DEL);
 
 			InitText();
 
@@ -423,7 +526,17 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 		{
 			::PrintLog(L"Message: WM_COMMAND");
 			switch(LOWORD(wParam))     
-			{     
+			{    
+			case IDC_TAGMANAGER_BU_DEL:
+				{
+					DelTags();
+					break;
+				}
+			case IDC_TAGMANAGER_BU_EDIT:
+				{
+					EditTag();
+					break;
+				}
 			case IDC_TAGMANAGER_BU_ADD:
 				{
 					AddTag();

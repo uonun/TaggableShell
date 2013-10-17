@@ -11,7 +11,7 @@ using namespace log4cpp;
 
 wchar_t * MyLoadString(__in UINT uID){
 	const UINT len = LOADSTRING_BUFFERSIZE * sizeof(wchar_t);
-	static wchar_t buffer[len];
+	wchar_t buffer[len];
 	memset(buffer,0,len);
 	int n = LoadString(::g_hInst,uID,buffer,len);
 	return buffer;
@@ -152,7 +152,7 @@ wchar_t * ANSIToUnicode(const char* str, wchar_t* & result )
 	return result;
 }
 
-char * UnicodeToANSI( const wchar_t* str, char* & result )
+char * UnicodeToANSI( const wchar_t* str, char* result )
 {
 	_ASSERT_EXPR(NULL!=result,L"the parameter \"result\" does not initialized!");
 
@@ -174,7 +174,7 @@ wchar_t * UTF8ToUnicode( const char* str , wchar_t* & result )
 	return result;
 }
 
-char * UnicodeToUTF8( const wchar_t* str , char* & result )
+char * UnicodeToUTF8( const wchar_t* str , char* result )
 {
 	_ASSERT_EXPR(NULL!=result,L"the parameter \"result\" does not initialized!");
 

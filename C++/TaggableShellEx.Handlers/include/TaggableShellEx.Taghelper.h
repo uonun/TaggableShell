@@ -23,9 +23,15 @@ public:
 	CTaghelper(void);
 	virtual ~CTaghelper(void);
 
+	BOOL OpenDb();
+
 	void SetCurrentFiles(LPWSTR* ppv,const int count);
 	void LoadTags(bool ignoreCache = false);
-	HRESULT SetTag(int tagIdx);
+
+	// Bind/Unbind tag to files by index of tag in the array of Tags.
+	HRESULT SetTagByIdx(UINT tagIdx);
+	// Bind/Unbind tag to files by record ID in database.
+	HRESULT SetTagByRecordId(UINT tagIdInDb);
 
 	LPWSTR TargetFileNames[MAXCOUNT_ITEM];			// the file full path of target item.
 	UINT FileCount;
@@ -34,15 +40,18 @@ public:
 
 	BOOL IsAsso(LPCWSTR file, LPCWSTR tag);
 	BOOL IsTagExists(LPCWSTR & tag);
-	char * GetFileID(LPSTR fileNameInSQL);
-	char * GetTagID(LPWSTR & tag);
-	char * InsertFile(LPWSTR & targetFile);
-	char * InsertTag(LPWSTR & newTag,const int useCount);
+	
+	UINT GetFileID(LPSTR fileNameInSQL);				// return DB_RECORD_NOT_EXIST if fail
+	UINT GetTagID(LPWSTR & tag);						// return DB_RECORD_NOT_EXIST if fail
+	UINT InsertFile(LPWSTR & targetFile);				// return DB_RECORD_NOT_EXIST if fail
+	UINT InsertTag(LPWSTR & newTag,const int useCount);	// return DB_RECORD_NOT_EXIST if fail
+
+	void DeleteTags(wchar_t** tags, const int count);
 
 private:
 	bool _cached;									// does tags loaded from database cached.
 	LPSTR _targetFileNamesInSQL[MAXCOUNT_ITEM];		// the file full path of target item with "'" replaced to "''" for SQL.
-	
+
 	sqlite3 * _db;
 	LPSTR _dbFile;
 
