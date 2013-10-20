@@ -11,18 +11,24 @@ FormTagManager::FormTagManager(void):
 	,_msgColor(COLOR_MY_DEFAULT)
 {
 	::PrintLog(L"FormTagManager.ctor.");
+
+	AddRef();
 }
 
 
 FormTagManager::~FormTagManager(void)
 {
 	::PrintLog(L"FormTagManager.~ctor.");
+
+	Release();
 }
 
 // to keep the instance after the Form opend.
 // this method must be called after the assignment of this->_handler, to make sure this->_handler.AddRef() be called.
 IFACEMETHODIMP_(ULONG) FormTagManager::AddRef()
 {
+	::PrintLog(L"FormTagManager.AddRef.");
+
 	if(this->_handler != NULL){
 		this->_handler->AddRef();
 	}
@@ -32,23 +38,34 @@ IFACEMETHODIMP_(ULONG) FormTagManager::AddRef()
 
 IFACEMETHODIMP_(ULONG) FormTagManager::Release()
 {
-	if(this->_handler != NULL){
-		try
-		{
-			auto x = this->_handler->Release();
-			if( x == 0 ){
+	::PrintLog(L"FormTagManager.Release.");
+	long cRef = 0;
+
+	cRef = InterlockedDecrement(&_cRef);
+	if (cRef == 0)
+	{
+		if(this->_handler != NULL){
+			try
+			{
+				auto x = this->_handler->Release();
+				if( x == 0 ){
+					this->_handler = NULL;
+				}
+			}
+			catch(int e)
+			{
 				this->_handler = NULL;
 			}
 		}
-		catch(int e)
-		{
-			this->_handler = NULL;
-		}
-	}
 
-	long cRef = InterlockedDecrement(&_cRef);
-	if (cRef == 0)
-	{
+		if( p_instance_ != NULL )
+		{
+			delete p_instance_;
+			p_instance_ = 0;
+		}
+
+		hbrBkgnd = NULL;
+
 		delete this;
 	}
 
@@ -70,6 +87,10 @@ void FormTagManager::LoadTags(void)
 	ListView_DeleteAllItems(_hListTags);
 
 	auto &_tagHelper = _handler->TagHelper;
+
+	// reload tags.
+	_tagHelper.LoadTags(true);
+
 	if ( _tagHelper.TagCount > 0 )
 	{
 		LVITEM item = {0};
@@ -127,13 +148,14 @@ void FormTagManager::AddTag(void)
 		::PrintLog(L"Got new tag =[ %s ], adding to database.", key);
 		BOOL isAttchWithFilesChecked = Button_GetCheck(_hCheckAttachToFiles) == BST_CHECKED;
 		int count = isAttchWithFilesChecked ? _handler->TagHelper.FileCount : 0;
-		UINT TID = _handler->TagHelper.InsertTag(key,count);
+		UINT TID = _handler->TagHelper.InsertTag(key,count); // not need to reload tags here, as they will be reloaded after be associated with files.
 		if( TID != DB_RECORD_NOT_EXIST )
 		{
 			if( isAttchWithFilesChecked )
 			{
 				_handler->TagHelper.SetTagByRecordId(TID);
 			}
+
 			LoadTags();
 
 			ShowMsg(L"Ìí¼Ó³É¹¦",COLOR_MY_OK);
@@ -158,7 +180,7 @@ void FormTagManager::DelTags(void)
 {
 	::PrintLog(L"FormTagManager.DelTags.");
 
-	LPWSTR selectedTags[MAXCOUNT_TAG] = {0};
+	wchar_t selectedTags[MAXCOUNT_TAG][MAXLENGTH_EACHTAG] = {0};
 
 	int count = 0;
 	int searchFrom = -1;
@@ -167,8 +189,8 @@ void FormTagManager::DelTags(void)
 	// find first
 	selectedIdx = ListView_GetNextItem(_hListTags,searchFrom,LVIS_SELECTED);
 	while (selectedIdx > -1){
-		selectedTags[count] = new wchar_t[MAXLENGTH_EACHTAG];
-		memset(selectedTags[count],0,MAXLENGTH_EACHTAG * sizeof(wchar_t));
+		//selectedTags[count] = new wchar_t[MAXLENGTH_EACHTAG];
+		//memset(selectedTags[count],0,MAXLENGTH_EACHTAG * sizeof(wchar_t));
 
 		ListView_GetItemText(_hListTags,selectedIdx,0,selectedTags[count],MAXLENGTH_EACHTAG);
 
@@ -179,65 +201,41 @@ void FormTagManager::DelTags(void)
 		selectedIdx = ListView_GetNextItem(_hListTags,searchFrom,LVIS_SELECTED);
 	}
 
-	try{
-		if ( NULL != selectedTags && count > 0)
+	if ( NULL != selectedTags && count > 0)
+	{
+		wchar_t msg[LOADSTRING_BUFFERSIZE];
+		const int maxShown = 20;
+		const UINT len = (MAXLENGTH_EACHTAG + 3) * MAXCOUNT_TAG;	// 3 for \0\r\n.
+		wchar_t tmp[len] = {0};
+		for (int i = 0; i < count && i < maxShown; i++)
 		{
-			wchar_t msg[LOADSTRING_BUFFERSIZE];
-			const int maxShown = 20;
-			const UINT len = (MAXCOUNT_TAG + 3) * MAXLENGTH_EACHTAG;	// 3 for \0\r\n.
-			wchar_t tmp[len];
-			memset(tmp,0,len * sizeof(tmp[0]));
-			for (int i = 0; i < count && i < maxShown; i++)
-			{
-				StrCat(tmp,selectedTags[i]);
-				if(i < count -1 )
-					StrCat(tmp,L"\r\n");
-			}
-
-			if( maxShown < count ){
-				wsprintf(msg,::MyLoadString(IDS_MSG_MORE_N_HIDDEN),count-maxShown);
+			StrCat(tmp,selectedTags[i]);
+			if(i < count -1 )
 				StrCat(tmp,L"\r\n");
-				StrCat(tmp,msg);
-			}
+		}
 
-			wsprintf(msg,::MyLoadString(IDS_MSG_CONFRIM_DEL_TAG),tmp);
-			int result = MessageBox(_hwnd,msg,::MyLoadString(IDS_MSGBOX_CAPTION_WARNING),MB_YESNO|MB_ICONWARNING|MB_DEFBUTTON1);
-			if( IDYES == result )
-			{
-				this->_handler->TagHelper.DeleteTags((wchar_t**)selectedTags,count);
-				LoadTags();
-			}
-			else
-			{
-				MessageBox(_hwnd,L"CANCEL",L"Warning",MB_OK);
-			}
+		if( maxShown < count ){
+			wsprintf(msg,::MyLoadString(IDS_MSG_MORE_N_HIDDEN),count-maxShown);
+			StrCat(tmp,L"\r\n");
+			StrCat(tmp,msg);
+		}
+
+		wsprintf(msg,::MyLoadString(IDS_MSG_CONFRIM_DEL_TAG),tmp);
+		int result = MessageBox(_hwnd,msg,::MyLoadString(IDS_MSGBOX_CAPTION_WARNING),MB_YESNO|MB_ICONWARNING|MB_DEFBUTTON1);
+		if( IDYES == result )
+		{
+			this->_handler->TagHelper.DeleteTags(selectedTags,count);
+			LoadTags();
 		}
 		else
 		{
-			// should not be occured.
-			::PrintLog(L"Selected none while deleting. Should not be occured here.");
-		}
-
-		for (int i = 0; i < count; i++)
-		{
-			if( NULL != selectedTags[i])
-			{
-				delete [] selectedTags[i];
-				selectedTags[i] = NULL;
-			}
+			MessageBox(_hwnd,L"CANCEL",L"Warning",MB_OK);
 		}
 	}
-	catch(int e)
+	else
 	{
-
-		for (int i = 0; i < count; i++)
-		{
-			if( NULL != selectedTags[i])
-			{
-				delete [] selectedTags[i];
-				selectedTags[i] = NULL;
-			}
-		}
+		// should not be occured.
+		::PrintLog(L"Selected none while deleting. Should not be occured here.");
 	}
 }
 
@@ -497,10 +495,8 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 				// http://msdn.microsoft.com/en-us/library/windows/desktop/bb787524(v=vs.85).aspx
 				return (INT_PTR)hbrBkgnd;
 			}
-			else
-			{
-				return 0;
-			}
+
+			return 0;
 		}
 	case WM_SYSCOMMAND:
 		{

@@ -10,7 +10,7 @@ using namespace std;
 
 typedef struct tagTAG4FILE
 {
-	bool bAsso;	
+	bool bAsso;		// is the tag associated with current target file. makes no sense if there are multi-filse specificed.
 	LPWSTR Tag;		// the name of current tag in database.
 	UINT TagID;		// the ID of current tag in database.
 	UINT TagIdx;	// the index of current tag in CTaghelper::Tags
@@ -41,12 +41,12 @@ public:
 	BOOL IsAsso(LPCWSTR file, LPCWSTR tag);
 	BOOL IsTagExists(LPCWSTR & tag);
 	
-	UINT GetFileID(LPSTR fileNameInSQL);				// return DB_RECORD_NOT_EXIST if fail
+	UINT GetFileID(LPSTR* fileNameInSQL);				// return DB_RECORD_NOT_EXIST if fail
 	UINT GetTagID(LPWSTR & tag);						// return DB_RECORD_NOT_EXIST if fail
 	UINT InsertFile(LPWSTR & targetFile);				// return DB_RECORD_NOT_EXIST if fail
 	UINT InsertTag(LPWSTR & newTag,const int useCount);	// return DB_RECORD_NOT_EXIST if fail
 
-	void DeleteTags(wchar_t** tags, const int count);
+	void DeleteTags(wchar_t tags[MAXCOUNT_TAG][MAXLENGTH_EACHTAG], const int count);
 
 private:
 	bool _cached;									// does tags loaded from database cached.

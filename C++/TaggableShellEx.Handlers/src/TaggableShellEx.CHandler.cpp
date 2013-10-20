@@ -26,7 +26,7 @@ CHandler::~CHandler(void)
 
 	for (UINT i = 0; i < FileCount; i++)
 	{
-		if (m_szFiles[i] != NULL){
+		if (m_szFiles != NULL && m_szFiles[i] != NULL){
 			delete m_szFiles[i];
 			m_szFiles[i] = NULL;
 		}

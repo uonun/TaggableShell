@@ -10,7 +10,6 @@ public:
 	{ 
 		if (0 == p_instance_) { 
 			static FormTagManager instance; 
-			instance.AddRef();
 			p_instance_ = &instance; 
 		} 
 		return p_instance_; 

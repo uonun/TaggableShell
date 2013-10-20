@@ -9,9 +9,11 @@
 using namespace log4cpp;
 #endif
 
+static wchar_t LogBuffer[LOADSTRING_BUFFERSIZE] = {0};
+
 wchar_t * MyLoadString(__in UINT uID){
 	const UINT len = LOADSTRING_BUFFERSIZE * sizeof(wchar_t);
-	wchar_t buffer[len];
+	static wchar_t buffer[LOADSTRING_BUFFERSIZE];
 	memset(buffer,0,len);
 	int n = LoadString(::g_hInst,uID,buffer,len);
 	return buffer;
@@ -43,38 +45,18 @@ void WStr2Str(const LPWSTR & s1,LPSTR & result)
 	}
 }
 
-// Print logs, depends on g_LogDirectory, g_LogFullName
-void PrintLog(const char *format, ...)
+void __print_log_core()
 {
-	char buf[4096], *p = buf;
-	va_list args;
-	va_start(args, format);
-	p += _vsnprintf(p, sizeof buf - 1, format, args);
-	va_end(args);
-
-	wchar_t* f = new wchar_t[LOADSTRING_BUFFERSIZE]; 
-	UTF8ToUnicode(buf,f);
-	PrintLog(f,L"");
-	delete(f);
-}
-
-// Print logs, depends on g_LogDirectory, g_LogFullName
-void PrintLog(const wchar_t *format, ...)
-{
-	wchar_t buf[4096], *p = buf;
-	va_list args;
-	va_start(args, format);
-	p += _vsnwprintf(p, sizeof buf - 1, format, args);
-	va_end(args);
-
 	// http://www.tutorialspoint.com/cplusplus/cpp_date_time.htm
 	time_t now(time(NULL));
 	tm *gmtm = gmtime(&now);
-	wchar_t buffer[LOADSTRING_BUFFERSIZE];
-	wcsftime(buffer, sizeof(buffer), L"%Y-%m-%d %H:%M:%S\0",gmtm);	
-	std::wstringstream ss;
-	ss << buffer << " > " << buf << L"\r\n\0";
-	OutputDebugString(ss.str().c_str());
+	wchar_t buffer[LOADSTRING_BUFFERSIZE] = {0};
+	wcsftime(buffer, sizeof(buffer), L"%Y-%m-%d %H:%M:%S > ",gmtm);
+
+	StrCat(buffer,LogBuffer);
+	StrCat(buffer,L"\r\n");
+
+	OutputDebugString(buffer);
 
 #ifdef LOG4CPP
 	if(CreateDirectory(g_LogDirectory, NULL) || ERROR_ALREADY_EXISTS == GetLastError())
@@ -108,7 +90,35 @@ void PrintLog(const wchar_t *format, ...)
 		log4cpp::Category::shutdown();    
 	}
 #endif
+
 }
+// Print logs, depends on g_LogDirectory, g_LogFullName
+void PrintLog(const char *format, ...)
+{
+	char buf[LOADSTRING_BUFFERSIZE] = {0}, *p = buf;
+	va_list args;
+	va_start(args, format);
+	_vsnprintf(p, sizeof buf - 1,format, args);
+	va_end(args);
+
+	wchar_t *f = LogBuffer;
+	UTF8ToUnicode(buf,f);
+	
+	__print_log_core();
+}
+
+// Print logs, depends on g_LogDirectory, g_LogFullName
+void PrintLog(const wchar_t *format, ...)
+{
+	wchar_t *p = LogBuffer;
+	va_list args;
+	va_start(args, format);
+	_vsnwprintf(p, sizeof LogBuffer - 1,format, args);
+	va_end(args);
+
+	__print_log_core();
+}
+
 
 //参数，src 字符串源，sub想要替换的字符串，dst，用来替换的字符串
 void Replace(char* src, const char* sub, const char* dst)
@@ -165,7 +175,7 @@ char * UnicodeToANSI( const wchar_t* str, char* result )
 
 wchar_t * UTF8ToUnicode( const char* str , wchar_t* & result )
 {
-	_ASSERT_EXPR(NULL!=result,L"the parameter \"result\" does not initialized!");
+	_ASSERT_EXPR(NULL != result,L"the parameter \"result\" does not initialized!");
 
 	int textlen ;
 	textlen = MultiByteToWideChar( CP_UTF8, 0, str,-1, NULL,0 );
@@ -190,7 +200,7 @@ char* w2m(const wchar_t* wcs,char* & result)
 {
 	_ASSERT_EXPR(NULL!=result,L"the parameter \"result\" does not initialized!");
 
-	int len;
+	size_t len;
 	len = wcstombs(NULL,wcs,0);
 	if (len <= 0)
 	{
@@ -207,15 +217,15 @@ wchar_t* m2w(const char* mbs, wchar_t* & result )
 {
 	_ASSERT_EXPR(NULL!=result,L"the parameter \"result\" does not initialized!");
 
-	int len;
-	len =mbstowcs(NULL,mbs,0);
+	size_t len;
+	len = mbstowcs(NULL,mbs,0);
 	if (len <= 0)
 	{
 		result = NULL;
 		return NULL;
 	}
 	memset(result, 0, sizeof(wchar_t) *(len+1));
-	len =mbstowcs(result,mbs,len+1);
+	len = mbstowcs(result,mbs,len+1);
 	return result;
 }
 
@@ -269,8 +279,7 @@ wchar_t * GetOSVersionStr()
 	ZeroMemory(&os, sizeof(OSVERSIONINFO));
 	os.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
 
-	static wchar_t result[LOADSTRING_BUFFERSIZE];
-	memset(result,0,sizeof(result[0])*LOADSTRING_BUFFERSIZE);
+	static wchar_t result[LOADSTRING_BUFFERSIZE] = {0};
 	if(GetVersionEx((OSVERSIONINFO *)&os))                  /*调用GetVersionEx函数OSVERSIONINFOEX结构必须将指针类型强制转换*/
 	{ 
 		//下面根据版本信息判断操作系统名称 
@@ -278,37 +287,37 @@ wchar_t * GetOSVersionStr()
 		case 4: 
 			switch(os.dwMinorVersion){                //判断次版本号 
 			case 0: 
-				if(os.dwPlatformId==VER_PLATFORM_WIN32_NT) 
-					wcscat(result,L"Microsoft Windows NT 4.0");                //1996年7月发布 
+				if(os.dwPlatformId==VER_PLATFORM_WIN32_NT)
+					StrCat(result,L"Microsoft Windows NT 4.0");                //1996年7月发布 
 				else if(os.dwPlatformId==VER_PLATFORM_WIN32_WINDOWS) 
-					wcscat(result,L"Microsoft Windows 95"); 
+					StrCat(result,L"Microsoft Windows 95"); 
 				break; 
 			case 10: 
-				wcscat(result,L"Microsoft Windows 98"); 
+				StrCat(result,L"Microsoft Windows 98"); 
 				break; 
 			case 90: 
-				wcscat(result,L"Microsoft Windows Me"); 
+				StrCat(result,L"Microsoft Windows Me"); 
 				break; 
 			} 
 			break; 
 		case 5: 
 			switch(os.dwMinorVersion){               //再比较dwMinorVersion的值 
 			case 0: 
-				wcscat(result,L"Microsoft Windows 2000");                    //1999年12月发布 
+				StrCat(result,L"Microsoft Windows 2000");                    //1999年12月发布 
 				break; 
 			case 1: 
-				wcscat(result,L"Microsoft Windows XP");                    //2001年8月发布 
+				StrCat(result,L"Microsoft Windows XP");                    //2001年8月发布 
 				break; 
 			case 2: 
 				if(os.wProductType==VER_NT_WORKSTATION && \
 					info.wProcessorArchitecture==PROCESSOR_ARCHITECTURE_AMD64)
-					wcscat(result,L"Microsoft Windows XP Professional"); 
+					StrCat(result,L"Microsoft Windows XP Professional"); 
 				else if(GetSystemMetrics(SM_SERVERR2)==0) 
-					wcscat(result,L"Microsoft Windows Server 2003");        //2003年3月发布 
+					StrCat(result,L"Microsoft Windows Server 2003");        //2003年3月发布 
 				else if(GetSystemMetrics(SM_SERVERR2)!=0) 
-					wcscat(result,L"Microsoft Windows Server 2003 R2"); 
+					StrCat(result,L"Microsoft Windows Server 2003 R2"); 
 				else if(os.wSuiteMask & VER_SUITE_WH_SERVER)
-					wcscat(result,L"Microsoft Windows Home Server");
+					StrCat(result,L"Microsoft Windows Home Server");
 				break; 
 			} 
 			break; 
@@ -316,27 +325,27 @@ wchar_t * GetOSVersionStr()
 			switch(os.dwMinorVersion){ 
 			case 0: 
 				if(os.wProductType==VER_NT_WORKSTATION)/* VER_NT_WORKSTATION是桌面系统 */
-					wcscat(result,L"Microsoft Windows Vista"); 
+					StrCat(result,L"Microsoft Windows Vista"); 
 				else 
-					wcscat(result,L"Microsoft Windows Server 2008");          //服务器版本 
+					StrCat(result,L"Microsoft Windows Server 2008");          //服务器版本 
 				break; 
 			case 1: 
 				if(os.wProductType==VER_NT_WORKSTATION) 
-					wcscat(result,L"Microsoft Windows 7"); 
+					StrCat(result,L"Microsoft Windows 7"); 
 				else 
-					wcscat(result,L"Microsoft Windows Server 2008 R2"); 
+					StrCat(result,L"Microsoft Windows Server 2008 R2"); 
 				break; 
 			case 2:
 				if(os.wProductType==VER_NT_WORKSTATION)
-					wcscat(result,L"Microsoft Windows 8");
+					StrCat(result,L"Microsoft Windows 8");
 				else
-					wcscat(result,L"Windows Server 2012"); 
+					StrCat(result,L"Windows Server 2012"); 
 				break;
 			case 3:
 				if(os.wProductType==VER_NT_WORKSTATION)
-					wcscat(result,L"Microsoft Windows 8.1 Preview");
+					StrCat(result,L"Microsoft Windows 8.1 Preview");
 				else
-					wcscat(result,L"Windows Server 2012 R2 Preview"); 
+					StrCat(result,L"Windows Server 2012 R2 Preview"); 
 				break;
 			} 
 			break; 
@@ -346,9 +355,9 @@ wchar_t * GetOSVersionStr()
 
 		if(Is64BitWindows())
 		{
-			wcscat(result,L", x64 Edition");
+			StrCat(result,L", x64 Edition");
 		}else{
-			wcscat(result,L", x86 Edition");
+			StrCat(result,L", x86 Edition");
 		}
 	} 
 

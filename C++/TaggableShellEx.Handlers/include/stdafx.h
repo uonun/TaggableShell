@@ -18,11 +18,17 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include <Windows.h>  
 #include <Windowsx.h>
+#include <new> // std::nothrow
+#include <windows.h>
+#include <shlobj.h>
+#include <Shlwapi.h>
+#include <shellapi.h>
+#include <commoncontrols.h> // IID_IImageList
 #include <string>
 #include <sstream>
-#include "../src/resource.h"
 #include <ctime>
 #include <filesystem>
+#include "../src/resource.h"
 
 using namespace std;
 using namespace std::tr2::sys;
@@ -33,7 +39,7 @@ using namespace std::tr2::sys;
 #define LOG_FILENAME					L"TaggableShell.log"
 #endif
 
-#define LOADSTRING_BUFFERSIZE			1024 * 100
+#define LOADSTRING_BUFFERSIZE			10240				// NOTE: could not be 102400, will throw exception while print log. not sure why.
 #define MAXLENGTH_SQL					100000				// The maximum number of bytes in the text of an SQL statement is limited to SQLITE_MAX_SQL_LENGTH which defaults to 1000000. You can redefine this limit to be as large as the smaller of SQLITE_MAX_LENGTH and 1073741824
 #define MAXLENGTH_EACHTAG				100					// max length of each tag.
 #define MAXCOUNT_TAG					100

@@ -48,4 +48,7 @@ private:
 
 	// IContextMenu
 	HMENU _hSubmenu;	
+
+	HWND hdlg;
+
 };

@@ -100,7 +100,6 @@ HRESULT CHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserve
 
 LRESULT CALLBACK DlgProc_TagManager(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
 	auto fTagManager = FormTagManager::instance();
-	_ASSERT_EXPR(NULL != fTagManager,L"fTagManager could not be NULL.");
 	return fTagManager->DlgProc(hwnd,uMsg,wParam,lParam);
 }
 
@@ -120,19 +119,19 @@ HRESULT CHandler::InvokeCommand (
 	}
 	else
 	{	
-		HWND hdlg = NULL;
 		//HWND parent = pCmdInfo->hwnd;
 		HWND parent = GetDesktopWindow();
 		BOOL createNew = true;
 
 		// the caption of window, must be same as it when the window got msg WM_INITDIALOG.
-		LPWSTR windowCaption = NULL;
+		wchar_t windowCaption[LOADSTRING_BUFFERSIZE] = {0};
 
 		switch (cmd - this->TagHelper.TagCount)
 		{
 		case CMD_NEWTAG:
 			{
-				windowCaption = ::MyLoadString(IDS_DLG_TAGMANAGER_CAPTION);
+				auto tmp = ::MyLoadString(IDS_DLG_TAGMANAGER_CAPTION);
+				memcpy(windowCaption,tmp,sizeof(windowCaption));
 				hdlg = FindWindowEx(parent, NULL, WINDOWCLASS_DLG, windowCaption);
 				if ( NULL == hdlg ){
 					hdlg = CreateDialogParam(g_hInst,MAKEINTRESOURCE(IDD_TAG_MANAGER),parent,DlgProc_TagManager,(LPARAM)this);
@@ -162,9 +161,10 @@ HRESULT CHandler::InvokeCommand (
 			ShowWindow(hdlg, SW_SHOW);
 			UpdateWindow(hdlg);
 
-			if( createNew ){
+			if( createNew )
+			{
 				// message queue.
-				MSG msg;     
+				/*MSG msg;     
 				while(GetMessage(&msg, NULL, 0, 0))     
 				{     
 					TranslateMessage(&msg);    
@@ -172,7 +172,7 @@ HRESULT CHandler::InvokeCommand (
 						SendMessage (hdlg, msg.message, msg.wParam, msg.lParam);
 					}
 					DispatchMessage(&msg);     
-				}
+				}*/
 			}
 			else
 			{
