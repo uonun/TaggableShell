@@ -43,9 +43,12 @@ private :
 	HWND _hBuEdit;
 	HWND _hBuDel;
 	
+	static IImageList *_sysImgList;
+	static HBRUSH _hbrBkgnd;
+
 	void InitText();
-	void InitTagList(IImageList *imgList);
-	void InitFileList(IImageList *imgList);
+	void InitTagList();
+	void InitFileList();
 
 	COLORREF _msgColor;
 	void ShowMsg(LPWSTR msg,COLORREF color = RGB(0,0,0));

@@ -99,7 +99,7 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 STDAPI DllCanUnloadNow()
 {
 	// Only allow the DLL to be unloaded after all outstanding references have been released
-	auto a = (g_cRefModule == 0) ? S_OK : S_FALSE;
+	auto a = (g_cRefModule <= 0) ? S_OK : S_FALSE;
 	if(a == S_OK){
 		CoUninitialize();
 	}
@@ -204,8 +204,7 @@ private:
 STDAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void **ppv)
 {
 	::PrintLog(L"DllGetClassObject");
-	auto hr = CClassFactory::CreateInstance(clsid, c_rgClassObjectInit, ARRAYSIZE(c_rgClassObjectInit), riid, ppv);
-	return hr;
+	return CClassFactory::CreateInstance(clsid, c_rgClassObjectInit, ARRAYSIZE(c_rgClassObjectInit), riid, ppv);
 }
 
 STDAPI DllRegisterServer()

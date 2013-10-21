@@ -33,6 +33,8 @@ public:
 	CTaghelper TagHelper;
 	UINT	   FileCount;
 
+	HWND _hdlg;
+
 private:
 
 	// IUnknown
@@ -48,7 +50,4 @@ private:
 
 	// IContextMenu
 	HMENU _hSubmenu;	
-
-	HWND hdlg;
-
 };

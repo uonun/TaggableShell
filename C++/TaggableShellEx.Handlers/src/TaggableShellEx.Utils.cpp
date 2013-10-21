@@ -12,10 +12,9 @@ using namespace log4cpp;
 static wchar_t LogBuffer[LOADSTRING_BUFFERSIZE] = {0};
 
 wchar_t * MyLoadString(__in UINT uID){
-	const UINT len = LOADSTRING_BUFFERSIZE * sizeof(wchar_t);
 	static wchar_t buffer[LOADSTRING_BUFFERSIZE];
-	memset(buffer,0,len);
-	int n = LoadString(::g_hInst,uID,buffer,len);
+	memset(buffer,0, sizeof(buffer));
+	int n = LoadString(::g_hInst,uID,buffer,LOADSTRING_BUFFERSIZE);
 	return buffer;
 }
 

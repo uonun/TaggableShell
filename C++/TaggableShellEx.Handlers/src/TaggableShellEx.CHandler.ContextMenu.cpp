@@ -55,16 +55,14 @@ HRESULT CHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserve
 	// supplied buffer.
 	if ( uFlags & GCS_HELPTEXT )
 	{
-		LPWSTR info;
-		UINT size = LOADSTRING_BUFFERSIZE * sizeof(wchar_t);
-		info = (wchar_t*)malloc(size);
-		memset(info,0,size);
-
+		LPWSTR info = NULL;
 		if( _hSubmenu != NULL ){
 			if( idCmd < this->TagHelper.TagCount)
 			{
 				LPWSTR formater = ::MyLoadString(IDS_COMMANDSTRING_TAG);
-				wsprintf ( info,formater,this->TagHelper.Tags[idCmd].Tag );
+				wchar_t tmp[LOADSTRING_BUFFERSIZE] = {0};
+				wsprintf ( tmp,formater,this->TagHelper.Tags[idCmd].Tag );
+				info = tmp;
 			}
 			else
 			{	
@@ -100,6 +98,9 @@ HRESULT CHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserve
 
 LRESULT CALLBACK DlgProc_TagManager(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
 	auto fTagManager = FormTagManager::instance();
+	//if (uMsg == WM_KEYDOWN || uMsg == WM_KEYUP ) {
+	//	SendMessage (hwnd, uMsg, wParam, lParam);
+	//}
 	return fTagManager->DlgProc(hwnd,uMsg,wParam,lParam);
 }
 
@@ -132,15 +133,15 @@ HRESULT CHandler::InvokeCommand (
 			{
 				auto tmp = ::MyLoadString(IDS_DLG_TAGMANAGER_CAPTION);
 				memcpy(windowCaption,tmp,sizeof(windowCaption));
-				hdlg = FindWindowEx(parent, NULL, WINDOWCLASS_DLG, windowCaption);
-				if ( NULL == hdlg ){
-					hdlg = CreateDialogParam(g_hInst,MAKEINTRESOURCE(IDD_TAG_MANAGER),parent,DlgProc_TagManager,(LPARAM)this);
+				_hdlg = FindWindowEx(parent, NULL, WINDOWCLASS_DLG, windowCaption);
+				if ( NULL == _hdlg ){
+					_hdlg = CreateDialogParam(g_hInst,MAKEINTRESOURCE(IDD_TAG_MANAGER),parent,DlgProc_TagManager,(LPARAM)this);
 					createNew = true;
-					::PrintLog(L"New window created: %s, handle = 0x%x",windowCaption, hdlg);
+					::PrintLog(L"New window created: %s, handle = 0x%x",windowCaption, _hdlg);
 				}else
 				{
 					createNew = false;
-					::PrintLog(L"Got existed window: %s, handle = 0x%x",windowCaption, hdlg);
+					::PrintLog(L"Got existed window: %s, handle = 0x%x",windowCaption, _hdlg);
 				}
 			}
 			break;
@@ -157,26 +158,38 @@ HRESULT CHandler::InvokeCommand (
 			break;
 		}
 
-		if(hdlg != NULL){
-			ShowWindow(hdlg, SW_SHOW);
-			UpdateWindow(hdlg);
+		if(_hdlg != NULL){
+			SetWindowText(_hdlg,windowCaption);
+			ShowWindow(_hdlg, SW_SHOW);
+			UpdateWindow(_hdlg);
 
 			if( createNew )
 			{
-				// message queue.
-				/*MSG msg;     
-				while(GetMessage(&msg, NULL, 0, 0))     
-				{     
-					TranslateMessage(&msg);    
-					if (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP ) {
-						SendMessage (hdlg, msg.message, msg.wParam, msg.lParam);
-					}
-					DispatchMessage(&msg);     
-				}*/
+				//// message queue.
+				//MSG msg;
+				//BOOL bRet;
+				//while( (bRet = GetMessage( &msg, NULL, 0, 0 )) != 0)
+				//{
+				//	if (bRet == -1)
+				//	{
+				//		DWORD e = GetLastError();
+				//		::PrintLog(L"Got error = %d",e);
+				//		MessageBox(pCmdInfo->hwnd,L"Got error",L"Error",MB_OK);
+				//		return E_FAIL;
+				//	}
+				//	else
+				//	{
+				//		TranslateMessage(&msg);
+				//		if (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP ) {
+				//			SendMessage (_hdlg, msg.message, msg.wParam, msg.lParam);
+				//		}
+				//		DispatchMessage(&msg);     
+				//	}
+				//}
 			}
 			else
 			{
-				SetWindowPos(hdlg,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW);
+				SetWindowPos(_hdlg,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW);
 			}
 		}else{
 			DWORD e = GetLastError();

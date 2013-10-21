@@ -1,7 +1,8 @@
 #include "..\include\TaggableShellEx.Form.TagManager.h"
 
 FormTagManager* FormTagManager::p_instance_ = NULL;
-static HBRUSH hbrBkgnd = NULL;	// for colored message info
+IImageList* FormTagManager::_sysImgList = NULL;
+HBRUSH FormTagManager::_hbrBkgnd = NULL;	// for colored message info
 
 FormTagManager::FormTagManager(void):
 	_cRef(1)
@@ -11,8 +12,6 @@ FormTagManager::FormTagManager(void):
 	,_msgColor(COLOR_MY_DEFAULT)
 {
 	::PrintLog(L"FormTagManager.ctor.");
-
-	AddRef();
 }
 
 
@@ -20,7 +19,22 @@ FormTagManager::~FormTagManager(void)
 {
 	::PrintLog(L"FormTagManager.~ctor.");
 
-	Release();
+	if( p_instance_ != NULL )
+	{
+		delete p_instance_;
+		p_instance_ = 0;
+	}
+
+	_hbrBkgnd = NULL;
+
+	if ( NULL != _sysImgList )
+	{
+		long cRef = _sysImgList->Release();
+		if( cRef == 0 )
+		{
+			_sysImgList = NULL;
+		}
+	}
 }
 
 // to keep the instance after the Form opend.
@@ -28,11 +42,6 @@ FormTagManager::~FormTagManager(void)
 IFACEMETHODIMP_(ULONG) FormTagManager::AddRef()
 {
 	::PrintLog(L"FormTagManager.AddRef.");
-
-	if(this->_handler != NULL){
-		this->_handler->AddRef();
-	}
-
 	return InterlockedIncrement(&_cRef);
 }
 
@@ -44,28 +53,6 @@ IFACEMETHODIMP_(ULONG) FormTagManager::Release()
 	cRef = InterlockedDecrement(&_cRef);
 	if (cRef == 0)
 	{
-		if(this->_handler != NULL){
-			try
-			{
-				auto x = this->_handler->Release();
-				if( x == 0 ){
-					this->_handler = NULL;
-				}
-			}
-			catch(int e)
-			{
-				this->_handler = NULL;
-			}
-		}
-
-		if( p_instance_ != NULL )
-		{
-			delete p_instance_;
-			p_instance_ = 0;
-		}
-
-		hbrBkgnd = NULL;
-
 		delete this;
 	}
 
@@ -189,9 +176,6 @@ void FormTagManager::DelTags(void)
 	// find first
 	selectedIdx = ListView_GetNextItem(_hListTags,searchFrom,LVIS_SELECTED);
 	while (selectedIdx > -1){
-		//selectedTags[count] = new wchar_t[MAXLENGTH_EACHTAG];
-		//memset(selectedTags[count],0,MAXLENGTH_EACHTAG * sizeof(wchar_t));
-
 		ListView_GetItemText(_hListTags,selectedIdx,0,selectedTags[count],MAXLENGTH_EACHTAG);
 
 		searchFrom = selectedIdx;
@@ -259,9 +243,10 @@ BOOL FormTagManager::IsNewTagOk(_Out_ wchar_t* key,_Out_  UINT & keyLength)
 
 int FormTagManager::GetImgIdxInList(LPWSTR & pszPath)
 {
+	int imgIdx = 0;
 	SHFILEINFOW sfi = {0};
 	auto hr = SHGetFileInfo(pszPath, -1,&sfi,sizeof(sfi), SHGFI_ICON|SHGFI_LARGEICON);
-	int imgIdx = sfi.iIcon;
+	imgIdx = sfi.iIcon;
 	DestroyIcon(sfi.hIcon); // we do not need the handle of icon, free the memory.
 	return imgIdx;
 }
@@ -284,11 +269,11 @@ void FormTagManager::InitText()
 	SetDlgItemText(_hwnd, IDC_TAGMANAGER_STATIC_ERROR_INFO,L"");
 }
 
-void FormTagManager::InitTagList(IImageList *imgList)
+void FormTagManager::InitTagList()
 {
 	_ASSERT_EXPR(NULL!=_hListTags,"_hListTags could not be NULL.");
 
-	ListView_SetImageList(_hListTags,imgList,LVSIL_SMALL);
+	ListView_SetImageList(_hListTags,_sysImgList,LVSIL_SMALL);
 
 	UINT cIdx = 0;
 	LVCOLUMN c = {0};
@@ -308,11 +293,11 @@ void FormTagManager::InitTagList(IImageList *imgList)
 	LoadTags();
 }
 
-void FormTagManager::InitFileList(IImageList *imgList)
+void FormTagManager::InitFileList()
 {
 	_ASSERT_EXPR(NULL!=_hListFiles,"_hListFiles could not be NULL.");
 
-	ListView_SetImageList(_hListFiles,imgList,LVSIL_SMALL);
+	ListView_SetImageList(_hListFiles,_sysImgList,LVSIL_SMALL);
 
 	UINT cIdx = 0;
 	LVCOLUMN c = {0};
@@ -445,9 +430,10 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 			this->_hwnd = hwnd;
 			this->_handler = (CHandler *)lParam;
 
-			// to keep the instance after the Form opend.
-			// this method must be called after the assignment of this->_handler, to make sure this->_handler.AddRef() be called.
-			this->AddRef();
+			this->_handler->AddRef();	// to keep the instance after the Form opend, will be released in WM_NCDESTROY.
+
+			SHGetImageList(SHIL_SMALL,IID_IImageList,(void **)&_sysImgList);
+			_sysImgList->AddRef();	// will be released in ~ctor.
 
 			_hErrorInfo = GetDlgItem(_hwnd,IDC_TAGMANAGER_STATIC_ERROR_INFO);
 			_hListTags = GetDlgItem(_hwnd,IDC_TAGMANAGER_LIST_TAGS);
@@ -459,22 +445,18 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 			_hBuDel = GetDlgItem(_hwnd,IDC_TAGMANAGER_BU_DEL);
 
 			InitText();
-
-			IImageList *imgList;
-			HRESULT hr = SHGetImageList(SHIL_SMALL,IID_IImageList,(void **)&imgList);
-			InitTagList(imgList);
-			InitFileList(imgList);
-			imgList->Release();
+			InitTagList();
+			InitFileList();
 
 			Button_SetCheck(_hCheckAttachToFiles,BST_CHECKED);
 			Button_Enable(_hBuAdd,false);
 			Edit_TakeFocus(_hEditCtlNewTag);
 
-			return 0;
+			break;
 		}
 	case MSG_TRANSFER_INSTANCES:
 		::PrintLog(L"Message: MSG_TRANSFER_INSTANCES: wParam: %d, lParam: %d",wParam, lParam);
-		return 0;
+		break;
 	case WM_CTLCOLORSTATIC:
 		{
 			// change the text color of static label ERROR_INFO
@@ -486,17 +468,15 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 				auto oldBkColor = GetSysColor(CTLCOLOR_DLG);
 				SetBkColor(hdcStatic,oldBkColor);
 
-				if (hbrBkgnd == NULL)
+				if (_hbrBkgnd == NULL)
 				{
-					hbrBkgnd = CreateSolidBrush(oldBkColor);
+					_hbrBkgnd = CreateSolidBrush(oldBkColor);
 				}
 
 				// the return value is a handle to a brush that the system uses to paint the background of the static control.
 				// http://msdn.microsoft.com/en-us/library/windows/desktop/bb787524(v=vs.85).aspx
-				return (INT_PTR)hbrBkgnd;
+				return (INT_PTR)_hbrBkgnd;
 			}
-
-			return 0;
 		}
 	case WM_SYSCOMMAND:
 		{
@@ -515,9 +495,8 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 			default:
 				break;
 			}
-
-			return 0;
 		}
+		break;
 	case WM_COMMAND:
 		{
 			::PrintLog(L"Message: WM_COMMAND");
@@ -552,8 +531,8 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 			default:
 				break;
 			}
-			return 0;
 		}
+		break;
 		//case WM_SIZE:
 		//	{
 		//		auto hTreeView = GetDlgItem(hdlg, IDC_TREE1);  
@@ -566,8 +545,8 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 	case WM_KEYDOWN:
 		{
 			::PrintLog(L"Message: WM_KEYDOWN");
-			break;
 		}
+		break;
 	case WM_KEYUP:
 		{
 			::PrintLog(L"Message: WM_KEYUP");
@@ -582,8 +561,28 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 				// simulate the button ADD to be Clicked.
 				SendMessage(_hwnd,WM_COMMAND, MAKEWPARAM(IDC_TAGMANAGER_BU_ADD, BN_CLICKED),(LPARAM)_hBuAdd);
 			}
-			break;
 		}
+		break;
+	case WM_CHAR:
+		{
+			::PrintLog(L"Message: WM_CHAR");
+		}
+		break;
+	case WM_SYSCHAR:
+		{
+			::PrintLog(L"Message: WM_SYSCHAR");
+		}
+		break;
+	case WM_DEADCHAR:
+		{
+			::PrintLog(L"Message: WM_DEADCHAR");
+		}
+		break;
+	case WM_SYSDEADCHAR:
+		{
+			::PrintLog(L"Message: WM_SYSDEADCHAR");
+		}
+		break;
 	case WM_NOTIFY:
 		{
 			LPNMHDR pNmhdr = (LPNMHDR) lParam;
@@ -602,23 +601,28 @@ LRESULT CALLBACK FormTagManager::DlgProc(
 			default:
 				break;
 			}
-
-			return 0;     
 		}
+		break;
 	case WM_DESTROY:     
 		{
 			PostQuitMessage(0);
-			return 0;     
 		}
+		break;
 	case WM_NCDESTROY:
 		{
 			::PrintLog(L"Message: WM_NCDESTROY");
-			this->Release();
-			return 0;     
+			if(this->_handler != NULL){
+				auto x = this->_handler->Release();
+				if( x == 0 ){
+					this->_handler = NULL;
+				}
+			}
 		}
+		break;
 	default:
 		break;
 	}
+
 	return (INT_PTR)FALSE;
 }
 
