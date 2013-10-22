@@ -8,6 +8,7 @@ CHandler::CHandler() :
 	,m_pIDFolder(NULL),m_pDataObj(NULL)	// IShellExtInit
 	,_dllRefCount(0) // IShellPropSheetExt
 	,_hSubmenu(NULL) // IContextMenu
+	,_hdlg(NULL)
 	,FileCount(0)
 {
 	::PrintLog(L"CHandler.ctor");
@@ -37,7 +38,7 @@ CHandler::~CHandler(void)
 
 HRESULT CHandler_CreateInstance(REFIID riid, void **ppv)
 {
-	::PrintLog(L"CHandler.ContextMenuHandler_CreateInstance");
+	::PrintLog(L"CHandler.CHandler_CreateInstance");
 	CHandler *pNew = new(std::nothrow) CHandler;
 	HRESULT hr = pNew ? S_OK : E_OUTOFMEMORY;
 	if (pNew)

@@ -76,7 +76,7 @@ STDMETHODIMP CHandler::AddPages(LPFNADDPROPSHEETPAGE lpfnAddPage, LPARAM lParam)
 	psp.dwSize      = sizeof(PROPSHEETPAGE);
 	psp.dwFlags     = PSP_USEREFPARENT | PSP_USETITLE | PSP_DEFAULT | PSP_USECALLBACK;
 	psp.hInstance   = ::g_hInst;
-	psp.pszTemplate = MAKEINTRESOURCE(IDD_PAGEDLG);
+	psp.pszTemplate = MAKEINTRESOURCE(IDD_PROPERTYPAGE);
 	psp.pszIcon     = 0;
 	psp.pszTitle    = MAKEINTRESOURCE(IDS_DLG_PROPERTYPAGE_CAPTION);
 	psp.pfnDlgProc  = PageDlgProc;

@@ -22,19 +22,23 @@
     <ClCompile Include="sqlite-201310070036\src\shell.c" />
     <ClCompile Include="sqlite-201310070036\src\sqlite3.c" />
     <ClCompile Include="src\dllmain.cpp" />
+    <ClCompile Include="src\TaggableShellEx.NsExt.CShellViewImpl.cpp" />
     <ClCompile Include="src\stdafx.cpp" />
     <ClCompile Include="src\TaggableShellEx.CHandler.ContextMenu.cpp" />
     <ClCompile Include="src\TaggableShellEx.CHandler.cpp" />
     <ClCompile Include="src\TaggableShellEx.CHandler.PropertyPage.cpp" />
+    <ClCompile Include="src\TaggableShellEx.NsExt.CShellFolderImpl.cpp" />
     <ClCompile Include="src\TaggableShellEx.Form.TagManager.cpp" />
     <ClCompile Include="src\TaggableShellEx.Taghelper.cpp" />
     <ClCompile Include="src\TaggableShellEx.Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\dllmain.h" />
+    <ClInclude Include="include\TaggableShellEx.NsExt.CShellViewImpl.h" />
     <ClInclude Include="include\stdafx.h" />
     <ClInclude Include="include\TaggableShellEx.CHandler.h" />
     <ClInclude Include="include\TaggableShellEx.Form.TagManager.h" />
+    <ClInclude Include="include\TaggableShellEx.NsExt.CShellFolderImpl.h" />
     <ClInclude Include="include\TaggableShellEx.Taghelper.h" />
     <ClInclude Include="include\TaggableShellEx.Utils.h" />
     <ClInclude Include="include\targetver.h" />
@@ -46,7 +50,7 @@
     <None Include="onbuild.bat" />
     <None Include="Register.ContextMenu.reg" />
     <None Include="Register.PropertyPage.reg" />
-    <None Include="Register.reg" />
+    <None Include="Register.ShellFolder.reg" />
     <None Include="src\Export.def" />
     <None Include="UnRegister.reg" />
   </ItemGroup>
@@ -55,6 +59,10 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\ReviewＮotes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\16x16.png" />
+    <Image Include="resources\48x48.ico" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7B7293B6-EDCA-4A43-A75A-25C515AB47D0}</ProjectGuid>

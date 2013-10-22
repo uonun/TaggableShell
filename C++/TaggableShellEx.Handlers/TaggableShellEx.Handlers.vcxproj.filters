@@ -48,6 +48,12 @@
     <ClCompile Include="src\TaggableShellEx.Form.TagManager.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\TaggableShellEx.NsExt.CShellViewImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TaggableShellEx.NsExt.CShellFolderImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite-201310070036\src\sqlite3.h">
@@ -80,9 +86,14 @@
     <ClInclude Include="src\resource.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="include\TaggableShellEx.NsExt.CShellViewImpl.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\TaggableShellEx.NsExt.CShellFolderImpl.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Register.reg" />
     <None Include="UnRegister.reg" />
     <None Include="Register.ContextMenu.reg" />
     <None Include="onbuild.bat" />
@@ -90,6 +101,7 @@
     <None Include="src\Export.def">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="Register.ShellFolder.reg" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="src\TaggableShellEx.Handlers.rc">
@@ -98,5 +110,13 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\ReviewＮotes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\16x16.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="resources\48x48.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

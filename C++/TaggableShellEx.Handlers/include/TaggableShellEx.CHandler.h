@@ -5,7 +5,7 @@
 class CHandler:
 	public IContextMenu,		// ContextMenu
 	public IShellPropSheetExt,	// PropertyPage
-	public IShellExtInit
+	public IShellExtInit		// ContextMenu, PropertyPage
 {
 public:
 	CHandler(void);
@@ -16,7 +16,7 @@ public:
 	IFACEMETHODIMP_(ULONG) AddRef();
 	IFACEMETHODIMP_(ULONG) Release();
 
-	// IShellExtInit
+	// IShellExtInit for ContextMenu, PropertyPage
 	STDMETHODIMP Initialize(LPCITEMIDLIST pIDFolder, 
 		IDataObject *pDataObj, 
 		HKEY hRegKey);

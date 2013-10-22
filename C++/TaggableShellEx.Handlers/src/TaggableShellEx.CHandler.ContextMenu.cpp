@@ -39,10 +39,13 @@ HRESULT CHandler::QueryContextMenu (
 
 	// http://msdn.microsoft.com/en-us/library/windows/desktop/ms647578(v=vs.85).aspx
 	MENUITEMINFO mii = { sizeof(MENUITEMINFO) };
-	mii.fMask = MIIM_SUBMENU | MIIM_STRING | MIIM_ID;
+	mii.fMask = MIIM_SUBMENU | MIIM_STRING | MIIM_ID | MIIM_BITMAP;
 	mii.wID = uIdx++;
 	mii.hSubMenu = _hSubmenu;
 	mii.dwTypeData = ::MyLoadString(IDS_CONTEXTMENU_MAIN_TEXT);
+
+	// TODO: take no effect, may be in a wrong way.
+	mii.hbmpItem = LoadBitmap(g_hInst, MAKEINTRESOURCE(IDB_PNG_16));
 
 	InsertMenuItem  ( hmenu, uMenuIndex, true,&mii );
 
@@ -120,7 +123,6 @@ HRESULT CHandler::InvokeCommand (
 	}
 	else
 	{	
-		//HWND parent = pCmdInfo->hwnd;
 		HWND parent = GetDesktopWindow();
 		BOOL createNew = true;
 

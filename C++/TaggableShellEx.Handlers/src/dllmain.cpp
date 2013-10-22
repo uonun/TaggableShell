@@ -18,6 +18,8 @@ struct CLASS_OBJECT_INIT
 const CLASS_OBJECT_INIT c_rgClassObjectInit[] =
 {
 	{ &__uuidof(CHandler), CHandler_CreateInstance },
+	{ &__uuidof(CShellFolderImpl), CShellFolderImpl_CreateInstance },
+	{ &__uuidof(CShellViewImpl), CShellViewImpl_CreateInstance },
 };
 
 
