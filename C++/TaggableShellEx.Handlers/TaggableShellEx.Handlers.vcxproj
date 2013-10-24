@@ -22,6 +22,8 @@
     <ClCompile Include="sqlite-201310070036\src\shell.c" />
     <ClCompile Include="sqlite-201310070036\src\sqlite3.c" />
     <ClCompile Include="src\dllmain.cpp" />
+    <ClCompile Include="src\PidlMgr.cpp" />
+    <ClCompile Include="src\TaggableShellEx.NsExt.CEnumIDListImpl.cpp" />
     <ClCompile Include="src\TaggableShellEx.NsExt.CShellViewImpl.cpp" />
     <ClCompile Include="src\stdafx.cpp" />
     <ClCompile Include="src\TaggableShellEx.CHandler.ContextMenu.cpp" />
@@ -34,6 +36,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\dllmain.h" />
+    <ClInclude Include="include\PidlMgr.h" />
+    <ClInclude Include="include\TaggableShellEx.NsExt.CEnumIDListImpl.h" />
     <ClInclude Include="include\TaggableShellEx.NsExt.CShellViewImpl.h" />
     <ClInclude Include="include\stdafx.h" />
     <ClInclude Include="include\TaggableShellEx.CHandler.h" />
@@ -47,6 +51,7 @@
     <ClInclude Include="src\resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="building.bat" />
     <None Include="onbuild.bat" />
     <None Include="Register.ContextMenu.reg" />
     <None Include="Register.PropertyPage.reg" />
@@ -179,6 +184,9 @@
     <PostBuildEvent>
       <Command>onbuild.bat $(Configuration) $(PlatformTarget)</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>building.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

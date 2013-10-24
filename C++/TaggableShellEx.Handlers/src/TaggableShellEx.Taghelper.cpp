@@ -21,7 +21,14 @@ CTaghelper::CTaghelper(void):
 
 	for each (LPWSTR var in TargetFileNames) { var = NULL; }
 	for each (LPSTR var in _targetFileNamesInSQL) { var = NULL; }
-
+	for each (TAG4FILE var in Tags) {
+		var.bAsso= false; 
+		var.Tag = NULL;
+		var.TagID = 0;
+		var.TagIdx = 0;
+		var.UseCount = 0;
+	}
+	
 	::WStr2Str(g_UserDb,_dbFile);
 }
 
@@ -83,10 +90,11 @@ int _callback_exec_load_tags(void * tagHelper,int argc, char ** argv, char ** as
 
 		auto &tag = h->Tags[h->TagCount];
 
-		tag.TagID = atoi(argv[0]);
-		::Str2WStr(argv[1],tag.Tag);
-		tag.UseCount = atoi(argv[2]);
 		tag.bAsso = *argv[3]!='0';
+		tag.TagID = atoi(argv[0]);
+		tag.TagIdx = h->TagCount;
+		tag.UseCount = atoi(argv[2]);
+		::Str2WStr(argv[1],tag.Tag);
 
 		::PrintLog( L"Got tag: %s",tag.Tag );
 

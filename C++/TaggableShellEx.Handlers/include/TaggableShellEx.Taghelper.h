@@ -11,10 +11,10 @@ using namespace std;
 typedef struct tagTAG4FILE
 {
 	bool bAsso;		// is the tag associated with current target file. makes no sense if there are multi-filse specificed.
-	LPWSTR Tag;		// the name of current tag in database.
 	UINT TagID;		// the ID of current tag in database.
 	UINT TagIdx;	// the index of current tag in CTaghelper::Tags
 	UINT UseCount;	// the count of files associated with current tag.
+	LPWSTR Tag;		// the name of current tag in database.
 }TAG4FILE,*LPTAG4FILE;
 
 class CTaghelper

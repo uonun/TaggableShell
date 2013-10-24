@@ -54,6 +54,12 @@
     <ClCompile Include="src\TaggableShellEx.NsExt.CShellFolderImpl.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\TaggableShellEx.NsExt.CEnumIDListImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PidlMgr.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite-201310070036\src\sqlite3.h">
@@ -92,6 +98,12 @@
     <ClInclude Include="include\TaggableShellEx.NsExt.CShellFolderImpl.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="include\TaggableShellEx.NsExt.CEnumIDListImpl.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\PidlMgr.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="UnRegister.reg" />
@@ -102,6 +114,7 @@
       <Filter>资源文件</Filter>
     </None>
     <None Include="Register.ShellFolder.reg" />
+    <None Include="building.bat" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="src\TaggableShellEx.Handlers.rc">

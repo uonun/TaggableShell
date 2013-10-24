@@ -1,6 +1,8 @@
 #pragma once
 #include "dllmain.h"
 #include "TaggableShellEx.NsExt.CShellFolderImpl.h"
+#include "TaggableShellEx.NsExt.CEnumIDListImpl.h"
+#include "PidlMgr.h"
 
 class CShellViewImpl:
 	public IShellView,
@@ -18,8 +20,7 @@ public:
 	// IOleWindow
 	STDMETHOD(GetWindow)(HWND* phwnd);
 
-	STDMETHOD(ContextSensitiveHelp)(BOOL)
-	{ return E_NOTIMPL; }
+	STDMETHOD(ContextSensitiveHelp)(BOOL){ return E_NOTIMPL; }
 
 	// IShellView methods
 	STDMETHOD(CreateViewWindow)(LPSHELLVIEW, LPCFOLDERSETTINGS, LPSHELLBROWSER, LPRECT, HWND*);
@@ -67,5 +68,10 @@ private:
 	CShellFolderImpl*      m_psfContainingFolder;
 	FOLDERSETTINGS m_FolderSettings;
 	IShellBrowser* m_spShellBrowser;
+	
+	CPidlMgr     m_PidlMgr;
+
+	void FillList();
+
 };
 

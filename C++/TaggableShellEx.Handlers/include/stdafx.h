@@ -26,9 +26,11 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include <commoncontrols.h> // IID_IImageList
 #include <string>
 #include <sstream>
+#include <Strsafe.h>	// StringCbCopyW
 #include <ctime>
 #include <filesystem>
 #include <process.h>		// _beginthreadex
+#include <vector>
 #include "../src/resource.h"
 
 using namespace std;

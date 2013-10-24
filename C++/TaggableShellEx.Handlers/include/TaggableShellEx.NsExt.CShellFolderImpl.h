@@ -4,7 +4,6 @@
 
 class CShellFolderImpl:
 	public IShellFolder,		// ShellFolder
-	public IEnumIDList,			// ShellFolder
 	public IPersistFolder		// ShellFolder
 {
 public:
@@ -102,26 +101,6 @@ public:
 		){	return S_OK;	};
 #pragma endregion
 
-	// IEnumIDList
-#pragma region IEnumIDList
-	HRESULT Clone(
-		IEnumIDList **ppenum
-		);
-
-	HRESULT Next(
-		ULONG celt,
-		LPITEMIDLIST *rgelt,
-		ULONG *pceltFetched
-		);
-
-	HRESULT Reset(){ return S_OK; };
-
-	HRESULT Skip(
-		ULONG celt
-		);
-#pragma endregion
-
-
 	// Init function - call right after constructing a CShellFolderImpl object.
 	HRESULT _init ( CShellFolderImpl* pParentFolder, LPCITEMIDLIST pidl )
 	{
@@ -130,6 +109,8 @@ public:
 	}
 
 	HWND _hdlg;
+
+	CTaghelper TagHelper;
 
 private:
 
@@ -141,5 +122,4 @@ private:
 
 	LPITEMIDLIST       m_pidl;
 	CShellFolderImpl*  m_pParentFolder;
-
 };

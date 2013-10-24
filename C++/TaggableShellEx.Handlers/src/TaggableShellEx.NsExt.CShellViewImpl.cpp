@@ -1,6 +1,5 @@
 #include "..\include\TaggableShellEx.NsExt.CShellViewImpl.h"
 
-
 CShellViewImpl::CShellViewImpl(void): 
 	_cRef(1) // IUnknown
 	,m_hwndParent(NULL)
@@ -89,8 +88,8 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	m_FolderSettings = *lpfs;
 
 
-	DWORD dwListStyles = WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_BORDER |
-		LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS;
+	DWORD dwListStyles = WS_CHILD | WS_VISIBLE | WS_TABSTOP | //WS_BORDER |
+		LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS | LVS_ALIGNLEFT;
 	DWORD dwListExStyles = WS_EX_CLIENTEDGE;
 	DWORD dwListExtendedStyles = LVS_EX_FULLROWSELECT | LVS_EX_HEADERDRAGDROP;
 
@@ -104,12 +103,47 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	}
 
 	*phWnd = NULL;
-	m_hWnd = CreateWindowEx ( dwListExStyles, WC_LISTVIEW, NULL, dwListStyles,0, 0, 0, 0, m_hwndParent, NULL, g_hInst, 0 );
+	m_hWnd = CreateWindowEx ( dwListExStyles, WC_LISTVIEW, NULL, dwListStyles,0, 0,
+		prcView->right - prcView->left,prcView->bottom - prcView->top,
+		m_hwndParent, NULL, g_hInst, 0 );
 
 	if ( NULL == m_hWnd )
 		return -1;
 
-	UpdateWindow (m_hWnd) ;
+
+
+
+	WCHAR szText[256];     // Temporary buffer.
+	LVCOLUMN lvc;
+	int iCol;
+
+	// Initialize the LVCOLUMN structure.
+	// The mask specifies that the format, width, text,
+	// and subitem members of the structure are valid.
+	lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+
+	// Add the columns.
+	for (iCol = 0; iCol < 4; iCol++)
+	{
+		lvc.iSubItem = iCol;
+		lvc.pszText = L"sdfsdf";
+		lvc.cx = 100;               // Width of column in pixels.
+
+		if ( iCol < 2 )
+			lvc.fmt = LVCFMT_LEFT;  // Left-aligned column.
+		else
+			lvc.fmt = LVCFMT_RIGHT; // Right-aligned column.
+
+		// Insert the columns into the list view.
+		ListView_InsertColumn(m_hWnd, iCol, &lvc);
+	}
+
+
+
+
+
+
+	FillList();
 
 	*phWnd = m_hWnd;
 	return S_OK;
@@ -255,4 +289,53 @@ STDMETHODIMP CShellViewImpl::Exec ( const GUID* pguidCmdGroup, DWORD nCmdID,
 	}
 
 	return hrRet;
+}
+
+
+// FillList() populates the list control.
+void CShellViewImpl::FillList()
+{
+	IEnumIDList *pEnum = NULL;
+	LPITEMIDLIST pidl = NULL;
+	HRESULT hr;
+
+	// Get an enumerator object for the folder's contents.  Since this simple
+	// extension doesn't deal with subfolders, we request only non-folder
+	// objects.
+
+	hr = m_psfContainingFolder->EnumObjects ( m_hWnd, SHCONTF_NONFOLDERS,&pEnum );
+
+	if ( FAILED(hr) )
+		return;
+
+	// Stop redrawing to avoid flickering
+	SendMessage(m_hWnd,WM_SETREDRAW,FALSE,0);
+
+	// Add items.
+	DWORD dwFetched;
+	while ( pEnum->Next(1, &pidl, &dwFetched) == S_OK )
+	{
+		LVITEM lvi = {0};
+		lvi.mask = LVIF_TEXT | LVIF_IMAGE | LVIF_PARAM;
+		lvi.iImage = 0;
+		  
+		// Store PIDL to the drive letter, using the lParam member for each item
+        MYPIDLDATA* data = m_PidlMgr.GetData ( pidl );
+        lvi.lParam = (LPARAM) m_PidlMgr.Create ( data );
+
+		// Column 1
+		lvi.pszText = data->wszDisplayName;
+
+		// free memory allocated by pEnum->Next
+		CoTaskMemFree(pidl);
+
+		ListView_InsertItem(m_hWnd,&lvi);
+	}
+
+	// the calling application must free the returned IEnumIDList object by calling its Release method.
+	pEnum->Release();
+
+	// Redraw the list view.
+	SendMessage(m_hWnd,WM_SETREDRAW,TRUE,0);
+	UpdateWindow(m_hWnd);
 }

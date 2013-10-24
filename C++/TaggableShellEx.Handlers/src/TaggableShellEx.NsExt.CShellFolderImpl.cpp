@@ -3,11 +3,13 @@
 #include "../include/TaggableShellEx.Taghelper.h"
 #include "../include/TaggableShellEx.NsExt.CShellFolderImpl.h"
 #include "../include/TaggableShellEx.NsExt.CShellViewImpl.h"
+#include "../include/TaggableShellEx.NsExt.CEnumIDListImpl.h"
 
 CShellFolderImpl::CShellFolderImpl(void): 
 	_cRef(1) // IUnknown
 	,m_pIDFolder(NULL)
 	,_hdlg(NULL)
+
 {
 	::PrintLog(L"CShellFolderImpl.ctor");
 
@@ -43,7 +45,6 @@ IFACEMETHODIMP CShellFolderImpl::QueryInterface(REFIID riid, void ** ppv)
 	{
 		QITABENT(CHandler, IShellFolder),
 		QITABENT(CHandler, IPersistFolder),
-		QITABENT(CHandler, IEnumIDList),
 		{0},
 	};
 	return QISearch(this, qit, riid, ppv);
@@ -90,11 +91,8 @@ HRESULT CShellFolderImpl::GetClassID(
 	if ( NULL == pClassID )
 		return E_POINTER;
 
-	auto c = &__uuidof(CShellFolderImpl);
-	pClassID->Data1 = c->Data1;
-	pClassID->Data2 = c->Data2;
-	pClassID->Data3 = c->Data3;
-	memcpy(pClassID->Data4,c->Data4,sizeof(pClassID->Data4));
+	pClassID = (CLSID *)&__uuidof(CShellFolderImpl);
+
 	return S_OK;
 }
 
@@ -107,7 +105,12 @@ HRESULT CShellFolderImpl::BindToObject(
 	void **ppvOut
 	)
 {
-	::PrintLog(L"ShellFolder::BindToObject: riid = %X-%X-%X-%X",riid.Data1,riid.Data2,riid.Data3,riid.Data4);
+#ifdef _DEBUG
+	LPOLESTR str;
+	StringFromIID(riid,&str);
+	::PrintLog(L"ShellFolder::BindToObject: riid =%s",str);
+	CoTaskMemFree(str);
+#endif
 
 	HRESULT hr = S_FALSE;
 
@@ -115,10 +118,17 @@ HRESULT CShellFolderImpl::BindToObject(
 	hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
 	if( hr == S_OK )
 	{
-		pShellFolder->AddRef();
 		hr = ((CShellFolderImpl*)pShellFolder)->_init ( this, pidl );
 
-		hr =pShellFolder->QueryInterface(riid,ppvOut);
+		if ( FAILED(hr) )
+		{
+			pShellFolder->Release();
+			return hr;
+		}
+
+		pShellFolder->AddRef();
+
+		hr = pShellFolder->QueryInterface(riid,ppvOut);
 		pShellFolder->Release();
 	}
 
@@ -132,52 +142,102 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	void **ppv
 	)
 {
-	::PrintLog(L"ShellFolder::CreateViewObject: riid = %X-%X-%X-%X",riid.Data1,riid.Data2,riid.Data3,riid.Data4);
+	/*
+	riid = 
+	{IID_IConnectionFactory}
+	{IID_IDropTarget}
+	{IID_IShellView}
+	{IID_ITopViewAwareItem}
+	{IID_IFrameLayoutDefinitionFactory}
+	{IID_IFrameLayoutDefinition}
+	*/
+#ifdef _DEBUG
+	LPOLESTR str;
+	StringFromIID(riid,&str);
+	::PrintLog(L"ShellFolder::CreateViewObject: riid =%s",str);
+	CoTaskMemFree(str);
+#endif
 
-	HRESULT hr = S_FALSE;
+	if ( NULL == ppv )
+		return E_POINTER;
 
-	IShellView* pShellView = NULL;
 	*ppv = NULL;
+	HRESULT hr = S_FALSE;
+	IShellView* pShellView = NULL;
+
 	// Create a new ShellViewImpl COM object.
 	if ( IID_IShellView == riid )
 	{
 		hr = CoCreateInstance(__uuidof(CShellViewImpl), NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellView)); 
 
+		if ( FAILED(hr) )
+			return hr;
+
 		// Object initialization - pass the object its containing folder (this).
 		hr = ((CShellViewImpl*)pShellView)->_init ( this );
+
+		if ( FAILED(hr) )
+		{
+			pShellView->Release();
+			return hr;
+		}
+
+		// AddRef() the object while we're using it.
+		pShellView->AddRef();
+
+
+		// Return the requested interface back to the shell.
+		hr = pShellView->QueryInterface ( riid, ppv );
+		pShellView->Release();
 	}
 	else
 	{
 		hr = CoCreateInstance(riid, NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellView)); 
 	}
-
-	if ( FAILED(hr) )
-		return hr;
-
-	// AddRef() the object while we're using it.
-	//pShellView->AddRef();
-
-	if ( FAILED(hr) )
-	{
-		pShellView->Release();
-		return hr;
-	}
-
-	// Return the requested interface back to the shell.
-	hr = pShellView->QueryInterface ( riid, ppv );
-	pShellView->Release();
-
 	return hr;
 }
 
 HRESULT CShellFolderImpl::EnumObjects(
 	HWND hwndOwner,
 	SHCONTF grfFlags,
-	IEnumIDList **ppenumIDList
+	IEnumIDList **ppEnumIDList
 	)
 {
-	ppenumIDList = NULL;
-	return S_OK;
+	if ( NULL == ppEnumIDList )
+		return E_POINTER;
+
+	*ppEnumIDList = NULL;
+
+	HRESULT hr;
+
+	CEnumIDListImpl* pEnum = new CEnumIDListImpl();
+	pEnum->AddRef();
+
+	vector<MYPIDLDATA> items;
+	items.clear();
+
+	if ( this->TagHelper.OpenDb() )
+	{
+		this->TagHelper.LoadTags();
+	}
+
+	for (UINT i = 0; i < TagHelper.TagCount; i++)
+	{
+		MYPIDLDATA d = {sizeof(MYPIDLDATA)};
+		d.cb = sizeof(MYPIDLDATA);
+		d.TagIdx = TagHelper.Tags[i].TagIdx;
+		StringCbCopyW(d.wszDisplayName, 
+			sizeof(d.wszDisplayName), TagHelper.Tags[i].Tag);
+		items.push_back(d);
+	}
+
+	pEnum->Init(items);
+
+	// Return an IEnumIDList interface to the caller.
+	hr = pEnum->QueryInterface ( IID_IEnumIDList, (void**) ppEnumIDList );
+	pEnum->Release();
+
+	return hr;
 }
 
 HRESULT CShellFolderImpl::GetAttributesOf(
@@ -225,32 +285,3 @@ HRESULT CShellFolderImpl::ParseDisplayName(
 }
 #pragma endregion
 
-
-// IEnumIDList
-#pragma region IEnumIDList
-HRESULT CShellFolderImpl::Clone(
-	IEnumIDList **ppenum
-	)
-{
-	return S_OK;
-}
-
-
-HRESULT CShellFolderImpl::Next(
-	ULONG celt,
-	LPITEMIDLIST *rgelt,
-	ULONG *pceltFetched
-	)
-{
-	return S_OK;
-}
-
-
-HRESULT CShellFolderImpl::Skip(
-	ULONG celt
-	)
-{
-	return S_OK;
-}
-
-#pragma endregion
