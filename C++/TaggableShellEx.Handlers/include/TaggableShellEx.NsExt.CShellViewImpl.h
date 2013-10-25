@@ -1,5 +1,6 @@
 #pragma once
 #include "dllmain.h"
+#include <Winuser.h> // GWLP_WNDPROC, GWLP_USERDATA
 #include "TaggableShellEx.NsExt.CShellFolderImpl.h"
 #include "TaggableShellEx.NsExt.CEnumIDListImpl.h"
 #include "PidlMgr.h"
@@ -68,10 +69,16 @@ private:
 	CShellFolderImpl*      m_psfContainingFolder;
 	FOLDERSETTINGS m_FolderSettings;
 	IShellBrowser* m_spShellBrowser;
-	
+
 	CPidlMgr     m_PidlMgr;
 
 	void FillList();
 
 };
 
+
+LRESULT CALLBACK WndProc(
+	HWND hwnd,        // handle to window
+	UINT uMsg,        // message identifier
+	WPARAM wParam,    // first message parameter
+	LPARAM lParam);    // second message parameter

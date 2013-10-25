@@ -1,4 +1,8 @@
+#pragma once
 #include "..\include\TaggableShellEx.NsExt.CShellViewImpl.h"
+
+ULONG_PTR lpPrevWndFunc = 0;	// The previous window procedure
+ULONG_PTR lpPrevUserData = 0;	// The previous window procedure
 
 CShellViewImpl::CShellViewImpl(void): 
 	_cRef(1) // IUnknown
@@ -13,7 +17,7 @@ CShellViewImpl::CShellViewImpl(void):
 
 CShellViewImpl::~CShellViewImpl(void)
 {
-	::PrintLog(L"CShellViewImpl.ctor");
+	::PrintLog(L"CShellViewImpl.~ctor");
 
 	if ( NULL != m_psfContainingFolder )
 		m_psfContainingFolder->Release();
@@ -82,7 +86,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 
 	// Init member variables.
 	m_spShellBrowser = psb;
-	//m_spShellBrowser->AddRef();
+	m_spShellBrowser->AddRef();	// The view should call this interface's AddRef method and keep the interface pointer to allow communication with the Windows Explorer window
 	m_spShellBrowser->GetWindow(&m_hwndParent);
 
 	m_FolderSettings = *lpfs;
@@ -103,13 +107,16 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	}
 
 	*phWnd = NULL;
-	m_hWnd = CreateWindowEx ( dwListExStyles, WC_LISTVIEW, NULL, dwListStyles,0, 0,
+	m_hWnd = CreateWindowEx ( dwListExStyles,WC_LISTVIEW, NULL, dwListStyles,0, 0,
 		prcView->right - prcView->left,prcView->bottom - prcView->top,
 		m_hwndParent, NULL, g_hInst, 0 );
 
 	if ( NULL == m_hWnd )
 		return -1;
 
+	// change the message procedure
+	lpPrevWndFunc = SetWindowLongPtr(m_hWnd,GWLP_WNDPROC, (LONG_PTR)WndProc);
+	lpPrevUserData = SetWindowLongPtr(m_hWnd,GWLP_USERDATA,(LONG_PTR)this);
 
 	LVCOLUMN lvc;
 	int iCol = 0;
@@ -150,17 +157,10 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 STDMETHODIMP CShellViewImpl::DestroyViewWindow()
 {
 	// Clean up the UI.
-
 	UIActivate ( SVUIA_DEACTIVATE );
-
-	// Destroy our windows & other resources.
-
-	//if ( NULL != m_hMenu )
-	//   DestroyMenu ( m_hMenu );
-
-	//m_wndList.DeleteAllItems();
-	//m_wndList.DestroyWindow();
 	DestroyWindow(m_hWnd);
+
+	Release();
 
 	return S_OK;
 }
@@ -349,3 +349,53 @@ void CShellViewImpl::FillList()
 	SendMessage(m_hWnd,WM_SETREDRAW,TRUE,0);
 	UpdateWindow(m_hWnd);
 }
+
+LRESULT CALLBACK WndProc(
+	HWND hwnd,        // handle to window
+	UINT uMsg,        // message identifier
+	WPARAM wParam,    // first message parameter
+	LPARAM lParam)    // second message parameter
+{ 
+	//::PrintLog(L"Message: 0x%x, wParam = 0x%x, lParam = 0x%x, hwnd = 0x%x", uMsg, wParam, lParam, hwnd);
+
+	CShellViewImpl* pView = NULL;
+	LONG_PTR x = GetWindowLongPtr(hwnd,GWLP_USERDATA);
+	if ( x > 0)
+	{
+		pView = (CShellViewImpl*)x;
+	}
+
+	switch (uMsg) 
+	{ 
+		//case WM_CREATE: 
+		//	// Initialize the window. 
+		//	return 0; 
+
+		//case WM_PAINT: 
+		//	// Paint the window's client area. 
+		//	return 0; 
+
+		//case WM_SIZE: 
+		//	// Set the size and position of the window. 
+		//	return 0; 
+
+		//case WM_DESTROY: 
+		//	return 0; 
+
+	case WM_NCDESTROY: 
+		// Clean up window-specific data objects. 
+		{
+			// Remove the subclass from the control. 
+			SetWindowLongPtr(hwnd, GWLP_WNDPROC,(LONG_PTR) lpPrevWndFunc); 
+			SetWindowLongPtr(hwnd,GWLP_USERDATA,lpPrevUserData);
+		}
+		return 0; 
+		// 
+		// Process other messages. 
+		// 
+
+	default:
+		return CallWindowProc((WNDPROC)lpPrevWndFunc,hwnd, uMsg, wParam, lParam); 
+	} 
+	return 0; 
+} 

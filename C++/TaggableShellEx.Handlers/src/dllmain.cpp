@@ -196,6 +196,8 @@ public:
 private:
 	~CClassFactory()
 	{
+		::PrintLog(L"CClassFactory.~ctor");
+		
 		DllRelease();
 	}
 

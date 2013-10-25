@@ -100,11 +100,13 @@ HRESULT CHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserve
 }
 
 LRESULT CALLBACK DlgProc_TagManager(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
-	auto fTagManager = FormTagManager::instance();
-	//if (uMsg == WM_KEYDOWN || uMsg == WM_KEYUP ) {
-	//	SendMessage (hwnd, uMsg, wParam, lParam);
-	//}
-	return fTagManager->DlgProc(hwnd,uMsg,wParam,lParam);
+	FormTagManager *pebhd = reinterpret_cast<FormTagManager *>(GetWindowLongPtr(hwnd, DWLP_USER));
+	if (uMsg == WM_INITDIALOG)
+	{
+		pebhd = FormTagManager::instance();
+		SetWindowLongPtr(hwnd, DWLP_USER, reinterpret_cast<LONG_PTR>(pebhd));
+	}
+	return pebhd ? pebhd->DlgProc(hwnd, uMsg, wParam, lParam) : 0;
 }
 
 // http://msdn.microsoft.com/en-us/library/windows/desktop/bb776096(v=vs.85).aspx

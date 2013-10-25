@@ -9,13 +9,6 @@
 
 #define WIN32_LEAN_AND_MEAN             //  从 Windows 头文件中排除极少使用的信息
 
-// 导入静态库     
-#pragma comment(lib, "Comctl32.lib")
-// 开启视觉效果 Copy from MSDN     
-#pragma comment(linker,"\"/manifestdependency:type='win32' \
-name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
-processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
-
 #include <Windows.h>  
 #include <Windowsx.h>
 #include <new> // std::nothrow
@@ -32,6 +25,13 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include <process.h>		// _beginthreadex
 #include <vector>
 #include "../src/resource.h"
+
+// 导入静态库     
+#pragma comment(lib, "Comctl32.lib")
+// 开启视觉效果 Copy from MSDN     
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 using namespace std;
 using namespace std::tr2::sys;

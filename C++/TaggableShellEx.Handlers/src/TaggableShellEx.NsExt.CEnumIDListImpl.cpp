@@ -18,7 +18,7 @@ IFACEMETHODIMP CEnumIDListImpl::QueryInterface(REFIID riid, void ** ppv)
 {
 	static const QITAB qit[] =
 	{
-		QITABENT(CHandler, IEnumIDList),
+		QITABENT(CEnumIDListImpl, IEnumIDList),
 		{0},
 	};
 	return QISearch(this, qit, riid, ppv);
