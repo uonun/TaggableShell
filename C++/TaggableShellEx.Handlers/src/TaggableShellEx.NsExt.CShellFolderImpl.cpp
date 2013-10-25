@@ -43,8 +43,8 @@ IFACEMETHODIMP CShellFolderImpl::QueryInterface(REFIID riid, void ** ppv)
 {
 	static const QITAB qit[] =
 	{
-		QITABENT(CHandler, IShellFolder),
-		QITABENT(CHandler, IPersistFolder),
+		QITABENT(CShellFolderImpl, IShellFolder),
+		QITABENT(CShellFolderImpl, IPersistFolder),
 		{0},
 	};
 	return QISearch(this, qit, riid, ppv);
@@ -68,6 +68,8 @@ IFACEMETHODIMP_(ULONG) CShellFolderImpl::Release()
 // IPersistFolder
 HRESULT CShellFolderImpl::Initialize(LPCITEMIDLIST pIDFolder)
 {
+	::PrintLog(L"CShellFolderImpl::Initialize");
+
 	// If Initialize has already been called, release the old PIDL
 	if(m_pIDFolder!=NULL){
 		ILFree(m_pIDFolder);
@@ -78,6 +80,21 @@ HRESULT CShellFolderImpl::Initialize(LPCITEMIDLIST pIDFolder)
 	if(pIDFolder)
 	{
 		m_pIDFolder = ILClone(pIDFolder);
+
+		//UINT pszDisplayNameBuffSize = 0;
+		//WCHAR pszDisplayName[MAX_PATH] = {0};
+		//STRRET strDispName;	
+		//
+		//LPSHELLFOLDER psfDeskTop = NULL;
+		//// Get an IShellFolder interface pointer
+		//HRESULT hr = SHGetDesktopFolder(&psfDeskTop);
+		//IShellFolder* f;
+		//psfDeskTop->BindToObject(m_pIDFolder,NULL,IID_IShellFolder,(void**)&f);
+
+		//f->GetDisplayNameOf(
+		//psfDeskTop->GetDisplayNameOf(m_pIDFolder, SHGDN_INFOLDER, &strDispName);
+		//StrRetToBuf(&strDispName,m_pIDFolder, pszDisplayName,pszDisplayNameBuffSize);
+
 	}
 
 	return S_OK;
@@ -142,6 +159,7 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	void **ppv
 	)
 {
+	// TODO: THERE MUST BE A BUG THAT IShellView* WILL NOT BE RELEASED AFTER THE SHELL FOLDER CLOSED!!
 	/*
 	riid = 
 	{IID_IConnectionFactory}
@@ -210,8 +228,9 @@ HRESULT CShellFolderImpl::EnumObjects(
 
 	HRESULT hr;
 
-	CEnumIDListImpl* pEnum = new CEnumIDListImpl();
-	pEnum->AddRef();
+	// create a new instance, but released by caller.
+	CEnumIDListImpl *pEnum = new CEnumIDListImpl();
+	//pEnum->AddRef();
 
 	vector<MYPIDLDATA> items;
 	items.clear();
@@ -226,6 +245,7 @@ HRESULT CShellFolderImpl::EnumObjects(
 		MYPIDLDATA d = {sizeof(MYPIDLDATA)};
 		d.cb = sizeof(MYPIDLDATA);
 		d.TagIdx = TagHelper.Tags[i].TagIdx;
+		d.UseCount = TagHelper.Tags[i].UseCount;
 		StringCbCopyW(d.wszDisplayName, 
 			sizeof(d.wszDisplayName), TagHelper.Tags[i].Tag);
 		items.push_back(d);
@@ -246,7 +266,7 @@ HRESULT CShellFolderImpl::GetAttributesOf(
 	SFGAOF *rgfInOut
 	) 
 {
-	*rgfInOut = 0;
+	*rgfInOut = SFGAO_CANDELETE | SFGAO_FILESYSANCESTOR;
 	return S_OK;
 }
 
@@ -256,6 +276,25 @@ HRESULT CShellFolderImpl::GetDisplayNameOf(
 	STRRET *pName
 	)
 {
+	/*
+	SIGDN_NORMALDISPLAY:				新建文本文档.txt
+	SIGDN_PARENTRELATIVEPARSING:		新建文本文档.txt
+	SIGDN_DESKTOPABSOLUTEPARSING:		E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
+	SIGDN_PARENTRELATIVEEDITING:		新建文本文档.txt
+	SIGDN_DESKTOPABSOLUTEEDITING:		E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
+	SIGDN_FILESYSPATH:					E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
+	SIGDN_URL:							file:///E:/Works/UDNZ/udnz.com.ShellEx.TaggableShell/C++/_Debug/x64/新建文本文档.txt
+	SIGDN_PARENTRELATIVEFORADDRESSBAR:	新建文本文档.txt
+	SIGDN_PARENTRELATIVE:				新建文本文档.txt
+	SIGDN_PARENTRELATIVEFORUI:			新建文本文档.txt
+	*/
+
+	auto last = m_PidlMgr.GetLastItem(pidl);
+	auto data =  m_PidlMgr.GetData ( last );
+	pName->uType = STRRET_WSTR;
+	pName->pOleStr = (LPWSTR) CoTaskMemAlloc(sizeof(data->wszDisplayName));
+	StringCbCopy(pName->pOleStr,sizeof(data->wszDisplayName),data->wszDisplayName);
+
 	return S_OK;
 }
 

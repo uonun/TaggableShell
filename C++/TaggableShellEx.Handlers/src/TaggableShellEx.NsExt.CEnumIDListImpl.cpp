@@ -41,6 +41,7 @@ IFACEMETHODIMP_(ULONG) CEnumIDListImpl::Release()
 
 void CEnumIDListImpl::Init(vector<MYPIDLDATA> items)
 {
+	_items.clear();
 	_items = items;
 }
 
@@ -87,6 +88,7 @@ HRESULT CEnumIDListImpl::Next(
 			//that is the PIDL's first SHITEMID structure
 			pidlOut->cb = uSize;
 			pidlOut->TagIdx = next.TagIdx;
+			pidlOut->UseCount = next.UseCount;
 			StringCbCopyW(pidlOut->wszDisplayName, 
 				sizeof(pidlOut->wszDisplayName), next.wszDisplayName);
 

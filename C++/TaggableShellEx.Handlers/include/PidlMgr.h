@@ -5,6 +5,7 @@
 typedef struct tagMYPIDLDATA {
   USHORT cb;	// MAKE SURE cb = sizeof(MYPIDLDATA)
   UINT TagIdx;
+  UINT UseCount;
   WCHAR wszDisplayName[MAXLENGTH_EACHTAG];
 } MYPIDLDATA, *LPMYPIDLDATA;
 

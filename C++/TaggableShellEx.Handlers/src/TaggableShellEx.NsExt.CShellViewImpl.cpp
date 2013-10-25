@@ -111,11 +111,8 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 		return -1;
 
 
-
-
-	WCHAR szText[256];     // Temporary buffer.
 	LVCOLUMN lvc;
-	int iCol;
+	int iCol = 0;
 
 	// Initialize the LVCOLUMN structure.
 	// The mask specifies that the format, width, text,
@@ -123,25 +120,23 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
 
 	// Add the columns.
-	for (iCol = 0; iCol < 4; iCol++)
+	lvc.iSubItem = iCol++;
+	lvc.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME);
+	lvc.cx = 200;									// Width of column in pixels.
+	lvc.fmt = LVCFMT_LEFT;  // Left-aligned column.
+	// Insert the columns into the list view.
+	ListView_InsertColumn(m_hWnd, iCol, &lvc);
+
+	// Add other columns for REPORT
+	if ( dwListStyles & LVS_REPORT )
 	{
-		lvc.iSubItem = iCol;
-		lvc.pszText = L"sdfsdf";
-		lvc.cx = 100;               // Width of column in pixels.
-
-		if ( iCol < 2 )
-			lvc.fmt = LVCFMT_LEFT;  // Left-aligned column.
-		else
-			lvc.fmt = LVCFMT_RIGHT; // Right-aligned column.
-
+		lvc.iSubItem = iCol++;
+		lvc.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT);
+		lvc.cx = 80;									// Width of column in pixels.
+		lvc.fmt = LVCFMT_RIGHT;  // Left-aligned column.
 		// Insert the columns into the list view.
 		ListView_InsertColumn(m_hWnd, iCol, &lvc);
 	}
-
-
-
-
-
 
 	FillList();
 
@@ -184,8 +179,8 @@ STDMETHODIMP CShellViewImpl::Refresh()
 {
 	// Repopulate the list control.
 
-	//m_wndList.DeleteAllItems();
-	//FillList();
+	ListView_DeleteAllItems(m_hWnd);
+	FillList();
 
 	return S_OK;
 }
@@ -313,23 +308,38 @@ void CShellViewImpl::FillList()
 
 	// Add items.
 	DWORD dwFetched;
+	int i = 0;
 	while ( pEnum->Next(1, &pidl, &dwFetched) == S_OK )
 	{
+		// Store PIDL to the drive letter, using the lParam member for each item
+		MYPIDLDATA* data = m_PidlMgr.GetData ( pidl );
+		// free memory allocated by pEnum->Next
+		CoTaskMemFree(pidl);
+
 		LVITEM lvi = {0};
 		lvi.mask = LVIF_TEXT | LVIF_IMAGE | LVIF_PARAM;
 		lvi.iImage = 0;
-		  
-		// Store PIDL to the drive letter, using the lParam member for each item
-        MYPIDLDATA* data = m_PidlMgr.GetData ( pidl );
-        lvi.lParam = (LPARAM) m_PidlMgr.Create ( data );
+		lvi.iItem = i;	//Zero-based index of the item to which this structure refers.
+		lvi.lParam = (LPARAM) m_PidlMgr.Create ( data );
 
 		// Column 1
 		lvi.pszText = data->wszDisplayName;
 
-		// free memory allocated by pEnum->Next
-		CoTaskMemFree(pidl);
+		auto x = ListView_InsertItem(m_hWnd,&lvi);
+		if( x != -1 ){
+			// show more details in other column.
+			auto style = GetWindowStyle(m_hWnd);
+			if ( style & LVS_REPORT )
+			{
+				// the max length of UINT is 64 + \0 = 65.
+				wchar_t buffer[65];
+				_ui64tow_s(data->UseCount,buffer,65,10);
+				ListView_SetItemText(m_hWnd,i,1,buffer);
+			}
 
-		ListView_InsertItem(m_hWnd,&lvi);
+			i++;
+		}
+
 	}
 
 	// the calling application must free the returned IEnumIDList object by calling its Release method.

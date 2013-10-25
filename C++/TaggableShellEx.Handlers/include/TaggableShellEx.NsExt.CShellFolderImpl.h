@@ -1,6 +1,7 @@
 #pragma once
 #include "dllmain.h"
 #include "TaggableShellEx.Taghelper.h"
+#include "PidlMgr.h"
 
 class CShellFolderImpl:
 	public IShellFolder,		// ShellFolder
@@ -21,6 +22,7 @@ public:
 		HKEY hRegKey);
 
 	// IPersistFolder
+	// @pidl: The address of the ITEMIDLIST (item identifier list) structure that specifies the absolute location of the folder.
 	HRESULT Initialize(LPCITEMIDLIST pidl);
 
 	// IPersist which is the base of IPersistFolder
@@ -105,6 +107,7 @@ public:
 	HRESULT _init ( CShellFolderImpl* pParentFolder, LPCITEMIDLIST pidl )
 	{
 		m_pParentFolder = pParentFolder;
+		m_PIDLCurrent = (LPITEMIDLIST)pidl;
 		return S_OK;
 	}
 
@@ -118,8 +121,9 @@ private:
 	long _cRef;
 
 	// IPersistFolder
-	LPITEMIDLIST  m_pIDFolder;           //The folder's PIDL
+	LPITEMIDLIST  m_pIDFolder;           // absolute location of the folder
+	LPITEMIDLIST       m_PIDLCurrent;	 // relevant location to the folder
 
-	LPITEMIDLIST       m_pidl;
 	CShellFolderImpl*  m_pParentFolder;
+	CPidlMgr m_PidlMgr;
 };

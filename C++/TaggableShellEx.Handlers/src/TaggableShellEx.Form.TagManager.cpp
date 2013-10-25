@@ -85,7 +85,7 @@ void FormTagManager::LoadTags(void)
 		{
 			item.pszText = LPSTR_TEXTCALLBACK;
 			item.mask = LVIF_TEXT | LVIF_IMAGE|LVIF_STATE;
-			item.iItem = i;
+			item.iItem = i;	//Zero-based index of the item to which this structure refers.
 			item.stateMask = 0;
 			item.iSubItem  = 0;
 			item.state     = 0;
