@@ -7,7 +7,9 @@
 
 class CShellViewImpl:
 	public IShellView,
-	public IOleCommandTarget
+	public IOleCommandTarget,
+	public IServiceProvider,
+	public ICommDlgBrowser
 {
 public:
 	CShellViewImpl(void);
@@ -18,9 +20,16 @@ public:
 	IFACEMETHODIMP_(ULONG) AddRef();
 	IFACEMETHODIMP_(ULONG) Release();
 
+	// IServiceProvider
+	STDMETHODIMP QueryService(REFGUID guidService, REFIID riid, void **ppv);
+
+	// ICommDlgBrowser
+	STDMETHODIMP OnDefaultCommand(IShellView * /* psv */);
+	STDMETHODIMP OnStateChange(IShellView * /* psv */, ULONG uChange);
+	STDMETHODIMP IncludeObject(IShellView * /* psv */, PCUITEMID_CHILD /* pidl */);
+
 	// IOleWindow
 	STDMETHOD(GetWindow)(HWND* phwnd);
-
 	STDMETHOD(ContextSensitiveHelp)(BOOL){ return E_NOTIMPL; }
 
 	// IShellView methods
@@ -63,6 +72,9 @@ private:
 	// IUnknown
 	long _cRef;
 
+	IExplorerBrowser *_peb;
+	IResultsFolder *_prf;
+
 	HWND m_hwndParent;
 	HWND m_hWnd;
 
@@ -73,6 +85,15 @@ private:
 	CPidlMgr     m_PidlMgr;
 
 	void FillList();
+
+
+
+	// In C++ you must employ a free (C) function or a static
+	// class member function as the thread entry-point-function.
+	// Furthermore, _beginthreadex() demands that the thread
+	// entry function signature take a single (void*) and returned
+	// an unsigned.
+	static unsigned __stdcall ThreadStaticEntryPoint(void * pThis);
 
 };
 
