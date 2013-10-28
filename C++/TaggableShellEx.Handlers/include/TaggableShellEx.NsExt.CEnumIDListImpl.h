@@ -14,7 +14,7 @@ public:
 	IFACEMETHODIMP_(ULONG) AddRef();
 	IFACEMETHODIMP_(ULONG) Release();
 
-	void Init(vector<MYPIDLDATA>);
+	void Init(PIDLIST_ABSOLUTE parent,vector<MYPIDLDATA>);
 
 	// IEnumIDList
 #pragma region IEnumIDList
@@ -42,5 +42,8 @@ private:
 
 	UINT _currentIdx;
 	vector<MYPIDLDATA> _items;
+	PIDLIST_ABSOLUTE _parent;
+		CPidlMgr     m_PidlMgr;
+
 };
 

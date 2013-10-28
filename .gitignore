@@ -157,3 +157,5 @@ $RECYCLE.BIN/
 .DS_Store
 
 
+C++/TaggableShellEx.Handlers/include/TaggableShellEx.NsExt.CShellItemImpl_Tag.h
+C++/TaggableShellEx.Handlers/src/TaggableShellEx.NsExt.CShellItemImpl_Tag.cpp

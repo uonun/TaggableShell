@@ -1,8 +1,8 @@
 #pragma once
 #include "dllmain.h"
-#include <Winuser.h> // GWLP_WNDPROC, GWLP_USERDATA
 #include "TaggableShellEx.NsExt.CShellFolderImpl.h"
 #include "TaggableShellEx.NsExt.CEnumIDListImpl.h"
+//#include "TaggableShellEx.NsExt.CShellItemImpl_Tag.h"
 #include "PidlMgr.h"
 
 class CShellViewImpl:
@@ -13,7 +13,6 @@ class CShellViewImpl:
 {
 public:
 	CShellViewImpl(void);
-	virtual ~CShellViewImpl(void);
 
 	// IUnknown
 	IFACEMETHODIMP QueryInterface(REFIID riid, void ** ppv);
@@ -57,17 +56,12 @@ public:
 	STDMETHOD(Exec)(const GUID*, DWORD, DWORD, VARIANTARG*, VARIANTARG*);
 
 	// Other stuff
-	HRESULT _init ( CShellFolderImpl* pContainingFolder )
-	{
-		m_psfContainingFolder = pContainingFolder;
+	HRESULT Init ( CShellFolderImpl* pContainingFolder );
 
-		if ( NULL != m_psfContainingFolder )
-			m_psfContainingFolder->AddRef();
-
-		return S_OK;
-	}
+	HRESULT GetItemFromView(IFolderView2 *pfv, int iItem, REFIID riid, void **ppv);
 
 private:
+	virtual ~CShellViewImpl(void);
 
 	// IUnknown
 	long _cRef;
@@ -86,14 +80,15 @@ private:
 
 	void FillList();
 
-
+	// the ABSOLUTE pidl of current IShellView
+	//ITEMIDLIST* _currentItem;
 
 	// In C++ you must employ a free (C) function or a static
 	// class member function as the thread entry-point-function.
 	// Furthermore, _beginthreadex() demands that the thread
 	// entry function signature take a single (void*) and returned
 	// an unsigned.
-	static unsigned __stdcall ThreadStaticEntryPoint(void * pThis);
+	static unsigned __stdcall FillList_Tags(void * pThis);
 
 };
 

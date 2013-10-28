@@ -1,15 +1,10 @@
 #pragma once
-#include "../include/dllmain.h"
-#include "../include/TaggableShellEx.Taghelper.h"
 #include "../include/TaggableShellEx.NsExt.CShellFolderImpl.h"
-#include "../include/TaggableShellEx.NsExt.CShellViewImpl.h"
-#include "../include/TaggableShellEx.NsExt.CEnumIDListImpl.h"
 
 CShellFolderImpl::CShellFolderImpl(void): 
 	_cRef(1) // IUnknown
-	,m_pIDFolder(NULL)
+	,m_pIDFolder(NULL),m_PIDLCurrent(NULL)
 	,_hdlg(NULL)
-
 {
 	::PrintLog(L"CShellFolderImpl.ctor");
 
@@ -80,21 +75,6 @@ HRESULT CShellFolderImpl::Initialize(LPCITEMIDLIST pIDFolder)
 	if(pIDFolder)
 	{
 		m_pIDFolder = ILClone(pIDFolder);
-
-		//UINT pszDisplayNameBuffSize = 0;
-		//WCHAR pszDisplayName[MAX_PATH] = {0};
-		//STRRET strDispName;	
-		//
-		//LPSHELLFOLDER psfDeskTop = NULL;
-		//// Get an IShellFolder interface pointer
-		//HRESULT hr = SHGetDesktopFolder(&psfDeskTop);
-		//IShellFolder* f;
-		//psfDeskTop->BindToObject(m_pIDFolder,NULL,IID_IShellFolder,(void**)&f);
-
-		//f->GetDisplayNameOf(
-		//psfDeskTop->GetDisplayNameOf(m_pIDFolder, SHGDN_INFOLDER, &strDispName);
-		//StrRetToBuf(&strDispName,m_pIDFolder, pszDisplayName,pszDisplayNameBuffSize);
-
 	}
 
 	return S_OK;
@@ -135,7 +115,7 @@ HRESULT CShellFolderImpl::BindToObject(
 	hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
 	if( hr == S_OK )
 	{
-		hr = ((CShellFolderImpl*)pShellFolder)->_init ( this, pidl );
+		hr = ((CShellFolderImpl*)pShellFolder)->Init ( m_pIDFolder,(PIDLIST_RELATIVE) pidl );
 
 		if ( FAILED(hr) )
 		{
@@ -192,7 +172,7 @@ HRESULT CShellFolderImpl::CreateViewObject(
 			return hr;
 
 		// Object initialization - pass the object its containing folder (this).
-		hr = ((CShellViewImpl*)pShellView)->_init ( this );
+		hr = ((CShellViewImpl*)pShellView)->Init ( this );
 
 		if ( FAILED(hr) )
 		{
@@ -230,7 +210,6 @@ HRESULT CShellFolderImpl::EnumObjects(
 
 	// create a new instance, but released by caller.
 	CEnumIDListImpl *pEnum = new CEnumIDListImpl();
-	//pEnum->AddRef();
 
 	vector<MYPIDLDATA> items;
 	items.clear();
@@ -240,18 +219,33 @@ HRESULT CShellFolderImpl::EnumObjects(
 		this->TagHelper.LoadTags();
 	}
 
-	for (UINT i = 0; i < TagHelper.TagCount; i++)
+	if ( grfFlags & SHCONTF_FOLDERS ){
+		for (UINT i = 0; i < TagHelper.TagCount; i++)
+		{
+			MYPIDLDATA d = {sizeof(MYPIDLDATA)};
+			d.cb = sizeof(MYPIDLDATA);
+			d.TagIdx = TagHelper.Tags[i].TagIdx;
+			d.UseCount = TagHelper.Tags[i].UseCount;
+			StringCbCopyW(d.wszDisplayName, 
+				sizeof(d.wszDisplayName), TagHelper.Tags[i].Tag);
+			items.push_back(d);
+		}
+	}
+	else
 	{
+		auto data = m_PidlMgr.GetData(m_PIDLCurrent);
+		::PrintLog(data->wszDisplayName);
+
 		MYPIDLDATA d = {sizeof(MYPIDLDATA)};
 		d.cb = sizeof(MYPIDLDATA);
-		d.TagIdx = TagHelper.Tags[i].TagIdx;
-		d.UseCount = TagHelper.Tags[i].UseCount;
+		d.TagIdx = 1;
+		d.UseCount = 1;
 		StringCbCopyW(d.wszDisplayName, 
-			sizeof(d.wszDisplayName), TagHelper.Tags[i].Tag);
+			sizeof(d.wszDisplayName), L"AA");
 		items.push_back(d);
 	}
 
-	pEnum->Init(items);
+	pEnum->Init(m_pIDFolder,items);
 
 	// Return an IEnumIDList interface to the caller.
 	hr = pEnum->QueryInterface ( IID_IEnumIDList, (void**) ppEnumIDList );
@@ -276,6 +270,7 @@ HRESULT CShellFolderImpl::GetDisplayNameOf(
 	STRRET *pName
 	)
 {
+	::PrintLog(L"ShellFolder::GetDisplayNameOf");
 	/*
 	SIGDN_NORMALDISPLAY:				新建文本文档.txt
 	SIGDN_PARENTRELATIVEPARSING:		新建文本文档.txt
@@ -295,6 +290,8 @@ HRESULT CShellFolderImpl::GetDisplayNameOf(
 	pName->pOleStr = (LPWSTR) CoTaskMemAlloc(sizeof(data->wszDisplayName));
 	StringCbCopy(pName->pOleStr,sizeof(data->wszDisplayName),data->wszDisplayName);
 
+	::PrintLog(L"Got name: %s",pName->pOleStr);
+
 	return S_OK;
 }
 
@@ -307,6 +304,18 @@ HRESULT CShellFolderImpl::GetUIObjectOf(
 	void **ppv
 	)
 {
+#ifdef _DEBUG
+	LPOLESTR str;
+	StringFromIID(riid,&str);
+	::PrintLog(L"ShellFolder::GetUIObjectOf: riid =%s",str);
+	CoTaskMemFree(str);
+#endif
+	if ( IID_IContextMenu == riid )
+	{
+		/*	HMENU m_hMenu = CreateMenu();
+		m_hMenu*/
+	}
+
 	*ppv = NULL;
 	return E_NOINTERFACE;
 }
@@ -320,6 +329,7 @@ HRESULT CShellFolderImpl::ParseDisplayName(
 	ULONG *pdwAttributes
 	)
 {
+	::PrintLog(L"ShellFolder::ParseDisplayName");
 	return S_OK;
 }
 #pragma endregion

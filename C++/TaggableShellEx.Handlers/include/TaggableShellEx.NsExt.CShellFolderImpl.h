@@ -1,6 +1,8 @@
 #pragma once
 #include "dllmain.h"
 #include "TaggableShellEx.Taghelper.h"
+#include "TaggableShellEx.NsExt.CShellViewImpl.h"
+#include "TaggableShellEx.NsExt.CEnumIDListImpl.h"
 #include "PidlMgr.h"
 
 class CShellFolderImpl:
@@ -15,12 +17,7 @@ public:
 	IFACEMETHODIMP QueryInterface(REFIID riid, void ** ppv);
 	IFACEMETHODIMP_(ULONG) AddRef();
 	IFACEMETHODIMP_(ULONG) Release();
-
-	// IShellExtInit for ContextMenu, PropertyPage
-	STDMETHODIMP Initialize(LPCITEMIDLIST pIDFolder, 
-		IDataObject *pDataObj, 
-		HKEY hRegKey);
-
+	
 	// IPersistFolder
 	// @pidl: The address of the ITEMIDLIST (item identifier list) structure that specifies the absolute location of the folder.
 	HRESULT Initialize(LPCITEMIDLIST pidl);
@@ -104,10 +101,10 @@ public:
 #pragma endregion
 
 	// Init function - call right after constructing a CShellFolderImpl object.
-	HRESULT _init ( CShellFolderImpl* pParentFolder, LPCITEMIDLIST pidl )
+	HRESULT Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current )
 	{
-		m_pParentFolder = pParentFolder;
-		m_PIDLCurrent = (LPITEMIDLIST)pidl;
+		m_pIDFolder = pidl_perent;
+		m_PIDLCurrent = pidl_current;
 		return S_OK;
 	}
 
@@ -115,15 +112,14 @@ public:
 
 	CTaghelper TagHelper;
 
+	// IPersistFolder
+	PIDLIST_ABSOLUTE  m_pIDFolder;           // absolute location of the folder
+	PIDLIST_RELATIVE  m_PIDLCurrent;		 // relevant location to the folder
+
 private:
 
 	// IUnknown
 	long _cRef;
 
-	// IPersistFolder
-	LPITEMIDLIST  m_pIDFolder;           // absolute location of the folder
-	LPITEMIDLIST       m_PIDLCurrent;	 // relevant location to the folder
-
-	CShellFolderImpl*  m_pParentFolder;
 	CPidlMgr m_PidlMgr;
 };

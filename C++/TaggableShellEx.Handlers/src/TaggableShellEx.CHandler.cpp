@@ -1,6 +1,4 @@
 #pragma once
-#include "resource.h"
-#include "../include/dllmain.h"
 #include "../include/TaggableShellEx.CHandler.h"
 
 CHandler::CHandler() : 

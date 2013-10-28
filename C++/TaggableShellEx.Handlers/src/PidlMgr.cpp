@@ -74,6 +74,8 @@ LPITEMIDLIST CPidlMgr::GetNextItem ( LPCITEMIDLIST pidl )
 /*---------------------------------------------------------------*/
 LPITEMIDLIST CPidlMgr::GetLastItem ( LPCITEMIDLIST pidl )
 {
+	return ILFindLastID(pidl);
+/*
 	LPITEMIDLIST pidlLast = NULL;
 
 	_ASSERT(pidl != NULL);
@@ -84,7 +86,7 @@ LPITEMIDLIST CPidlMgr::GetLastItem ( LPCITEMIDLIST pidl )
 		pidl = GetNextItem ( pidl );
 	}
 
-	return pidlLast;
+	return pidlLast;*/
 }
 
 
@@ -122,7 +124,7 @@ MYPIDLDATA* CPidlMgr::GetData ( LPCITEMIDLIST pidl )
 	MYPIDLDATA* pData;
 
 	if ( NULL == pidl )
-		return '\0';
+		return NULL;
 
 	// Get the last item of the PIDL to make sure we get the right TCHAR
 	// in case of multiple nesting levels
@@ -160,7 +162,6 @@ LPITEMIDLIST CPidlMgr::Copy ( LPCITEMIDLIST pidlSrc )
 
 	return pidlTarget;
 }
-
 
 ///*---------------------------------------------------------------*/
 //// CPidlMgr::GetPidlDescription ( LPITEMIDLIST, LPTSTR)

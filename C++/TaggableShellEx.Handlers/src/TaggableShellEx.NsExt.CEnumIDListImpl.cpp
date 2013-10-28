@@ -1,4 +1,5 @@
-#include "..\include\TaggableShellEx.NsExt.CEnumIDListImpl.h"
+#pragma once
+#include "../include/TaggableShellEx.NsExt.CEnumIDListImpl.h"
 
 CEnumIDListImpl::CEnumIDListImpl(void):
 	_cRef(1) // IUnknown
@@ -10,7 +11,7 @@ CEnumIDListImpl::CEnumIDListImpl(void):
 
 CEnumIDListImpl::~CEnumIDListImpl(void)
 {
-	//Items.clear();
+	_items.clear();
 }
 
 // IUnknown
@@ -39,8 +40,10 @@ IFACEMETHODIMP_(ULONG) CEnumIDListImpl::Release()
 	return cRef;
 }
 
-void CEnumIDListImpl::Init(vector<MYPIDLDATA> items)
+void CEnumIDListImpl::Init(PIDLIST_ABSOLUTE parent,vector<MYPIDLDATA> items)
 {
+	_parent = parent;
+
 	_items.clear();
 	_items = items;
 }
@@ -61,10 +64,13 @@ HRESULT CEnumIDListImpl::Next(
 	ULONG *pceltFetched
 	)
 {
+	*rgelt = NULL;
+
 	LPMYPIDLDATA   pidlOut = NULL;
 	//Calculate the size of the MYPIDLDATA structure.
 	USHORT         uSize = sizeof(MYPIDLDATA);
 	ULONG n = 0;
+
 
 	if ( _currentIdx >= _items.size())
 	{
@@ -104,6 +110,10 @@ HRESULT CEnumIDListImpl::Next(
 		}
 
 	}
+
+	// try to return absolute pidl.
+	//auto d = m_PidlMgr.Copy(_parent);
+	//*rgelt = ILAppendID(d,(SHITEMID*)pidlOut,true);
 
 	*pceltFetched = n;
 

@@ -1,4 +1,5 @@
-#include "..\include\TaggableShellEx.Form.TagManager.h"
+#pragma once
+#include "../include/TaggableShellEx.Form.TagManager.h"
 
 FormTagManager* FormTagManager::p_instance_ = NULL;
 IImageList* FormTagManager::_sysImgList = NULL;
