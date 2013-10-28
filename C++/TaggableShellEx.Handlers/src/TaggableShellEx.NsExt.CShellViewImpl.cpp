@@ -1,8 +1,10 @@
 #pragma once
 #include "..\include\TaggableShellEx.NsExt.CShellViewImpl.h"
+#include <propkey.h>
 
 ULONG_PTR lpPrevWndFunc = 0;	// The previous window procedure
 ULONG_PTR lpPrevUserData = 0;	// The previous window procedure
+UINT const KFD_SELCHANGE = WM_USER;
 
 CShellViewImpl::CShellViewImpl(void): 
 	_cRef(1) // IUnknown
@@ -10,6 +12,7 @@ CShellViewImpl::CShellViewImpl(void):
 	,m_hWnd(NULL)
 	,m_spShellBrowser(NULL)
 	,m_psfContainingFolder(NULL)
+	, _peb(NULL), _prf(NULL)
 {
 	::PrintLog(L"CShellViewImpl.ctor");
 }
@@ -44,9 +47,11 @@ IFACEMETHODIMP CShellViewImpl::QueryInterface(REFIID riid, void ** ppv)
 {
 	static const QITAB qit[] =
 	{
-		QITABENT(CHandler, IShellView),
-		QITABENT(CHandler, IOleWindow),
-		QITABENT(CHandler, IOleCommandTarget),
+		QITABENT(CShellViewImpl, IShellView),
+		QITABENT(CShellViewImpl, IOleCommandTarget),
+		QITABENT(CShellViewImpl, IServiceProvider),
+		QITABENT(CShellViewImpl, ICommDlgBrowser),
+		QITABENT(CShellViewImpl, IOleWindow),
 		{0},
 	};
 	return QISearch(this, qit, riid, ppv);
@@ -67,6 +72,41 @@ IFACEMETHODIMP_(ULONG) CShellViewImpl::Release()
 	return cRef;
 }
 
+// IServiceProvider
+STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void **ppv)
+{
+	HRESULT hr = E_NOINTERFACE;
+	*ppv = NULL;
+	if (guidService == SID_SExplorerBrowserFrame)
+	{
+		// responding to this SID allows us to hook up our ICommDlgBrowser
+		// implementation so we get selection change events from the view
+		hr = QueryInterface(riid, ppv);
+	}
+	return hr;
+}
+
+// ICommDlgBrowser
+STDMETHODIMP CShellViewImpl::OnDefaultCommand(IShellView * /* psv */)
+{
+	//_OnExplore();
+	return S_OK;
+}
+
+STDMETHODIMP CShellViewImpl::OnStateChange(IShellView * /* psv */, ULONG uChange)
+{
+	if (uChange == CDBOSC_SELCHANGE)
+	{
+		PostMessage(m_hWnd, KFD_SELCHANGE, 0, 0);
+	}
+	return S_OK;
+}
+
+STDMETHODIMP CShellViewImpl::IncludeObject(IShellView * /* psv */, PCUITEMID_CHILD /* pidl */)
+{
+	return S_OK;
+}
+
 
 STDMETHODIMP CShellViewImpl::GetWindow ( HWND* phwnd )
 {
@@ -74,6 +114,56 @@ STDMETHODIMP CShellViewImpl::GetWindow ( HWND* phwnd )
 	*phwnd = m_hWnd;
 	return S_OK;
 }
+
+unsigned __stdcall CShellViewImpl::ThreadStaticEntryPoint(void * pThis)
+{
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	if (SUCCEEDED(hr))
+	{
+		OleInitialize(0);   // for drag and drop
+
+		CShellViewImpl * pthX = (CShellViewImpl*)pThis;
+
+		IKnownFolderManager *pManager;
+		HRESULT hr = CoCreateInstance(CLSID_KnownFolderManager, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pManager));
+		if (SUCCEEDED(hr))
+		{
+			UINT cCount;
+			KNOWNFOLDERID *pkfid;
+
+			hr = pManager->GetFolderIds(&pkfid, &cCount);
+			if (SUCCEEDED(hr))
+			{
+				for (UINT i = 0; i < cCount; i++)
+				{
+					IKnownFolder *pKnownFolder;
+					hr = pManager->GetFolder(pkfid[i], &pKnownFolder);
+					if (SUCCEEDED(hr))
+					{
+						IShellItem *psi;
+						hr = pKnownFolder->GetShellItem(0, IID_PPV_ARGS(&psi));
+						if (SUCCEEDED(hr))
+						{
+							hr = pthX->_prf->AddItem(psi);
+							psi->Release();
+						}
+						pKnownFolder->Release();
+					}
+				}
+				CoTaskMemFree(pkfid);
+			}
+			pManager->Release();
+		}
+
+		UpdateWindow(pthX->m_hWnd);
+
+		OleUninitialize();
+		CoUninitialize();
+	}
+
+	return 1;          // the thread exit code, If the function succeeds, the return value is nonzero.
+}
+
 
 // CreateViewWindow() creates the container window.  Once that window is
 // created, it will create the list control.
@@ -90,11 +180,10 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	m_spShellBrowser->GetWindow(&m_hwndParent);
 
 	m_FolderSettings = *lpfs;
+	m_FolderSettings.ViewMode = FVM_DETAILS;
 
-
-	DWORD dwListStyles = WS_CHILD | WS_VISIBLE | WS_TABSTOP | //WS_BORDER |
-		LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS | LVS_ALIGNLEFT;
-	DWORD dwListExStyles = WS_EX_CLIENTEDGE;
+	DWORD dwListStyles = WS_CHILDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+	DWORD dwListExStyles = WS_EX_CLIENTEDGE | WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RIGHTSCROLLBAR;
 	DWORD dwListExtendedStyles = LVS_EX_FULLROWSELECT | LVS_EX_HEADERDRAGDROP;
 
 	switch ( m_FolderSettings.ViewMode )
@@ -106,48 +195,179 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 		DEFAULT_UNREACHABLE;
 	}
 
+	// DirectUIHWND   ExplorerBrowserControl
+
 	*phWnd = NULL;
-	m_hWnd = CreateWindowEx ( dwListExStyles,WC_LISTVIEW, NULL, dwListStyles,0, 0,
+	m_hWnd = CreateWindowEx ( dwListExStyles,WC_STATIC, NULL, dwListStyles,0, 0,
 		prcView->right - prcView->left,prcView->bottom - prcView->top,
 		m_hwndParent, NULL, g_hInst, 0 );
 
 	if ( NULL == m_hWnd )
 		return -1;
+	
 
-	// change the message procedure
-	lpPrevWndFunc = SetWindowLongPtr(m_hWnd,GWLP_WNDPROC, (LONG_PTR)WndProc);
-	lpPrevUserData = SetWindowLongPtr(m_hWnd,GWLP_USERDATA,(LONG_PTR)this);
+	RECT rc;
+	GetWindowRect(m_hWnd, &rc);
+	MapWindowRect(m_hwndParent,m_hWnd , &rc);
+	 //HRESULT hr = SHCoCreateInstance(NULL, &CLSID_ExplorerBrowser, NULL, IID_PPV_ARGS(&_peb));
 
-	LVCOLUMN lvc;
-	int iCol = 0;
 
-	// Initialize the LVCOLUMN structure.
-	// The mask specifies that the format, width, text,
-	// and subitem members of the structure are valid.
-	lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
-
-	// Add the columns.
-	lvc.iSubItem = iCol++;
-	lvc.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME);
-	lvc.cx = 200;									// Width of column in pixels.
-	lvc.fmt = LVCFMT_LEFT;  // Left-aligned column.
-	// Insert the columns into the list view.
-	ListView_InsertColumn(m_hWnd, iCol, &lvc);
-
-	// Add other columns for REPORT
-	if ( dwListStyles & LVS_REPORT )
+	HRESULT hr = CoCreateInstance(CLSID_ExplorerBrowser, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&_peb));
+	if (SUCCEEDED(hr))
 	{
-		lvc.iSubItem = iCol++;
-		lvc.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT);
-		lvc.cx = 80;									// Width of column in pixels.
-		lvc.fmt = LVCFMT_RIGHT;  // Left-aligned column.
-		// Insert the columns into the list view.
-		ListView_InsertColumn(m_hWnd, iCol, &lvc);
+		IUnknown_SetSite(_peb, static_cast<IServiceProvider *>(this));
+
+		//FOLDERSETTINGS fs = {0};
+		//fs.ViewMode = FVM_DETAILS;
+		//fs.fFlags = FWF_AUTOARRANGE | FWF_NOWEBVIEW;
+		hr = _peb->Initialize(m_hwndParent, &rc, lpfs);
+		if (SUCCEEDED(hr))
+		{
+			_peb->SetOptions(EBO_NAVIGATEONCE | EBO_SHOWFRAMES); // do not allow navigations
+
+			// Initialize the exporer browser so that we can use the results folder
+			// as the data source. This enables us to program the contents of
+			// the view via IResultsFolder
+
+			hr = _peb->FillFromObject(NULL, EBF_NONE);
+			if (SUCCEEDED(hr))
+			{
+				IFolderView2 *pfv2;
+				hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+				if (SUCCEEDED(hr))
+				{
+					IColumnManager *pcm;
+					hr = pfv2->QueryInterface(&pcm);
+					if (SUCCEEDED(hr))
+					{
+						PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay, PKEY_ItemFolderPathDisplay};
+						hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
+						if (SUCCEEDED(hr))
+						{
+							CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+							hr = pcm->GetColumnInfo(PKEY_ItemFolderPathDisplay, &ci);
+							if (SUCCEEDED(hr))
+							{
+								ci.uWidth += 100;
+								ci.uDefaultWidth += 100;
+								ci.uIdealWidth += 100;
+								pcm->SetColumnInfo(PKEY_ItemFolderPathDisplay, &ci);
+							}
+						}
+						pcm->Release();
+					}
+
+					hr = pfv2->GetFolder(IID_PPV_ARGS(&_prf));
+					if (SUCCEEDED(hr))
+					{
+						//_StartFolderEnum();
+						//_beginthreadex(0,0,ThreadStaticEntryPoint,this,0,0);
+
+						IKnownFolderManager *pManager;
+						HRESULT hr = CoCreateInstance(CLSID_KnownFolderManager, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pManager));
+						if (SUCCEEDED(hr))
+						{
+							UINT cCount;
+							KNOWNFOLDERID *pkfid;
+
+							hr = pManager->GetFolderIds(&pkfid, &cCount);
+							if (SUCCEEDED(hr))
+							{
+								for (UINT i = 0; i < cCount; i++)
+								{
+									IKnownFolder *pKnownFolder;
+									hr = pManager->GetFolder(pkfid[i], &pKnownFolder);
+									if (SUCCEEDED(hr))
+									{
+										IShellItem *psi;
+										hr = pKnownFolder->GetShellItem(0, IID_PPV_ARGS(&psi));
+										if (SUCCEEDED(hr))
+										{
+											hr = _prf->AddItem(psi);
+											psi->Release();
+										}
+										pKnownFolder->Release();
+									}
+								}
+								CoTaskMemFree(pkfid);
+							}
+							pManager->Release();
+						}
+
+
+					}
+					pfv2->Release();
+				}
+			}
+		}
 	}
 
-	FillList();
-
 	*phWnd = m_hWnd;
+	UpdateWindow(m_hWnd);
+
+
+
+
+
+
+
+
+	//DWORD dwListStyles = WS_CHILD | WS_VISIBLE | WS_TABSTOP | //WS_BORDER |
+	//	LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS | LVS_ALIGNLEFT;
+	//DWORD dwListExStyles = WS_EX_CLIENTEDGE;
+	//DWORD dwListExtendedStyles = LVS_EX_FULLROWSELECT | LVS_EX_HEADERDRAGDROP;
+
+	//switch ( m_FolderSettings.ViewMode )
+	//{
+	//case FVM_ICON:      dwListStyles |= LVS_ICON;      break;
+	//case FVM_SMALLICON: dwListStyles |= LVS_SMALLICON; break;
+	//case FVM_LIST:      dwListStyles |= LVS_LIST;      break;
+	//case FVM_DETAILS:   dwListStyles |= LVS_REPORT;    break;
+	//	DEFAULT_UNREACHABLE;
+	//}
+
+	//*phWnd = NULL;
+	//m_hWnd = CreateWindowEx ( dwListExStyles,WC_LISTVIEW, NULL, dwListStyles,0, 0,
+	//	prcView->right - prcView->left,prcView->bottom - prcView->top,
+	//	m_hwndParent, NULL, g_hInst, 0 );
+
+	//if ( NULL == m_hWnd )
+	//	return -1;
+
+	//// change the message procedure
+	//lpPrevWndFunc = SetWindowLongPtr(m_hWnd,GWLP_WNDPROC, (LONG_PTR)WndProc);
+	//lpPrevUserData = SetWindowLongPtr(m_hWnd,GWLP_USERDATA,(LONG_PTR)this);
+
+	//LVCOLUMN lvc;
+	//int iCol = 0;
+
+	//// Initialize the LVCOLUMN structure.
+	//// The mask specifies that the format, width, text,
+	//// and subitem members of the structure are valid.
+	//lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+
+	//// Add the columns.
+	//lvc.iSubItem = iCol++;
+	//lvc.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME);
+	//lvc.cx = 200;									// Width of column in pixels.
+	//lvc.fmt = LVCFMT_LEFT;  // Left-aligned column.
+	//// Insert the columns into the list view.
+	//ListView_InsertColumn(m_hWnd, iCol, &lvc);
+
+	//// Add other columns for REPORT
+	//if ( dwListStyles & LVS_REPORT )
+	//{
+	//	lvc.iSubItem = iCol++;
+	//	lvc.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT);
+	//	lvc.cx = 80;									// Width of column in pixels.
+	//	lvc.fmt = LVCFMT_RIGHT;  // Left-aligned column.
+	//	// Insert the columns into the list view.
+	//	ListView_InsertColumn(m_hWnd, iCol, &lvc);
+	//}
+
+	//FillList();
+
+	//*phWnd = m_hWnd;
 	return S_OK;
 }
 
@@ -179,8 +399,8 @@ STDMETHODIMP CShellViewImpl::Refresh()
 {
 	// Repopulate the list control.
 
-	ListView_DeleteAllItems(m_hWnd);
-	FillList();
+	//ListView_DeleteAllItems(m_hWnd);
+	//FillList();
 
 	return S_OK;
 }
