@@ -108,8 +108,6 @@ public:
 		return S_OK;
 	}
 
-	HWND _hdlg;
-
 	CTaghelper TagHelper;
 
 	// IPersistFolder

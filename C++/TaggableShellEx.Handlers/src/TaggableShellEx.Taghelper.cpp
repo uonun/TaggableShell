@@ -28,7 +28,7 @@ CTaghelper::CTaghelper(void):
 		var.TagIdx = 0;
 		var.UseCount = 0;
 	}
-	
+
 	::WStr2Str(g_UserDb,_dbFile);
 }
 
@@ -597,6 +597,60 @@ BOOL CTaghelper::IsTagExists(LPCWSTR & tag)
 		}
 	}
 	return FALSE;
+}
+
+HRESULT CTaghelper::GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagIdInDb)
+{
+	_ASSERT_EXPR( files != NULL ,L"files could not be null.");
+	_ASSERT_EXPR( tagIdInDb > 0,L"tagIdInDb must be greater than 0.");
+
+	count = 0;
+
+	char * sSQLFormater = NULL;
+	char sSQL[MAXLENGTH_SQL];
+
+	// get tag ID
+	sSQLFormater = "SELECT [FULLPATH] FROM FILES f \
+				   INNER JOIN [ASSO_FILE_TAG] a on f.[ID] = a.[FILEID]\
+				   INNER JOIN [TAGS] t on t.[ID] = a.[TAGID]\
+				   WHERE t.[ID] = '%d'";
+
+	sprintf ( sSQL,sSQLFormater,tagIdInDb );
+
+	// utf8 used in database
+	ANSIToUTF8(sSQL);
+	::PrintLog("GetFilesByTagID: %s",sSQL);
+
+	char** pazResult = 0;
+	int pnRow = 0;
+	int pnColumn = 0;
+	char * pErrMsg = 0;
+	int ret = 0;  
+	ret = sqlite3_get_table(_db,sSQL,&pazResult,&pnRow,&pnColumn,&pErrMsg);
+	if ( ret != SQLITE_OK )  
+	{
+		::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+		sqlite3_free(pErrMsg);  
+	}
+	else
+	{
+		if(pnRow > 0 && pnColumn > 0)
+		{
+			for (int i = 1; i <= pnRow; i++)
+			{
+				LPWSTR fname;
+				::Str2WStr( pazResult[i],fname);
+				files[count++] = fname;
+
+				::PrintLog("Got file: %d",fname);
+			}
+		}else{
+			::PrintLog("Fail to get file associated with tag: id = %d.",tagIdInDb);
+		}
+		sqlite3_free_table(pazResult);
+	}
+
+	return S_OK;
 }
 /*
 Ð´ÎÄ¼þ

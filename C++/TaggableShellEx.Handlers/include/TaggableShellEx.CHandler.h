@@ -42,7 +42,7 @@ private:
 
 	// IShellExtInit
 	LPITEMIDLIST  m_pIDFolder;           //The folder's PIDL
-	TCHAR*        m_szFiles[MAXCOUNT_ITEM];    //The file names
+	TCHAR*        m_szFiles[MAXCOUNT_SELECTED_ITEM];    //The file names
 	IDataObject   *m_pDataObj;            //The IDataObject pointer
 
 	// IShellPropSheetExt

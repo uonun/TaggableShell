@@ -4,7 +4,6 @@
 CShellFolderImpl::CShellFolderImpl(void): 
 	_cRef(1) // IUnknown
 	,m_pIDFolder(NULL),m_PIDLCurrent(NULL)
-	,_hdlg(NULL)
 {
 	::PrintLog(L"CShellFolderImpl.ctor");
 
@@ -75,6 +74,17 @@ HRESULT CShellFolderImpl::Initialize(LPCITEMIDLIST pIDFolder)
 	if(pIDFolder)
 	{
 		m_pIDFolder = ILClone(pIDFolder);
+
+		HRESULT hr;
+		IShellItem* si;
+		hr = SHCreateShellItem(NULL,NULL,m_pIDFolder,&si);
+		if ( SUCCEEDED(hr) )
+		{
+			LPWSTR path;
+			si->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING,&path);
+			::PrintLog(L"Get in path: %s",path);
+		}
+		si->Release();
 	}
 
 	return S_OK;
@@ -116,6 +126,9 @@ HRESULT CShellFolderImpl::BindToObject(
 	if( hr == S_OK )
 	{
 		hr = ((CShellFolderImpl*)pShellFolder)->Init ( m_pIDFolder,(PIDLIST_RELATIVE) pidl );
+
+		auto data = m_PidlMgr.GetData(pidl);
+		::PrintLog(L"ShellFolder::BindToObject: %s",data->wszDisplayName);
 
 		if ( FAILED(hr) )
 		{
@@ -220,31 +233,59 @@ HRESULT CShellFolderImpl::EnumObjects(
 	}
 
 	if ( grfFlags & SHCONTF_FOLDERS ){
-		for (UINT i = 0; i < TagHelper.TagCount; i++)
+		if ( NULL != m_PIDLCurrent )
 		{
-			MYPIDLDATA d = {sizeof(MYPIDLDATA)};
-			d.cb = sizeof(MYPIDLDATA);
-			d.TagIdx = TagHelper.Tags[i].TagIdx;
-			d.UseCount = TagHelper.Tags[i].UseCount;
-			StringCbCopyW(d.wszDisplayName, 
-				sizeof(d.wszDisplayName), TagHelper.Tags[i].Tag);
-			items.push_back(d);
+			auto data = m_PidlMgr.GetData(m_PIDLCurrent);
+
+			LPWSTR *files = new LPWSTR[MAXCOUNT_TOTAL_ITEMS];
+			UINT count = 0;
+			TagHelper.GetFilesByTagID(files,count,data->TagID);
+			for (UINT i = 0; i < count; i++)
+			{
+				MYPIDLDATA d = {sizeof(MYPIDLDATA)};
+				d.cb = sizeof(MYPIDLDATA);
+				d.Type = MYSHITEMTYPE_FILE;
+				d.TagID = 0;
+				d.TagIdx = 0;
+				d.UseCount = 0;
+				StringCbCopyW(d.wszDisplayName,sizeof(d.wszDisplayName), files[i]);
+				StringCbCopyW(d.wszRemark,sizeof(d.wszRemark),L"REMARK");
+
+				items.push_back(d);
+			}
+			delete [] files;
+		}else{
+			for (UINT i = 0; i < TagHelper.TagCount; i++)
+			{
+				MYPIDLDATA d = {sizeof(MYPIDLDATA)};
+				d.cb = sizeof(MYPIDLDATA);
+				d.Type = MYSHITEMTYPE_TAG;
+				d.TagID = TagHelper.Tags[i].TagID;
+				d.TagIdx = TagHelper.Tags[i].TagIdx;
+				d.UseCount = TagHelper.Tags[i].UseCount;
+				StringCbCopyW(d.wszDisplayName,sizeof(d.wszDisplayName), TagHelper.Tags[i].Tag);
+				StringCbCopyW(d.wszRemark,sizeof(d.wszRemark),L"");
+
+				items.push_back(d);
+			}
 		}
 	}
-	else
+	/*else
 	{
-		auto data = m_PidlMgr.GetData(m_PIDLCurrent);
-		::PrintLog(data->wszDisplayName);
+	auto data = m_PidlMgr.GetData(m_PIDLCurrent);
+	::PrintLog(data->wszDisplayName);
 
-		MYPIDLDATA d = {sizeof(MYPIDLDATA)};
-		d.cb = sizeof(MYPIDLDATA);
-		d.TagIdx = 1;
-		d.UseCount = 1;
-		StringCbCopyW(d.wszDisplayName, 
-			sizeof(d.wszDisplayName), L"AA");
-		items.push_back(d);
-	}
+	MYPIDLDATA d = {sizeof(MYPIDLDATA)};
+	d.cb = sizeof(MYPIDLDATA);
+	d.Type = 1;
+	d.TagID = 0;
+	d.TagIdx = 0;
+	d.UseCount = 0;
+	StringCbCopyW(d.wszDisplayName,sizeof(d.wszDisplayName), L"FIELNAME");
+	StringCbCopyW(d.wszRemark,sizeof(d.wszRemark),L"REMARK");
 
+	items.push_back(d);
+	}*/
 	pEnum->Init(m_pIDFolder,items);
 
 	// Return an IEnumIDList interface to the caller.
@@ -284,10 +325,10 @@ HRESULT CShellFolderImpl::GetDisplayNameOf(
 	SIGDN_PARENTRELATIVEFORUI:			新建文本文档.txt
 	*/
 
-	auto last = m_PidlMgr.GetLastItem(pidl);
-	auto data =  m_PidlMgr.GetData ( last );
+	auto data =  m_PidlMgr.GetData ( pidl );
 	pName->uType = STRRET_WSTR;
 	pName->pOleStr = (LPWSTR) CoTaskMemAlloc(sizeof(data->wszDisplayName));
+
 	StringCbCopy(pName->pOleStr,sizeof(data->wszDisplayName),data->wszDisplayName);
 
 	::PrintLog(L"Got name: %s",pName->pOleStr);
@@ -310,14 +351,53 @@ HRESULT CShellFolderImpl::GetUIObjectOf(
 	::PrintLog(L"ShellFolder::GetUIObjectOf: riid =%s",str);
 	CoTaskMemFree(str);
 #endif
+
+	HRESULT hr = E_NOINTERFACE;
+	*ppv = NULL;
+
 	if ( IID_IContextMenu == riid )
 	{
+		this->Init(m_pIDFolder,(LPITEMIDLIST)*apidl);
+
+		DEFCONTEXTMENU pdcm = {0};
+		pdcm.hwnd = hwndOwner;
+		pdcm.pidlFolder = NULL;
+		pdcm.psf = static_cast<IShellFolder *>(this);
+		pdcm.cidl = cidl;
+		pdcm.apidl = apidl;
+
+		hr = SHCreateDefaultContextMenu(&pdcm,riid, ppv);
+
+		::PrintLog(L"ShellFolder::GetUIObjectOf -- SHCreateDefaultContextMenu: %d",hr);
 		/*	HMENU m_hMenu = CreateMenu();
 		m_hMenu*/
 	}
+	else if ( IID_IExtractIcon == riid )
+	{
+		IExtractIcon *pxi;
+		IDefaultExtractIconInit *pdxi;
+		hr = SHCreateDefaultExtractIcon(IID_PPV_ARGS(&pdxi));
+		if (SUCCEEDED(hr) &&
+			SUCCEEDED(hr = pdxi->SetFlags(GIL_PERCLASS)) &&
+			//SUCCEEDED(hr = pdxi->SetKey(hkey)) &&   // optional
+			SUCCEEDED(hr = pdxi->SetNormalIcon(g_DllFullName, 110)) &&
+			SUCCEEDED(hr = pdxi->SetOpenIcon(NULL, SIID_FOLDEROPEN)) && // optional
+			SUCCEEDED(hr = pdxi->SetDefaultIcon(NULL, SIID_FOLDER)) && // optional
+			SUCCEEDED(hr = pdxi->SetShortcutIcon(g_DllFullName, 110))) // optional
+		{
+			hr = pdxi->QueryInterface(IID_PPV_ARGS(&pxi));
+			if (SUCCEEDED(hr))
+				ppv = (void**)&pxi;
+		}
 
-	*ppv = NULL;
-	return E_NOINTERFACE;
+		if (pdxi)
+		{
+			pdxi->Release();
+		}
+
+	}
+
+	return hr;
 }
 
 HRESULT CShellFolderImpl::ParseDisplayName(

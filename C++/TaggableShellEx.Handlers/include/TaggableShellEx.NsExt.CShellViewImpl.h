@@ -57,7 +57,7 @@ public:
 
 	// Other stuff
 	HRESULT Init ( CShellFolderImpl* pContainingFolder );
-
+	BOOL IsShowTag();
 	HRESULT GetItemFromView(IFolderView2 *pfv, int iItem, REFIID riid, void **ppv);
 
 private:

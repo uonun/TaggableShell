@@ -46,7 +46,8 @@ using namespace std::tr2::sys;
 #define MAXLENGTH_SQL					10000				// The maximum number of bytes in the text of an SQL statement is limited to SQLITE_MAX_SQL_LENGTH which defaults to 1000000. You can redefine this limit to be as large as the smaller of SQLITE_MAX_LENGTH and 1073741824
 #define MAXLENGTH_EACHTAG				100					// max length of each tag.
 #define MAXCOUNT_TAG					100
-#define MAXCOUNT_ITEM					0xFFFF				// max count of selected shell items.
+#define MAXCOUNT_SELECTED_ITEM			0xFFFF				// max count of selected shell items.
+#define MAXCOUNT_TOTAL_ITEMS			0xFFFF				// max count of total items this application handled, including any type of items such as files, folders.
 
 #define FOLDER_PROFILE					L"Profile"
 #define FOLDER_LOG						L"Logs"

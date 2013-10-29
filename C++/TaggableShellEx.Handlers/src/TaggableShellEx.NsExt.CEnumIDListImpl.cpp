@@ -93,10 +93,12 @@ HRESULT CEnumIDListImpl::Next(
 			//Assign values to the members of the MYPIDLDATA structure
 			//that is the PIDL's first SHITEMID structure
 			pidlOut->cb = uSize;
+			pidlOut->Type = next.Type;
+			pidlOut->TagID = next.TagID;
 			pidlOut->TagIdx = next.TagIdx;
 			pidlOut->UseCount = next.UseCount;
-			StringCbCopyW(pidlOut->wszDisplayName, 
-				sizeof(pidlOut->wszDisplayName), next.wszDisplayName);
+			StringCbCopyW(pidlOut->wszDisplayName,sizeof(pidlOut->wszDisplayName), next.wszDisplayName);
+			StringCbCopyW(pidlOut->wszRemark,sizeof(pidlOut->wszRemark), next.wszRemark);
 
 			//Advance the pointer to the start of the next SHITEMID structure.
 			pidlOut = (LPMYPIDLDATA)((LPBYTE)pidlOut + pidlOut->cb);

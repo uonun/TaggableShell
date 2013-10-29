@@ -29,6 +29,12 @@ CShellViewImpl::~CShellViewImpl(void)
 		m_psfContainingFolder = NULL;
 	}
 
+	if ( NULL != _peb )
+	{
+		_peb->Destroy();
+		_peb = NULL;
+	}
+
 	if ( NULL != m_spShellBrowser )
 	{
 		m_spShellBrowser->Release();
@@ -121,45 +127,39 @@ STDMETHODIMP CShellViewImpl::OnDefaultCommand(IShellView * psv)
 {
 	::PrintLog(L"CShellViewImpl::OnDefaultCommand");
 
+	HRESULT hr;
 
+	LPITEMIDLIST last;
 
-
-	/*
 	IFolderView2 *pfv2;
-	HRESULT hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
 	if (SUCCEEDED(hr))
 	{
-	IShellItem *psi;
-	hr = GetItemFromView(pfv2, -1, IID_PPV_ARGS(&psi));
-	if (SUCCEEDED(hr))
-	{
-	PIDLIST_ABSOLUTE pidl;
-	hr = SHGetIDListFromObject(psi, &pidl);
-	if (SUCCEEDED(hr))
-	{
-	SHELLEXECUTEINFO ei = { sizeof(ei) };
-	ei.fMask        = SEE_MASK_INVOKEIDLIST;
-	ei.hwnd         = m_hwndParent;
-	ei.nShow        = SW_NORMAL;
-	ei.lpIDList     = pidl;
+		IShellItem *psi;
+		hr = GetItemFromView(pfv2, -1, IID_PPV_ARGS(&psi));
+		if (SUCCEEDED(hr))
+		{
+			PIDLIST_ABSOLUTE pidl;
+			hr = SHGetIDListFromObject(psi, &pidl);
+			if (SUCCEEDED(hr))
+			{
+				last = m_PidlMgr.GetLastItem(pidl);
+				if( hr == S_OK )
+				{
+					//m_psfContainingFolder->m_PIDLCurrent = last;
+					auto data = m_PidlMgr.GetData(last);
+					::PrintLog(L"CShellViewImpl::OnDefaultCommand: %s",data->wszDisplayName);
 
-	ShellExecuteEx(&ei);
-
-	CoTaskMemFree(pidl);
-	}
-	psi->Release();
-	}
-	pfv2->Release();
-	}*/
-
-	HRESULT hr = SHGetIDListFromObject(psv,&m_psfContainingFolder->m_pIDFolder);
-	//auto last = m_PidlMgr.GetLastItem(m_psfContainingFolder->m_pIDFolder);
-	if( hr == S_OK )
-	{
-		m_spShellBrowser->BrowseObject(m_psfContainingFolder->m_pIDFolder,SBSP_DEFBROWSER | SBSP_ABSOLUTE);
+					hr = m_spShellBrowser->BrowseObject(last, SBSP_DEFBROWSER | SBSP_RELATIVE);
+				}
+				CoTaskMemFree(pidl);
+			}
+			psi->Release();
+		}
+		pfv2->Release();
 	}
 
-	return S_OK;
+	return hr;
 }
 
 STDMETHODIMP CShellViewImpl::OnStateChange(IShellView * psv, ULONG uChange)
@@ -195,53 +195,87 @@ unsigned __stdcall CShellViewImpl::FillList_Tags(void * pThis)
 
 		CShellViewImpl * pthX = (CShellViewImpl*)pThis;
 		pthX->_peb->RemoveAll();
-		pthX->_peb->SetEmptyText(::MyLoadString(IDS_MSG_LOADING_TAGS));
+
+		BOOL isShowTag = pthX->IsShowTag();
+
+		LPWSTR infoLoading = 0,infoLoaded = 0;
+		if ( isShowTag )
+		{
+			infoLoading = ::MyLoadString(IDS_MSG_LOADING_TAGS);
+			infoLoaded = ::MyLoadString(IDS_MSG_NO_TAG_WITH_DETAIL);
+		}
+		else
+		{
+			auto data = pthX->m_PidlMgr.GetData(pthX->m_psfContainingFolder->m_PIDLCurrent);
+			LPWSTR currentTag = data->wszDisplayName;
+
+			WCHAR tmp[MAX_PATH];
+			wsprintf ( tmp,::MyLoadString(IDS_MSG_LOADING_FILES_FOR_TAG),currentTag);
+			infoLoading = tmp;
+
+			WCHAR tmp2[MAX_PATH];
+			wsprintf ( tmp2,::MyLoadString(IDS_MSG_NO_FILE_IN_TAG_WITH_DETAIL),currentTag);
+			infoLoaded = tmp2;			
+		}
+
+		pthX->_peb->SetEmptyText(infoLoading);
+
 
 		IEnumIDList *pEnum = NULL;
 		LPITEMIDLIST pidl = NULL;
 		HRESULT hr;
 
 		DWORD flag = SHCONTF_FOLDERS;
-		IShellFolder *sf = pthX->m_psfContainingFolder;
-		// Get an enumerator object for the folder's contents.
-		if ( pthX->m_psfContainingFolder->m_PIDLCurrent == NULL )
-		{
-			sf = pthX->m_psfContainingFolder;
-		}
-		else
-		{
-			flag = SHCONTF_CHECKING_FOR_CHILDREN;
-			//auto data = pthX->m_PidlMgr.GetData(pthX->m_psfContainingFolder->m_PIDLCurrent);
-			//::PrintLog(data->wszDisplayName);
-
-			//pthX->m_psfContainingFolder->BindToObject(pthX->m_psfContainingFolder->m_PIDLCurrent,NULL,IID_PPV_ARGS(&sf));
-		}
+		CShellFolderImpl *sf = pthX->m_psfContainingFolder;
 
 		hr = sf->EnumObjects ( pthX->m_hWnd, flag,&pEnum );
 
 		if ( FAILED(hr) )
 			return 0;
 
-		// Add items.
-		DWORD dwFetched;
-		while ( pEnum->Next(1, &pidl, &dwFetched) == S_OK )	// the pidl is relative.
-		{
-			IShellItem *psi;
-			hr = SHCreateShellItem(pthX->m_psfContainingFolder->m_pIDFolder,NULL,pidl,&psi);
-			if (SUCCEEDED(hr))
+		try{
+			// Add items.
+			DWORD dwFetched;
+			while ( pEnum->Next(1, &pidl, &dwFetched) == S_OK )	// the pidl is relative.
 			{
-				hr = pthX->_prf->AddItem(psi);
-				psi->Release();
+				IShellItem *psi;
+				if( pthX->IsShowTag() )
+				{
+					hr = SHCreateShellItem(pthX->m_psfContainingFolder->m_pIDFolder,NULL,pidl,&psi);
+				}else{
+					auto data = pthX->m_PidlMgr.GetData(pidl);
+					hr = SHCreateItemFromParsingName(data->wszDisplayName,NULL,IID_PPV_ARGS(&psi));
+					if ( ! SUCCEEDED(hr))
+					{
+						// ERROR_FILE_NOT_FOUND
+						// ERROR_PATH_NOT_FOUND
+						// ERROR_INVALID_DRIVE
+						// ....
+					}
+				}
+
+				if (SUCCEEDED(hr))
+				{
+					hr = pthX->_prf->AddItem(psi);
+					psi->Release();
+				}
+
+				// free memory allocated by pEnum->Next
+				CoTaskMemFree(pidl);
 			}
 
-			// free memory allocated by pEnum->Next
-			CoTaskMemFree(pidl);
+			// the calling application must free the returned IEnumIDList object by calling its Release method.
+			pEnum->Release();
+
+			pthX->_peb->SetEmptyText(infoLoaded);
 		}
+		catch(int e)
+		{
+			// the calling application must free the returned IEnumIDList object by calling its Release method.
+			pEnum->Release();
 
-		// the calling application must free the returned IEnumIDList object by calling its Release method.
-		pEnum->Release();
-
-		pthX->_peb->SetEmptyText(::MyLoadString(IDS_MSG_NO_TAG_WITH_DETAIL));
+			pthX->_peb->SetEmptyText(infoLoaded);
+		}
 
 		OleUninitialize();
 		CoUninitialize();
@@ -258,13 +292,14 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 											   LPSHELLBROWSER psb, 
 											   LPRECT prcView, HWND* phWnd )
 {
+	HRESULT hr;
+
 	*phWnd = NULL;
 
 	// Init member variables.
 	m_spShellBrowser = psb;
 	m_spShellBrowser->GetWindow(&m_hwndParent);
 	m_spShellBrowser->SetStatusTextSB(::MyLoadString(IDS_ProductIntro));
-
 
 	m_FolderSettings = *lpfs;
 	m_FolderSettings.ViewMode = FVM_DETAILS;
@@ -290,7 +325,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	if ( NULL == m_hWnd )
 		return -1;
 
-	HRESULT hr = CoCreateInstance(CLSID_ExplorerBrowser, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_peb));
+	hr = CoCreateInstance(CLSID_ExplorerBrowser, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_peb));
 	if (SUCCEEDED(hr))
 	{
 		IUnknown_SetSite(_peb, static_cast<IServiceProvider *>(this));
@@ -314,8 +349,8 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 				spSV->GetWindow(phWnd);
 
 				// change the message procedure
-				lpPrevWndFunc = SetWindowLongPtr(*phWnd,GWLP_WNDPROC, (LONG_PTR)WndProc);
-				lpPrevUserData = SetWindowLongPtr(*phWnd,GWLP_USERDATA,(LONG_PTR)this);
+				//lpPrevWndFunc = SetWindowLongPtr(*phWnd,GWLP_WNDPROC, (LONG_PTR)WndProc);
+				//lpPrevUserData = SetWindowLongPtr(*phWnd,GWLP_USERDATA,(LONG_PTR)this);
 
 				IFolderView2 *pfv2;
 				hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
@@ -325,38 +360,70 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 					hr = pfv2->QueryInterface(&pcm);
 					if (SUCCEEDED(hr))
 					{
-						PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay, PKEY_FileCount};
-						hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
-						if (SUCCEEDED(hr))
+						if( IsShowTag() )
 						{
-							// tag name
-							CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-							hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
+							PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay, PKEY_FileCount};
+							hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
 							if (SUCCEEDED(hr))
 							{
-								ci.dwState = CM_STATE_ALWAYSVISIBLE;
-								ci.uWidth = 250;
-								ci.uDefaultWidth = 250;
-								ci.uIdealWidth = 250;
-								StringCbPrintf(ci.wszName,sizeof(ci.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME) );
-								pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
-							}
+								// tag name
+								CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+								hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
+								if (SUCCEEDED(hr))
+								{
+									ci.dwState = CM_STATE_ALWAYSVISIBLE;
+									ci.uWidth = 250;
+									ci.uDefaultWidth = 250;
+									ci.uIdealWidth = 250;
+									StringCbPrintf(ci.wszName,sizeof(ci.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME) );
+									pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
+								}
 
-							// use count
-							CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-							hr = pcm->GetColumnInfo(PKEY_FileCount, &ci2);
-							if (SUCCEEDED(hr))
-							{
-								ci2.dwState = CM_STATE_ALWAYSVISIBLE;
-								ci2.uWidth = 100;
-								ci2.uDefaultWidth = 100;
-								ci2.uIdealWidth = 100;
-								StringCbPrintf(ci2.wszName,sizeof(ci2.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT) );
-								pcm->SetColumnInfo(PKEY_FileCount, &ci2);
+								// use count
+								CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+								hr = pcm->GetColumnInfo(PKEY_FileCount, &ci2);
+								if (SUCCEEDED(hr))
+								{
+									ci2.dwState = CM_STATE_ALWAYSVISIBLE;
+									ci2.uWidth = 100;
+									ci2.uDefaultWidth = 100;
+									ci2.uIdealWidth = 100;
+									StringCbPrintf(ci2.wszName,sizeof(ci2.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT) );
+									pcm->SetColumnInfo(PKEY_FileCount, &ci2);
+								}
 							}
-
+							pcm->Release();
 						}
-						pcm->Release();
+						else
+						{
+							PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay,PKEY_ItemTypeText, PKEY_ItemPathDisplay};
+							hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
+							if (SUCCEEDED(hr))
+							{
+								CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+								hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
+								if (SUCCEEDED(hr))
+								{
+									ci.dwState = CM_STATE_ALWAYSVISIBLE;
+									ci.uWidth = 250;
+									ci.uDefaultWidth = 250;
+									ci.uIdealWidth = 250;
+									pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
+								}
+
+								CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+								hr = pcm->GetColumnInfo(PKEY_ItemTypeText, &ci2);
+								if (SUCCEEDED(hr))
+								{
+									ci2.dwState = CM_STATE_ALWAYSVISIBLE;
+									ci2.uWidth = 100;
+									ci2.uDefaultWidth = 100;
+									ci2.uIdealWidth = 100;
+									pcm->SetColumnInfo(PKEY_ItemTypeText, &ci2);
+								}
+							}
+							pcm->Release();
+						}
 					}
 
 					hr = pfv2->GetFolder(IID_PPV_ARGS(&_prf));
@@ -381,10 +448,7 @@ STDMETHODIMP CShellViewImpl::DestroyViewWindow()
 	// Clean up the UI.
 	UIActivate ( SVUIA_DEACTIVATE );
 
-	_peb->Destroy();
-	DestroyWindow(m_hWnd);
-
-	Release();
+	//DestroyWindow(m_hWnd);
 
 	return S_OK;
 }
@@ -518,6 +582,15 @@ HRESULT CShellViewImpl::Init ( CShellFolderImpl* pContainingFolder )
 		m_psfContainingFolder->AddRef();
 
 	return S_OK;
+}
+
+BOOL CShellViewImpl::IsShowTag()
+{
+	if ( NULL != m_psfContainingFolder && NULL != m_psfContainingFolder->m_PIDLCurrent )
+	{
+		return FALSE;
+	}
+	return TRUE;
 }
 
 // FillList() populates the list control.

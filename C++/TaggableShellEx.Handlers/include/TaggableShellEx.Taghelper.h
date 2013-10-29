@@ -33,7 +33,7 @@ public:
 	// Bind/Unbind tag to files by record ID in database.
 	HRESULT SetTagByRecordId(UINT tagIdInDb);
 
-	LPWSTR TargetFileNames[MAXCOUNT_ITEM];			// the file full path of target item.
+	LPWSTR TargetFileNames[MAXCOUNT_SELECTED_ITEM];			// the file full path of target item.
 	UINT FileCount;
 	UINT TagCount;				// The count of loaded tags. READ ONLY.
 	TAG4FILE Tags[MAXCOUNT_TAG];		// The loaded tags. READ ONLY.
@@ -48,9 +48,11 @@ public:
 
 	void DeleteTags(wchar_t tags[MAXCOUNT_TAG][MAXLENGTH_EACHTAG], const int count);
 
+	HRESULT GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagIdInDb);
+
 private:
 	bool _cached;									// does tags loaded from database cached.
-	LPSTR _targetFileNamesInSQL[MAXCOUNT_ITEM];		// the file full path of target item with "'" replaced to "''" for SQL.
+	LPSTR _targetFileNamesInSQL[MAXCOUNT_SELECTED_ITEM];		// the file full path of target item with "'" replaced to "''" for SQL.
 
 	sqlite3 * _db;
 	LPSTR _dbFile;
