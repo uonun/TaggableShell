@@ -80,7 +80,7 @@ HRESULT CEnumIDListImpl::Next(
 
 	// The implementation must allocate these item identifiers using CoTaskMemAlloc. The calling application is responsible for freeing the item identifiers using CoTaskMemFree.
 	// plus the terminator
-	pidlOut = (LPMYPIDLDATA)CoTaskMemAlloc(uSize + sizeof(USHORT));
+	pidlOut = (LPMYPIDLDATA)CoTaskMemAlloc(uSize  * celt + sizeof(USHORT));
 
 	if(pidlOut)
 	{
@@ -90,15 +90,20 @@ HRESULT CEnumIDListImpl::Next(
 		{
 			auto next = _items[_currentIdx++];
 
-			//Assign values to the members of the MYPIDLDATA structure
-			//that is the PIDL's first SHITEMID structure
-			pidlOut->cb = uSize;
-			pidlOut->Type = next.Type;
-			pidlOut->TagID = next.TagID;
-			pidlOut->TagIdx = next.TagIdx;
-			pidlOut->UseCount = next.UseCount;
-			StringCbCopyW(pidlOut->wszDisplayName,sizeof(pidlOut->wszDisplayName), next.wszDisplayName);
-			StringCbCopyW(pidlOut->wszRemark,sizeof(pidlOut->wszRemark), next.wszRemark);
+			auto pidl = m_PidlMgr.Create((LPCMYPIDLDATA)&next);
+			UINT cbSrc = m_PidlMgr.GetSize(pidl);
+			CopyMemory ( pidlOut, pidl, cbSrc );
+			m_PidlMgr.Delete(pidl);
+
+			////Assign values to the members of the MYPIDLDATA structure
+			////that is the PIDL's first SHITEMID structure
+			//pidlOut->cb = uSize;
+			//pidlOut->Type = next.Type;
+			//pidlOut->TagID = next.TagID;
+			//pidlOut->TagIdx = next.TagIdx;
+			//pidlOut->UseCount = next.UseCount;
+			//StringCbCopyW(pidlOut->wszDisplayName,sizeof(pidlOut->wszDisplayName), next.wszDisplayName);
+			//StringCbCopyW(pidlOut->wszRemark,sizeof(pidlOut->wszRemark), next.wszRemark);
 
 			//Advance the pointer to the start of the next SHITEMID structure.
 			pidlOut = (LPMYPIDLDATA)((LPBYTE)pidlOut + pidlOut->cb);

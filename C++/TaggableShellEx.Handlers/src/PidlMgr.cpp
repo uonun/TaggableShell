@@ -6,7 +6,7 @@
 
 CPidlMgr::CPidlMgr()
 {
-	HRESULT hr = SHGetMalloc ( &m_spMalloc );
+
 }
 
 CPidlMgr::~CPidlMgr()
@@ -19,30 +19,7 @@ CPidlMgr::~CPidlMgr()
 /*---------------------------------------------------------------*/
 LPITEMIDLIST CPidlMgr::Create ( const MYPIDLDATA* data )
 {
-	// Global size of the PIDL, including SHITEMID
-	UINT uSize = sizeof(ITEMIDLIST) + sizeof(MYPIDLDATA);
-
-	// Also allocate memory for the final null SHITEMID.
-	LPITEMIDLIST pidlNew = (LPITEMIDLIST) m_spMalloc->Alloc(uSize + sizeof(ITEMIDLIST));
-
-	if ( pidlNew )
-	{
-		LPITEMIDLIST pidlTemp = pidlNew;
-
-		// Prepares the PIDL to be filled with actual data
-		pidlTemp->mkid.cb = uSize;
-		MYPIDLDATA* pData = (MYPIDLDATA*) pidlTemp->mkid.abID;
-
-		// Fill the PIDL
-		pData=(MYPIDLDATA*)data;
-
-		// A PIDL of size 0 means the end of the chain
-		pidlTemp = GetNextItem ( pidlTemp );
-		pidlTemp->mkid.cb = 0;
-		pidlTemp->mkid.abID[0] = 0;
-	}
-
-	return pidlNew;
+	return ILAppendID(NULL,(LPSHITEMID)data,TRUE);
 }
 
 
@@ -52,7 +29,7 @@ LPITEMIDLIST CPidlMgr::Create ( const MYPIDLDATA* data )
 /*---------------------------------------------------------------*/
 void CPidlMgr::Delete(LPITEMIDLIST pidl)
 {
-	m_spMalloc->Free(pidl);
+	ILFree(pidl);
 }
 
 
@@ -63,8 +40,8 @@ void CPidlMgr::Delete(LPITEMIDLIST pidl)
 LPITEMIDLIST CPidlMgr::GetNextItem ( LPCITEMIDLIST pidl )
 {
 	_ASSERT(pidl != NULL);
-
-	return LPITEMIDLIST(LPBYTE(pidl) + pidl->mkid.cb);
+	return ILGetNext(pidl);
+	//return LPITEMIDLIST(LPBYTE(pidl) + pidl->mkid.cb);
 }
 
 
@@ -75,15 +52,15 @@ LPITEMIDLIST CPidlMgr::GetNextItem ( LPCITEMIDLIST pidl )
 LPITEMIDLIST CPidlMgr::GetLastItem ( LPCITEMIDLIST pidl )
 {
 	return ILFindLastID(pidl);
-/*
+	/*
 	LPITEMIDLIST pidlLast = NULL;
 
 	_ASSERT(pidl != NULL);
 
 	while ( 0 != pidl->mkid.cb )
 	{
-		pidlLast = (LPITEMIDLIST) pidl;
-		pidl = GetNextItem ( pidl );
+	pidlLast = (LPITEMIDLIST) pidl;
+	pidl = GetNextItem ( pidl );
 	}
 
 	return pidlLast;*/
@@ -96,21 +73,22 @@ LPITEMIDLIST CPidlMgr::GetLastItem ( LPCITEMIDLIST pidl )
 /*---------------------------------------------------------------*/
 UINT CPidlMgr::GetSize ( LPCITEMIDLIST pidl )
 {
-	UINT uSize = 0;
-	LPITEMIDLIST pidlTemp = (LPITEMIDLIST) pidl;
+	return ILGetSize(pidl);
+	//UINT uSize = 0;
+	//LPITEMIDLIST pidlTemp = (LPITEMIDLIST) pidl;
 
-	_ASSERT(pidl != NULL);
+	//_ASSERT(pidl != NULL);
 
-	while ( 0 != pidlTemp->mkid.cb )
-	{
-		uSize += pidlTemp->mkid.cb;
-		pidlTemp = GetNextItem ( pidlTemp );
-	}  
+	//while ( 0 != pidlTemp->mkid.cb )
+	//{
+	//	uSize += pidlTemp->mkid.cb;
+	//	pidlTemp = GetNextItem ( pidlTemp );
+	//}  
 
-	// add the size of the NULL terminating ITEMIDLIST
-	uSize += sizeof(ITEMIDLIST);
+	//// add the size of the NULL terminating ITEMIDLIST
+	//uSize += sizeof(ITEMIDLIST);
 
-	return uSize;
+	//return uSize;
 }
 
 
@@ -129,10 +107,17 @@ MYPIDLDATA* CPidlMgr::GetData ( LPCITEMIDLIST pidl )
 	// Get the last item of the PIDL to make sure we get the right TCHAR
 	// in case of multiple nesting levels
 	pLast = GetLastItem ( pidl );
+	if ( NULL == pLast )
+		return NULL;
 
 	// we use MYPIDLDATA as SHITEMID in LPCITEMIDLIST.
 	pData = (MYPIDLDATA*)pLast;
-	return pData;
+
+	// to make sure current SHITEMID is MYPIDLDATA
+	if ( pData->cb == pLast->mkid.cb )
+		return pData;
+	else
+		return NULL;
 }
 
 
@@ -142,25 +127,26 @@ MYPIDLDATA* CPidlMgr::GetData ( LPCITEMIDLIST pidl )
 /*---------------------------------------------------------------*/
 LPITEMIDLIST CPidlMgr::Copy ( LPCITEMIDLIST pidlSrc )
 {
-	LPITEMIDLIST pidlTarget = NULL;
-	UINT cbSrc = 0;
+	return ILCloneFull(pidlSrc);
+	//LPITEMIDLIST pidlTarget = NULL;
+	//UINT cbSrc = 0;
 
-	if ( NULL == pidlSrc )
-		return NULL;
+	//if ( NULL == pidlSrc )
+	//	return NULL;
 
-	// Allocate memory for the new PIDL.
+	//// Allocate memory for the new PIDL.
 
-	cbSrc = GetSize ( pidlSrc );
-	pidlTarget = (LPITEMIDLIST) m_spMalloc->Alloc ( cbSrc );
+	//cbSrc = GetSize ( pidlSrc );
+	//pidlTarget = (LPITEMIDLIST) m_spMalloc->Alloc ( cbSrc );
 
-	if ( NULL == pidlTarget )
-		return NULL;
+	//if ( NULL == pidlTarget )
+	//	return NULL;
 
-	// Copy the source PIDL to the target PIDL.
+	//// Copy the source PIDL to the target PIDL.
 
-	CopyMemory ( pidlTarget, pidlSrc, cbSrc );
+	//CopyMemory ( pidlTarget, pidlSrc, cbSrc );
 
-	return pidlTarget;
+	//return pidlTarget;
 }
 
 ///*---------------------------------------------------------------*/

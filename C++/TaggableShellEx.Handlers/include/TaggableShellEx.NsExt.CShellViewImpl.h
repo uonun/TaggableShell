@@ -37,19 +37,12 @@ public:
 	STDMETHOD(GetCurrentInfo)(LPFOLDERSETTINGS);
 	STDMETHOD(Refresh)();
 	STDMETHOD(UIActivate)(UINT);
-
-	STDMETHOD(AddPropertySheetPages)(DWORD, LPFNADDPROPSHEETPAGE, LPARAM)
-	{ return E_NOTIMPL; }
-	STDMETHOD(EnableModeless)(BOOL)
-	{ return E_NOTIMPL; }
-	STDMETHOD(GetItemObject)(UINT, REFIID, void**)
-	{ return E_NOTIMPL; }
-	STDMETHOD(SaveViewState)()
-	{ return E_NOTIMPL; }
-	STDMETHOD(SelectItem)(LPCITEMIDLIST, UINT)
-	{ return E_NOTIMPL; }
-	STDMETHOD(TranslateAccelerator)(LPMSG)
-	{ return E_NOTIMPL; }
+	STDMETHOD(AddPropertySheetPages)(DWORD, LPFNADDPROPSHEETPAGE, LPARAM);
+	STDMETHOD(EnableModeless)(BOOL);
+	STDMETHOD(GetItemObject)(UINT, REFIID, void**);
+	STDMETHOD(SaveViewState)();
+	STDMETHOD(SelectItem)(LPCITEMIDLIST, UINT);
+	STDMETHOD(TranslateAccelerator)(LPMSG);
 
 	// IOleCommandTarget methods
 	STDMETHOD(QueryStatus)(const GUID*, ULONG, OLECMD prgCmds[], OLECMDTEXT*);
@@ -68,7 +61,7 @@ private:
 
 	IExplorerBrowser *_peb;
 	IResultsFolder *_prf;
-
+	
 	HWND m_hwndParent;
 	HWND m_hWnd;
 
@@ -80,21 +73,12 @@ private:
 
 	void FillList();
 
-	// the ABSOLUTE pidl of current IShellView
-	//ITEMIDLIST* _currentItem;
-
 	// In C++ you must employ a free (C) function or a static
 	// class member function as the thread entry-point-function.
 	// Furthermore, _beginthreadex() demands that the thread
 	// entry function signature take a single (void*) and returned
 	// an unsigned.
-	static unsigned __stdcall FillList_Tags(void * pThis);
+	static unsigned __stdcall FillList_Asyn(void * pThis);
+	BOOL _isRefreshing;
 
 };
-
-
-LRESULT CALLBACK WndProc(
-	HWND hwnd,        // handle to window
-	UINT uMsg,        // message identifier
-	WPARAM wParam,    // first message parameter
-	LPARAM lParam);    // second message parameter

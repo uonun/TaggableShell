@@ -191,7 +191,7 @@ void CTaghelper::LoadTags(bool ignoreCache)
 	}
 }
 
-HRESULT CTaghelper::SetTagByRecordId(UINT tagIdInDb)
+HRESULT CTaghelper::SetTagByRecordId(UINT & tagIdInDb)
 {
 	_ASSERT_EXPR( tagIdInDb > 0,L"tagIdInDb must be greater than 0.");
 
@@ -303,7 +303,7 @@ HRESULT CTaghelper::SetTagByRecordId(UINT tagIdInDb)
 	return hr;
 }
 
-HRESULT CTaghelper::SetTagByIdx(UINT tagIdx)
+HRESULT CTaghelper::SetTagByIdx(UINT & tagIdx)
 {
 	_ASSERT_EXPR( tagIdx < TagCount,L"tagIdx must be less than TagCount.");
 	return SetTagByRecordId(Tags[tagIdx].TagID);
@@ -642,7 +642,7 @@ HRESULT CTaghelper::GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagI
 				::Str2WStr( pazResult[i],fname);
 				files[count++] = fname;
 
-				::PrintLog("Got file: %d",fname);
+				::PrintLog("Got file: %s",fname);
 			}
 		}else{
 			::PrintLog("Fail to get file associated with tag: id = %d.",tagIdInDb);

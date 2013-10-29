@@ -1,8 +1,8 @@
 #pragma once
 #include "../include/stdafx.h"
 
-#define MYSHITEMTYPE_TAG	DWORD(1);
-#define MYSHITEMTYPE_FILE	DWORD(2);
+#define MYSHITEMTYPE_TAG	DWORD(1)
+#define MYSHITEMTYPE_FILE	DWORD(2)
 
 // Data structure to be stored in our PIDLs.
 typedef struct tagMYPIDLDATA {
@@ -14,6 +14,8 @@ typedef struct tagMYPIDLDATA {
 	WCHAR wszDisplayName[MAX_PATH];	// file fullname or tag name.
 	WCHAR wszRemark[MAX_PATH];		//
 } MYPIDLDATA, *LPMYPIDLDATA;
+
+typedef const MYPIDLDATA* LPCMYPIDLDATA;
 
 // Class that creates/destroyes PIDLs and gets data from PIDLs.
 class CPidlMgr  
@@ -33,5 +35,5 @@ public:
 	MYPIDLDATA* GetData ( LPCITEMIDLIST );
 
 private:
-	IMalloc* m_spMalloc;
+
 };

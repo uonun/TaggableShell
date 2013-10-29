@@ -3,17 +3,14 @@
 #include <Winuser.h> // GWLP_WNDPROC, GWLP_USERDATA
 #include <propkey.h>
 
-ULONG_PTR lpPrevWndFunc = 0;	// The previous window procedure
-ULONG_PTR lpPrevUserData = 0;	// The previous window procedure
-UINT const KFD_SELCHANGE = WM_USER;
-
 CShellViewImpl::CShellViewImpl(void): 
 	_cRef(1) // IUnknown
 	,m_hwndParent(NULL)
 	,m_hWnd(NULL)
 	,m_spShellBrowser(NULL)
 	,m_psfContainingFolder(NULL)
-	, _peb(NULL), _prf(NULL)
+	, _peb(NULL),_prf(NULL)
+	,_isRefreshing(FALSE)
 {
 	::PrintLog(L"CShellViewImpl.ctor");
 }
@@ -146,11 +143,22 @@ STDMETHODIMP CShellViewImpl::OnDefaultCommand(IShellView * psv)
 				last = m_PidlMgr.GetLastItem(pidl);
 				if( hr == S_OK )
 				{
-					//m_psfContainingFolder->m_PIDLCurrent = last;
 					auto data = m_PidlMgr.GetData(last);
-					::PrintLog(L"CShellViewImpl::OnDefaultCommand: %s",data->wszDisplayName);
+					if ( data != NULL && (data->Type == MYSHITEMTYPE_TAG || data->Type == MYSHITEMTYPE_FILE ) )
+					{
+						::PrintLog(L"CShellViewImpl::OnDefaultCommand: %s",data->wszDisplayName);
+						hr = m_spShellBrowser->BrowseObject(last, SBSP_DEFBROWSER | SBSP_RELATIVE);
+					}
+					else
+					{
+						SHELLEXECUTEINFO ei = { sizeof(ei) };
+						ei.fMask        = SEE_MASK_INVOKEIDLIST;
+						ei.hwnd         = m_hwndParent;
+						ei.nShow        = SW_NORMAL;
+						ei.lpIDList     = pidl;
 
-					hr = m_spShellBrowser->BrowseObject(last, SBSP_DEFBROWSER | SBSP_RELATIVE);
+						ShellExecuteEx(&ei);
+					}
 				}
 				CoTaskMemFree(pidl);
 			}
@@ -167,7 +175,7 @@ STDMETHODIMP CShellViewImpl::OnStateChange(IShellView * psv, ULONG uChange)
 	::PrintLog(L"CShellViewImpl::OnStateChange, uChange = %d",uChange);
 	if (uChange == CDBOSC_SELCHANGE)
 	{
-		PostMessage(m_hWnd, KFD_SELCHANGE, 0, 0);
+		//PostMessage(m_hWnd, KFD_SELCHANGE, 0, 0);
 	}
 	return S_OK;
 }
@@ -186,19 +194,18 @@ STDMETHODIMP CShellViewImpl::GetWindow ( HWND* phwnd )
 	return S_OK;
 }
 
-unsigned __stdcall CShellViewImpl::FillList_Tags(void * pThis)
+unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 {
 	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 	if (SUCCEEDED(hr))
 	{
-		OleInitialize(0);   // for drag and drop
+		IEnumIDList *pEnum = NULL;
 
 		CShellViewImpl * pthX = (CShellViewImpl*)pThis;
-		pthX->_peb->RemoveAll();
-
-		BOOL isShowTag = pthX->IsShowTag();
+		pthX->_isRefreshing = TRUE;
 
 		LPWSTR infoLoading = 0,infoLoaded = 0;
+		BOOL isShowTag = pthX->IsShowTag();
 		if ( isShowTag )
 		{
 			infoLoading = ::MyLoadString(IDS_MSG_LOADING_TAGS);
@@ -218,66 +225,73 @@ unsigned __stdcall CShellViewImpl::FillList_Tags(void * pThis)
 			infoLoaded = tmp2;			
 		}
 
-		pthX->_peb->SetEmptyText(infoLoading);
-
-
-		IEnumIDList *pEnum = NULL;
-		LPITEMIDLIST pidl = NULL;
-		HRESULT hr;
-
-		DWORD flag = SHCONTF_FOLDERS;
-		CShellFolderImpl *sf = pthX->m_psfContainingFolder;
-
-		hr = sf->EnumObjects ( pthX->m_hWnd, flag,&pEnum );
-
-		if ( FAILED(hr) )
-			return 0;
-
 		try{
-			// Add items.
-			DWORD dwFetched;
-			while ( pEnum->Next(1, &pidl, &dwFetched) == S_OK )	// the pidl is relative.
+			pthX->_peb->SetEmptyText(infoLoading);
+			pthX->_peb->RemoveAll();
+
+			UpdateWindow(pthX->m_hWnd);
+
+			// Stop redrawing to avoid flickering
+			SendMessage( pthX->m_hWnd,WM_SETREDRAW,FALSE,0);
+
+			LPITEMIDLIST pidl = NULL;
+			HRESULT hr;
+
+			DWORD flag = isShowTag ? SHCONTF_FOLDERS : SHCONTF_NONFOLDERS;
+			CShellFolderImpl *sf = pthX->m_psfContainingFolder;
+
+			hr = sf->EnumObjects ( pthX->m_hWnd, flag,&pEnum );
+			if ( SUCCEEDED(hr) )
 			{
-				IShellItem *psi;
-				if( pthX->IsShowTag() )
+				// Add items.
+				DWORD dwFetched;
+				while ( pEnum->Next(1, &pidl, &dwFetched) == S_OK )	// the pidl is relative.
 				{
-					hr = SHCreateShellItem(pthX->m_psfContainingFolder->m_pIDFolder,NULL,pidl,&psi);
-				}else{
-					auto data = pthX->m_PidlMgr.GetData(pidl);
-					hr = SHCreateItemFromParsingName(data->wszDisplayName,NULL,IID_PPV_ARGS(&psi));
-					if ( ! SUCCEEDED(hr))
+					IShellItem *psi;
+					if( pthX->IsShowTag() )
 					{
+						hr = SHCreateShellItem(pthX->m_psfContainingFolder->m_pIDFolder,NULL,pidl,&psi);
+					}else{
+						auto data = pthX->m_PidlMgr.GetData(pidl);
+						if ( data != NULL )
+						{
+							hr = SHCreateItemFromParsingName(data->wszDisplayName,NULL,IID_PPV_ARGS(&psi));
+						}
+					}
+
+					if (SUCCEEDED(hr))
+					{
+						hr = pthX->_prf->AddItem(psi);
+						psi->Release();
+					}else{
 						// ERROR_FILE_NOT_FOUND
 						// ERROR_PATH_NOT_FOUND
 						// ERROR_INVALID_DRIVE
 						// ....
 					}
-				}
 
-				if (SUCCEEDED(hr))
-				{
-					hr = pthX->_prf->AddItem(psi);
-					psi->Release();
+					// free memory allocated by pEnum->Next
+					CoTaskMemFree(pidl);
 				}
-
-				// free memory allocated by pEnum->Next
-				CoTaskMemFree(pidl);
 			}
-
-			// the calling application must free the returned IEnumIDList object by calling its Release method.
-			pEnum->Release();
-
-			pthX->_peb->SetEmptyText(infoLoaded);
 		}
 		catch(int e)
 		{
-			// the calling application must free the returned IEnumIDList object by calling its Release method.
-			pEnum->Release();
-
-			pthX->_peb->SetEmptyText(infoLoaded);
 		}
 
-		OleUninitialize();
+		// the calling application must free the returned IEnumIDList object by calling its Release method.
+		if ( NULL != pEnum )
+			pEnum->Release();
+
+		pthX->_peb->SetEmptyText(infoLoaded);
+
+		// Restart redrawing to avoid flickering
+		SendMessage( pthX->m_hWnd,WM_SETREDRAW,TRUE,0);
+
+		UpdateWindow( pthX->m_hWnd );
+
+		pthX->_isRefreshing = FALSE;
+
 		CoUninitialize();
 	}
 
@@ -298,24 +312,14 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 
 	// Init member variables.
 	m_spShellBrowser = psb;
+	m_spShellBrowser->AddRef();
 	m_spShellBrowser->GetWindow(&m_hwndParent);
 	m_spShellBrowser->SetStatusTextSB(::MyLoadString(IDS_ProductIntro));
 
 	m_FolderSettings = *lpfs;
-	m_FolderSettings.ViewMode = FVM_DETAILS;
 
 	DWORD dwListStyles = WS_CHILDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	DWORD dwListExStyles = WS_EX_CLIENTEDGE | WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RIGHTSCROLLBAR;
-	DWORD dwListExtendedStyles = LVS_EX_FULLROWSELECT | LVS_EX_HEADERDRAGDROP;
-
-	switch ( m_FolderSettings.ViewMode )
-	{
-	case FVM_ICON:      dwListStyles |= LVS_ICON;      break;
-	case FVM_SMALLICON: dwListStyles |= LVS_SMALLICON; break;
-	case FVM_LIST:      dwListStyles |= LVS_LIST;      break;
-	case FVM_DETAILS:   dwListStyles |= LVS_REPORT;    break;
-		DEFAULT_UNREACHABLE;
-	}
 
 	*phWnd = NULL;
 	m_hWnd = CreateWindowEx ( dwListExStyles,WC_STATIC, NULL, dwListStyles,0, 0,
@@ -334,7 +338,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 		if (SUCCEEDED(hr))
 		{
 			// initialized
-			_peb->SetOptions(EBO_NAVIGATEONCE | EBO_SHOWFRAMES); // do not allow navigations
+			_peb->SetOptions(EBO_ALWAYSNAVIGATE | EBO_SHOWFRAMES);
 			_peb->SetEmptyText(::MyLoadString(IDS_MSG_LOADING_TAGS));
 
 			// Initialize the exporer browser so that we can use the results folder
@@ -348,88 +352,98 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 				_peb->GetCurrentView(IID_PPV_ARGS(&spSV));
 				spSV->GetWindow(phWnd);
 
-				// change the message procedure
-				//lpPrevWndFunc = SetWindowLongPtr(*phWnd,GWLP_WNDPROC, (LONG_PTR)WndProc);
-				//lpPrevUserData = SetWindowLongPtr(*phWnd,GWLP_USERDATA,(LONG_PTR)this);
-
 				IFolderView2 *pfv2;
 				hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
 				if (SUCCEEDED(hr))
-				{
-					IColumnManager *pcm;
-					hr = pfv2->QueryInterface(&pcm);
-					if (SUCCEEDED(hr))
-					{
-						if( IsShowTag() )
-						{
-							PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay, PKEY_FileCount};
-							hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
-							if (SUCCEEDED(hr))
-							{
-								// tag name
-								CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-								hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
-								if (SUCCEEDED(hr))
-								{
-									ci.dwState = CM_STATE_ALWAYSVISIBLE;
-									ci.uWidth = 250;
-									ci.uDefaultWidth = 250;
-									ci.uIdealWidth = 250;
-									StringCbPrintf(ci.wszName,sizeof(ci.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME) );
-									pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
-								}
-
-								// use count
-								CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-								hr = pcm->GetColumnInfo(PKEY_FileCount, &ci2);
-								if (SUCCEEDED(hr))
-								{
-									ci2.dwState = CM_STATE_ALWAYSVISIBLE;
-									ci2.uWidth = 100;
-									ci2.uDefaultWidth = 100;
-									ci2.uIdealWidth = 100;
-									StringCbPrintf(ci2.wszName,sizeof(ci2.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT) );
-									pcm->SetColumnInfo(PKEY_FileCount, &ci2);
-								}
-							}
-							pcm->Release();
-						}
-						else
-						{
-							PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay,PKEY_ItemTypeText, PKEY_ItemPathDisplay};
-							hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
-							if (SUCCEEDED(hr))
-							{
-								CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-								hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
-								if (SUCCEEDED(hr))
-								{
-									ci.dwState = CM_STATE_ALWAYSVISIBLE;
-									ci.uWidth = 250;
-									ci.uDefaultWidth = 250;
-									ci.uIdealWidth = 250;
-									pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
-								}
-
-								CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-								hr = pcm->GetColumnInfo(PKEY_ItemTypeText, &ci2);
-								if (SUCCEEDED(hr))
-								{
-									ci2.dwState = CM_STATE_ALWAYSVISIBLE;
-									ci2.uWidth = 100;
-									ci2.uDefaultWidth = 100;
-									ci2.uIdealWidth = 100;
-									pcm->SetColumnInfo(PKEY_ItemTypeText, &ci2);
-								}
-							}
-							pcm->Release();
-						}
-					}
-
+				{					
 					hr = pfv2->GetFolder(IID_PPV_ARGS(&_prf));
 					if (SUCCEEDED(hr))
 					{
 						FillList();
+					}
+
+					if ( m_FolderSettings.ViewMode == FVM_DETAILS )
+					{
+						IColumnManager *pcm;
+						hr = pfv2->QueryInterface(&pcm);
+						if (SUCCEEDED(hr))
+						{
+							if( IsShowTag() )
+							{
+								PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay, PKEY_FileCount};
+								hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
+								if (SUCCEEDED(hr))
+								{
+									// tag name
+									CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+									hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
+									if (SUCCEEDED(hr))
+									{
+										ci.dwState = CM_STATE_ALWAYSVISIBLE;
+										ci.uWidth = 250;
+										ci.uDefaultWidth = 250;
+										ci.uIdealWidth = 250;
+										StringCbPrintf(ci.wszName,sizeof(ci.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME) );
+										pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
+									}
+
+									// use count
+									CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+									hr = pcm->GetColumnInfo(PKEY_FileCount, &ci2);
+									if (SUCCEEDED(hr))
+									{
+										ci2.dwState = CM_STATE_ALWAYSVISIBLE;
+										ci2.uWidth = 100;
+										ci2.uDefaultWidth = 100;
+										ci2.uIdealWidth = 100;
+										StringCbPrintf(ci2.wszName,sizeof(ci2.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT) );
+										pcm->SetColumnInfo(PKEY_FileCount, &ci2);
+									}
+								}
+								pcm->Release();
+							}
+							else
+							{
+								PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay,PKEY_DateModified,PKEY_ItemTypeText,PKEY_Size,PKEY_ItemFolderPathDisplay};
+								hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
+								if (SUCCEEDED(hr))
+								{
+									CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+									hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
+									if (SUCCEEDED(hr))
+									{
+										ci.dwState = CM_STATE_ALWAYSVISIBLE;
+										ci.uWidth = 250;
+										ci.uDefaultWidth = 250;
+										ci.uIdealWidth = 250;
+										pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
+									}
+
+									CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+									hr = pcm->GetColumnInfo(PKEY_DateModified, &ci2);
+									if (SUCCEEDED(hr))
+									{
+										ci2.dwState = CM_STATE_VISIBLE;
+										ci2.uWidth = 180;
+										ci2.uDefaultWidth = 180;
+										ci2.uIdealWidth = 180;
+										pcm->SetColumnInfo(PKEY_DateModified, &ci2);
+									}
+
+									CM_COLUMNINFO ci3 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+									hr = pcm->GetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
+									if (SUCCEEDED(hr))
+									{
+										ci2.dwState = CM_STATE_VISIBLE;
+										ci2.uWidth = 350;
+										ci2.uDefaultWidth = 350;
+										ci2.uIdealWidth = 350;
+										pcm->SetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
+									}
+								}
+								pcm->Release();
+							}
+						}
 					}
 					pfv2->Release();
 				}
@@ -447,8 +461,6 @@ STDMETHODIMP CShellViewImpl::DestroyViewWindow()
 {
 	// Clean up the UI.
 	UIActivate ( SVUIA_DEACTIVATE );
-
-	//DestroyWindow(m_hWnd);
 
 	return S_OK;
 }
@@ -488,6 +500,19 @@ STDMETHODIMP CShellViewImpl::UIActivate ( UINT uState )
 
 	return S_OK;
 }
+
+STDMETHODIMP 	CShellViewImpl::AddPropertySheetPages(DWORD dwReserved, LPFNADDPROPSHEETPAGE lpfn, LPARAM lparam)
+{ return E_NOTIMPL; }
+STDMETHODIMP 	CShellViewImpl::EnableModeless(BOOL fEnable)
+{ return E_NOTIMPL; }
+STDMETHODIMP 	CShellViewImpl::GetItemObject(UINT uItem, REFIID riid, void** ppv)
+{ return E_NOTIMPL; }
+STDMETHODIMP 	CShellViewImpl::SaveViewState()
+{ return E_NOTIMPL; }
+STDMETHODIMP 	CShellViewImpl::SelectItem(LPCITEMIDLIST pidlItem, UINT uFlags)
+{ return E_NOTIMPL; }
+STDMETHODIMP 	CShellViewImpl::TranslateAccelerator(LPMSG lpmsg)
+{ return E_NOTIMPL; }
 
 
 // QueryStatus() is called by the browser to determine which standard commands
@@ -577,10 +602,6 @@ STDMETHODIMP CShellViewImpl::Exec ( const GUID* pguidCmdGroup, DWORD nCmdID,
 HRESULT CShellViewImpl::Init ( CShellFolderImpl* pContainingFolder )
 {
 	m_psfContainingFolder = pContainingFolder;
-
-	if ( NULL != m_psfContainingFolder )
-		m_psfContainingFolder->AddRef();
-
 	return S_OK;
 }
 
@@ -596,55 +617,6 @@ BOOL CShellViewImpl::IsShowTag()
 // FillList() populates the list control.
 void CShellViewImpl::FillList()
 {
-	_beginthreadex(0,0,FillList_Tags,this,0,0);
+	if( !_isRefreshing )
+		_beginthreadex(0,0,FillList_Asyn,this,0,0);
 }
-
-LRESULT CALLBACK WndProc(
-	HWND hwnd,        // handle to window
-	UINT uMsg,        // message identifier
-	WPARAM wParam,    // first message parameter
-	LPARAM lParam)    // second message parameter
-{ 
-	//::PrintLog(L"Message: 0x%x, wParam = 0x%x, lParam = 0x%x, hwnd = 0x%x", uMsg, wParam, lParam, hwnd);
-
-	CShellViewImpl* pView = NULL;
-	LONG_PTR x = GetWindowLongPtr(hwnd,GWLP_USERDATA);
-	if ( x > 0)
-	{
-		pView = (CShellViewImpl*)x;
-	}
-
-	switch (uMsg) 
-	{ 
-		//case WM_CREATE: 
-		//	// Initialize the window. 
-		//	return 0; 
-
-		//case WM_PAINT: 
-		//	// Paint the window's client area. 
-		//	return 0; 
-
-		//case WM_SIZE: 
-		//	// Set the size and position of the window. 
-		//	return 0; 
-
-		//case WM_DESTROY: 
-		//	return 0; 
-
-	case WM_NCDESTROY: 
-		// Clean up window-specific data objects. 
-		{
-			// Remove the subclass from the control. 
-			SetWindowLongPtr(hwnd, GWLP_WNDPROC,(LONG_PTR) lpPrevWndFunc); 
-			SetWindowLongPtr(hwnd,GWLP_USERDATA,lpPrevUserData);
-		}
-		return 0; 
-		// 
-		// Process other messages. 
-		// 
-
-	default:
-		return CallWindowProc((WNDPROC)lpPrevWndFunc,hwnd, uMsg, wParam, lParam); 
-	} 
-	return 0; 
-} 

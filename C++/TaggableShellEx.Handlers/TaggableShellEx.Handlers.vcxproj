@@ -63,7 +63,7 @@
     <ResourceCompile Include="src\TaggableShellEx.Handlers.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\ReviewＮotes.txt" />
+    <Text Include="..\Notes.txt" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\16x16.png" />

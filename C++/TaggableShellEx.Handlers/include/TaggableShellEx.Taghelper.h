@@ -29,9 +29,9 @@ public:
 	void LoadTags(bool ignoreCache = false);
 
 	// Bind/Unbind tag to files by index of tag in the array of Tags.
-	HRESULT SetTagByIdx(UINT tagIdx);
+	HRESULT SetTagByIdx(UINT & tagIdx);
 	// Bind/Unbind tag to files by record ID in database.
-	HRESULT SetTagByRecordId(UINT tagIdInDb);
+	HRESULT SetTagByRecordId(UINT & tagIdInDb);
 
 	LPWSTR TargetFileNames[MAXCOUNT_SELECTED_ITEM];			// the file full path of target item.
 	UINT FileCount;

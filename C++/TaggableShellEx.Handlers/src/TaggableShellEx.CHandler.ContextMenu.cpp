@@ -121,7 +121,8 @@ HRESULT CHandler::InvokeCommand (
 	auto cmd =LOWORD( pCmdInfo->lpVerb );
 	if( cmd < this->TagHelper.TagCount)
 	{
-		this->TagHelper.SetTagByIdx(cmd);
+		UINT cmd_tagIdx = cmd;
+		this->TagHelper.SetTagByIdx(cmd_tagIdx);
 	}
 	else
 	{	

@@ -122,14 +122,14 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\ReviewＮotes.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="resources\16x16.png">
       <Filter>资源文件</Filter>
     </Image>
     <Image Include="resources\48x48.ico">
       <Filter>资源文件</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\Notes.txt" />
   </ItemGroup>
 </Project>

@@ -136,8 +136,6 @@ HRESULT CShellFolderImpl::BindToObject(
 			return hr;
 		}
 
-		pShellFolder->AddRef();
-
 		hr = pShellFolder->QueryInterface(riid,ppvOut);
 		pShellFolder->Release();
 	}
@@ -193,10 +191,6 @@ HRESULT CShellFolderImpl::CreateViewObject(
 			return hr;
 		}
 
-		// AddRef() the object while we're using it.
-		pShellView->AddRef();
-
-
 		// Return the requested interface back to the shell.
 		hr = pShellView->QueryInterface ( riid, ppv );
 		pShellView->Release();
@@ -217,75 +211,63 @@ HRESULT CShellFolderImpl::EnumObjects(
 	if ( NULL == ppEnumIDList )
 		return E_POINTER;
 
+	HRESULT hr;
+	vector<MYPIDLDATA> items;
+	BOOL isShowFilesInTag = FALSE;
+	MYPIDLDATA* data = NULL;
 	*ppEnumIDList = NULL;
 
-	HRESULT hr;
+	// grfFlags is SHCONTF_FOLDERS or SHCONTF_NONFOLDERS, see CShellViewImpl::FillList();
+	if ( grfFlags & SHCONTF_NONFOLDERS )
+	{
+		data = m_PidlMgr.GetData(m_PIDLCurrent);
+		if ( data != NULL )
+		{
+			// if MYPIDLDATA exists, then show files in tag.
+			isShowFilesInTag = TRUE;
+		}
+	}
 
 	// create a new instance, but released by caller.
 	CEnumIDListImpl *pEnum = new CEnumIDListImpl();
-
-	vector<MYPIDLDATA> items;
-	items.clear();
 
 	if ( this->TagHelper.OpenDb() )
 	{
 		this->TagHelper.LoadTags();
 	}
 
-	if ( grfFlags & SHCONTF_FOLDERS ){
-		if ( NULL != m_PIDLCurrent )
+	if ( isShowFilesInTag )
+	{
+		LPWSTR *files = new LPWSTR[MAXCOUNT_TOTAL_ITEMS];
+		UINT count = 0;
+		TagHelper.GetFilesByTagID(files,count,data->TagID);
+		for (UINT i = 0; i < count; i++)
 		{
-			auto data = m_PidlMgr.GetData(m_PIDLCurrent);
+			MYPIDLDATA d = {sizeof(MYPIDLDATA)};
+			d.cb = sizeof(MYPIDLDATA);
+			d.Type = MYSHITEMTYPE_FILE;
+			StringCbCopyW(d.wszDisplayName,sizeof(d.wszDisplayName), files[i]);
 
-			LPWSTR *files = new LPWSTR[MAXCOUNT_TOTAL_ITEMS];
-			UINT count = 0;
-			TagHelper.GetFilesByTagID(files,count,data->TagID);
-			for (UINT i = 0; i < count; i++)
-			{
-				MYPIDLDATA d = {sizeof(MYPIDLDATA)};
-				d.cb = sizeof(MYPIDLDATA);
-				d.Type = MYSHITEMTYPE_FILE;
-				d.TagID = 0;
-				d.TagIdx = 0;
-				d.UseCount = 0;
-				StringCbCopyW(d.wszDisplayName,sizeof(d.wszDisplayName), files[i]);
-				StringCbCopyW(d.wszRemark,sizeof(d.wszRemark),L"REMARK");
+			items.push_back(d);
+		}
+		delete [] files;
+	}
+	else
+	{
+		for (UINT i = 0; i < TagHelper.TagCount; i++)
+		{
+			MYPIDLDATA d = {sizeof(MYPIDLDATA)};
+			d.cb = sizeof(MYPIDLDATA);
+			d.Type = MYSHITEMTYPE_TAG;
+			d.TagID = TagHelper.Tags[i].TagID;
+			d.TagIdx = TagHelper.Tags[i].TagIdx;
+			d.UseCount = TagHelper.Tags[i].UseCount;
+			StringCbCopyW(d.wszDisplayName,sizeof(d.wszDisplayName), TagHelper.Tags[i].Tag);
 
-				items.push_back(d);
-			}
-			delete [] files;
-		}else{
-			for (UINT i = 0; i < TagHelper.TagCount; i++)
-			{
-				MYPIDLDATA d = {sizeof(MYPIDLDATA)};
-				d.cb = sizeof(MYPIDLDATA);
-				d.Type = MYSHITEMTYPE_TAG;
-				d.TagID = TagHelper.Tags[i].TagID;
-				d.TagIdx = TagHelper.Tags[i].TagIdx;
-				d.UseCount = TagHelper.Tags[i].UseCount;
-				StringCbCopyW(d.wszDisplayName,sizeof(d.wszDisplayName), TagHelper.Tags[i].Tag);
-				StringCbCopyW(d.wszRemark,sizeof(d.wszRemark),L"");
-
-				items.push_back(d);
-			}
+			items.push_back(d);
 		}
 	}
-	/*else
-	{
-	auto data = m_PidlMgr.GetData(m_PIDLCurrent);
-	::PrintLog(data->wszDisplayName);
 
-	MYPIDLDATA d = {sizeof(MYPIDLDATA)};
-	d.cb = sizeof(MYPIDLDATA);
-	d.Type = 1;
-	d.TagID = 0;
-	d.TagIdx = 0;
-	d.UseCount = 0;
-	StringCbCopyW(d.wszDisplayName,sizeof(d.wszDisplayName), L"FIELNAME");
-	StringCbCopyW(d.wszRemark,sizeof(d.wszRemark),L"REMARK");
-
-	items.push_back(d);
-	}*/
 	pEnum->Init(m_pIDFolder,items);
 
 	// Return an IEnumIDList interface to the caller.
