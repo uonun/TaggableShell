@@ -115,6 +115,7 @@
     </None>
     <None Include="Register.ShellFolder.reg" />
     <None Include="building.bat" />
+    <None Include="Register.Settings.reg" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="src\TaggableShellEx.Handlers.rc">

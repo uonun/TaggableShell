@@ -11,6 +11,7 @@ CShellViewImpl::CShellViewImpl(void):
 	,m_psfContainingFolder(NULL)
 	, _peb(NULL),_prf(NULL)
 	,_isRefreshing(FALSE)
+	,m_uUIState(SVUIA_DEACTIVATE)
 {
 	::PrintLog(L"CShellViewImpl.ctor");
 }
@@ -85,8 +86,29 @@ IFACEMETHODIMP_(ULONG) CShellViewImpl::Release()
 // IServiceProvider
 STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void **ppv)
 {
+	/*
+	{CLSID_Desktop}
+	{IID_ILayoutModifier}
+	{IID_IBrowserSettings}
+	{IID_ICommDlgBrowser}
+	{IID_IFolderTypeModifier}
+	{IID_IBrowserWithActivationNotification}
+	{IID_IFileDialogPrivate}
+	{IID_IWebBrowserApp}
+	{IID_IFolderView}
+	{4C96BE40-915C-11CF-99D3-00AA004AE837}
+	{3934E4C2-8143-4E4C-A1DC-718F8563F337}
+	{4C96BE40-915C-11CF-99D3-00AA004AE837}
+	{6CCB7BE0-6807-11D0-B810-00C04FD706EC}
+	{E38FE0F3-3DB0-47EE-A314-25CF7F4BF521}
+	{FAD451C2-AF58-4161-B9FF-57AFBBED0AD2}
+	{E07010EC-BC17-44C0-97B0-46C7C95B9EDC}
+	*/
+
 	HRESULT hr = E_NOINTERFACE;
 	*ppv = NULL;
+
+
 	if (guidService == SID_SExplorerBrowserFrame)
 	{
 		// responding to this SID allows us to hook up our ICommDlgBrowser
@@ -126,8 +148,6 @@ STDMETHODIMP CShellViewImpl::OnDefaultCommand(IShellView * psv)
 
 	HRESULT hr;
 
-	LPITEMIDLIST last;
-
 	IFolderView2 *pfv2;
 	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
 	if (SUCCEEDED(hr))
@@ -140,6 +160,7 @@ STDMETHODIMP CShellViewImpl::OnDefaultCommand(IShellView * psv)
 			hr = SHGetIDListFromObject(psi, &pidl);
 			if (SUCCEEDED(hr))
 			{
+				LPITEMIDLIST last;
 				last = m_PidlMgr.GetLastItem(pidl);
 				if( hr == S_OK )
 				{
@@ -284,11 +305,9 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 			pEnum->Release();
 
 		pthX->_peb->SetEmptyText(infoLoaded);
-
-		// Restart redrawing to avoid flickering
-		SendMessage( pthX->m_hWnd,WM_SETREDRAW,TRUE,0);
-
 		UpdateWindow( pthX->m_hWnd );
+		SendMessage( pthX->m_hWnd,WM_SETREDRAW,TRUE,0);	// Restart redrawing to avoid flickering
+		pthX->HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
 
 		pthX->_isRefreshing = FALSE;
 
@@ -298,6 +317,93 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 	return 1;          // the thread exit code, If the function succeeds, the return value is nonzero.
 }
 
+
+void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
+{
+	IColumnManager *pcm;
+	HRESULT hr = pfv2->QueryInterface(&pcm);
+	if (SUCCEEDED(hr))
+	{
+		if ( m_FolderSettings.ViewMode == FVM_DETAILS )
+		{
+			if( IsShowTag() )
+			{
+				PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay, PKEY_FileCount};
+				hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
+				if (SUCCEEDED(hr))
+				{
+					// tag name
+					CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+					hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
+					if (SUCCEEDED(hr))
+					{
+						ci.dwState = CM_STATE_ALWAYSVISIBLE;
+						ci.uWidth = 250;
+						ci.uDefaultWidth = 250;
+						ci.uIdealWidth = 250;
+						StringCbPrintf(ci.wszName,sizeof(ci.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME) );
+						pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
+					}
+
+					// use count
+					CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+					hr = pcm->GetColumnInfo(PKEY_FileCount, &ci2);
+					if (SUCCEEDED(hr))
+					{
+						ci2.dwState = CM_STATE_ALWAYSVISIBLE;
+						ci2.uWidth = 100;
+						ci2.uDefaultWidth = 100;
+						ci2.uIdealWidth = 100;
+						StringCbPrintf(ci2.wszName,sizeof(ci2.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT) );
+						pcm->SetColumnInfo(PKEY_FileCount, &ci2);
+					}
+				}
+			}
+			else
+			{
+				PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay,PKEY_DateModified,PKEY_ItemTypeText,PKEY_Size,PKEY_ItemFolderPathDisplay};
+				hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
+				if (SUCCEEDED(hr))
+				{
+					CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+					hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
+					if (SUCCEEDED(hr))
+					{
+						ci.dwState = CM_STATE_ALWAYSVISIBLE;
+						ci.uWidth = 250;
+						ci.uDefaultWidth = 250;
+						ci.uIdealWidth = 250;
+						pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
+					}
+
+					CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+					hr = pcm->GetColumnInfo(PKEY_DateModified, &ci2);
+					if (SUCCEEDED(hr))
+					{
+						ci2.dwState = CM_STATE_VISIBLE;
+						ci2.uWidth = 180;
+						ci2.uDefaultWidth = 180;
+						ci2.uIdealWidth = 180;
+						pcm->SetColumnInfo(PKEY_DateModified, &ci2);
+					}
+
+					CM_COLUMNINFO ci3 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+					hr = pcm->GetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
+					if (SUCCEEDED(hr))
+					{
+						ci2.dwState = CM_STATE_VISIBLE;
+						ci2.uWidth = 350;
+						ci2.uDefaultWidth = 350;
+						ci2.uIdealWidth = 350;
+						pcm->SetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
+					}
+				}
+			}
+		}
+
+		pcm->Release();
+	}
+}
 
 // CreateViewWindow() creates the container window.  Once that window is
 // created, it will create the list control.
@@ -317,7 +423,10 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	m_spShellBrowser->SetStatusTextSB(::MyLoadString(IDS_ProductIntro));
 
 	m_FolderSettings = *lpfs;
+	//m_FolderSettings.ViewMode = FVM_DETAILS;
 
+
+#pragma region prepare window handler
 	DWORD dwListStyles = WS_CHILDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	DWORD dwListExStyles = WS_EX_CLIENTEDGE | WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RIGHTSCROLLBAR;
 
@@ -328,6 +437,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 
 	if ( NULL == m_hWnd )
 		return -1;
+#pragma endregion
 
 	hr = CoCreateInstance(CLSID_ExplorerBrowser, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_peb));
 	if (SUCCEEDED(hr))
@@ -355,96 +465,15 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 				IFolderView2 *pfv2;
 				hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
 				if (SUCCEEDED(hr))
-				{					
+				{	
+					InitExplorerBrowserColumns(pfv2);
+
 					hr = pfv2->GetFolder(IID_PPV_ARGS(&_prf));
 					if (SUCCEEDED(hr))
 					{
 						FillList();
 					}
 
-					if ( m_FolderSettings.ViewMode == FVM_DETAILS )
-					{
-						IColumnManager *pcm;
-						hr = pfv2->QueryInterface(&pcm);
-						if (SUCCEEDED(hr))
-						{
-							if( IsShowTag() )
-							{
-								PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay, PKEY_FileCount};
-								hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
-								if (SUCCEEDED(hr))
-								{
-									// tag name
-									CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-									hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
-									if (SUCCEEDED(hr))
-									{
-										ci.dwState = CM_STATE_ALWAYSVISIBLE;
-										ci.uWidth = 250;
-										ci.uDefaultWidth = 250;
-										ci.uIdealWidth = 250;
-										StringCbPrintf(ci.wszName,sizeof(ci.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME) );
-										pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
-									}
-
-									// use count
-									CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-									hr = pcm->GetColumnInfo(PKEY_FileCount, &ci2);
-									if (SUCCEEDED(hr))
-									{
-										ci2.dwState = CM_STATE_ALWAYSVISIBLE;
-										ci2.uWidth = 100;
-										ci2.uDefaultWidth = 100;
-										ci2.uIdealWidth = 100;
-										StringCbPrintf(ci2.wszName,sizeof(ci2.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT) );
-										pcm->SetColumnInfo(PKEY_FileCount, &ci2);
-									}
-								}
-								pcm->Release();
-							}
-							else
-							{
-								PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay,PKEY_DateModified,PKEY_ItemTypeText,PKEY_Size,PKEY_ItemFolderPathDisplay};
-								hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
-								if (SUCCEEDED(hr))
-								{
-									CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-									hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
-									if (SUCCEEDED(hr))
-									{
-										ci.dwState = CM_STATE_ALWAYSVISIBLE;
-										ci.uWidth = 250;
-										ci.uDefaultWidth = 250;
-										ci.uIdealWidth = 250;
-										pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
-									}
-
-									CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-									hr = pcm->GetColumnInfo(PKEY_DateModified, &ci2);
-									if (SUCCEEDED(hr))
-									{
-										ci2.dwState = CM_STATE_VISIBLE;
-										ci2.uWidth = 180;
-										ci2.uDefaultWidth = 180;
-										ci2.uIdealWidth = 180;
-										pcm->SetColumnInfo(PKEY_DateModified, &ci2);
-									}
-
-									CM_COLUMNINFO ci3 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-									hr = pcm->GetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
-									if (SUCCEEDED(hr))
-									{
-										ci2.dwState = CM_STATE_VISIBLE;
-										ci2.uWidth = 350;
-										ci2.uDefaultWidth = 350;
-										ci2.uIdealWidth = 350;
-										pcm->SetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
-									}
-								}
-								pcm->Release();
-							}
-						}
-					}
 					pfv2->Release();
 				}
 			}
@@ -455,8 +484,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 }
 
 
-// DestroyViewWindow() is responsible for destroying our windows & cleaning
-// up stuff.
+// DestroyViewWindow() is responsible for destroying our windows & cleaning up stuff.
 STDMETHODIMP CShellViewImpl::DestroyViewWindow()
 {
 	// Clean up the UI.
@@ -469,7 +497,7 @@ STDMETHODIMP CShellViewImpl::DestroyViewWindow()
 // GetCurrentInfo() returns our FODLERSETTINGS to the browser.
 STDMETHODIMP CShellViewImpl::GetCurrentInfo ( LPFOLDERSETTINGS lpfs )
 {
-	*lpfs = m_FolderSettings;
+	lpfs = &m_FolderSettings;
 	return S_OK;
 }
 
@@ -490,19 +518,110 @@ STDMETHODIMP CShellViewImpl::Refresh()
 STDMETHODIMP CShellViewImpl::UIActivate ( UINT uState )
 {
 	// Nothing to do if the state hasn't changed since the last call.
-	//
-	//if ( m_uUIState == uState )
-	//    return S_OK;
-	//
-	//// Modify the Explorer menu and status bar.
+	if ( m_uUIState == uState )
+		return S_OK;
 
-	//HandleActivate ( uState );
+	// Modify the Explorer menu and status bar.
+	HandleActivate ( uState );
 
 	return S_OK;
 }
 
-STDMETHODIMP 	CShellViewImpl::AddPropertySheetPages(DWORD dwReserved, LPFNADDPROPSHEETPAGE lpfn, LPARAM lparam)
-{ return E_NOTIMPL; }
+#pragma region AddPropertySheetPages
+INT_PTR CALLBACK PageDlgProc_ShellViewImpl(     
+	_In_  HWND hwnd,     
+	_In_  UINT uMsg,     
+	_In_  WPARAM wParam,     
+	_In_  LPARAM lParam     
+	)     
+{
+	BOOL bRet = FALSE;
+
+	switch ( uMsg )
+	{
+	case WM_INITDIALOG:
+		//bRet = OnInitDialog ( hwnd, lParam );
+		break;
+
+	case WM_NOTIFY:
+		{
+			NMHDR* phdr = (NMHDR*) lParam;
+
+			switch ( phdr->code )
+			{
+			case PSN_APPLY:
+				MessageBox(hwnd,L"Apply",L"Caption",MB_OK);
+				break;
+			}
+		}
+		break;
+	}
+
+	return bRet;
+}
+
+// http://msdn.microsoft.com/en-us/library/windows/desktop/bb760813(v=vs.85).aspx
+UINT CALLBACK PageCallbackProc_ShellViewImpl(
+	HWND hwnd,
+	_In_     UINT uMsg,
+	_Inout_  LPPROPSHEETPAGE ppsp
+	)
+{
+	switch ( uMsg )
+	{
+	case PSPCB_RELEASE:
+		CShellViewImpl* tmp = (CShellViewImpl*)ppsp->lParam;
+		tmp->Release();
+		MessageBox(hwnd,L"PSPCB_RELEASE",L"PSPCB_RELEASE",MB_OK);		
+		break;
+	}
+
+	return 1;   // use nonzero let the page be created
+}
+
+STDMETHODIMP CShellViewImpl::AddPropertySheetPages(DWORD dwReserved, LPFNADDPROPSHEETPAGE lpfn, LPARAM lparam)
+{ 
+	::PrintLog(L"CShellViewImpl::AddPropertySheetPages");
+
+	PROPSHEETPAGE  psp;
+	HPROPSHEETPAGE hPage;
+
+	// Set up the PROPSHEETPAGE struct.
+	ZeroMemory ( &psp, sizeof(PROPSHEETPAGE) );
+
+	psp.dwSize      = sizeof(PROPSHEETPAGE);
+	psp.dwFlags     = PSP_USEREFPARENT | PSP_USETITLE | PSP_DEFAULT | PSP_USECALLBACK;
+	psp.hInstance   = ::g_hInst;
+	psp.pszTemplate = MAKEINTRESOURCE(IDD_PROPERTYPAGE);
+	psp.pszIcon     = 0;
+	psp.pszTitle    = MAKEINTRESOURCE(IDS_DLG_PROPERTYPAGE_CAPTION);
+	psp.pfnDlgProc  = PageDlgProc_ShellViewImpl;
+	psp.lParam      = (LPARAM) this;
+	psp.pfnCallback = PageCallbackProc_ShellViewImpl;
+	psp.pcRefParent = (UINT*)&_dllRefCount;
+
+	// Create the page & get a handle.
+	hPage = CreatePropertySheetPage ( &psp );
+
+	if ( NULL != hPage )
+	{
+		// Call the shell's callback function, so it adds the page to
+		// the property sheet.
+		if ( lpfn ( hPage, lparam )){
+			this->AddRef(); // released in the callback with the message PSPCB_RELEASE.
+		}
+		else
+		{
+			DestroyPropertySheetPage ( hPage );
+		}
+	}else{
+		return E_OUTOFMEMORY;
+	}
+
+	return S_OK;
+}
+#pragma endregion
+
 STDMETHODIMP 	CShellViewImpl::EnableModeless(BOOL fEnable)
 { return E_NOTIMPL; }
 STDMETHODIMP 	CShellViewImpl::GetItemObject(UINT uItem, REFIID riid, void** ppv)
@@ -609,6 +728,8 @@ BOOL CShellViewImpl::IsShowTag()
 {
 	if ( NULL != m_psfContainingFolder && NULL != m_psfContainingFolder->m_PIDLCurrent )
 	{
+		//auto data = m_PidlMgr.GetData(m_psfContainingFolder->m_PIDLCurrent);
+		//return data != NULL && data->Type == MYSHITEMTYPE_TAG ? TRUE : FALSE;
 		return FALSE;
 	}
 	return TRUE;
@@ -619,4 +740,96 @@ void CShellViewImpl::FillList()
 {
 	if( !_isRefreshing )
 		_beginthreadex(0,0,FillList_Asyn,this,0,0);
+}
+
+void CShellViewImpl::HandleActivate ( UINT uState )
+{
+	// Undo our previous changes to the menu.
+
+	HandleDeactivate();
+
+	// If we are being activated
+	if ( SVUIA_DEACTIVATE != uState )
+	{
+		m_spShellBrowser->OnViewWindowActive(this);
+
+		/*
+		// First, create a new menu.
+		if ( NULL != m_hMenu )
+		{		
+		DestroyMenu ( m_hMenu );    // also destroys the SimpleNSExt submenu
+		m_hMenu = NULL;
+		}
+
+		m_hMenu = CreateMenu();
+		if ( NULL != m_hMenu )
+		{
+		// Let the browser insert its standard items first.
+		OLEMENUGROUPWIDTHS omw = { 0, 0, 0, 0, 0, 0 };
+		m_spShellBrowser->InsertMenusSB ( m_hMenu, &omw );
+
+		// Insert our SimpleExt menu before the Explorer Help menu.
+		HMENU hmenuSimpleNS;
+		hmenuSimpleNS = LoadMenu ( g_hInst,
+		uState == SVUIA_ACTIVATE_FOCUS ?
+		MAKEINTRESOURCE(IDR_MENU_Folder) :
+		MAKEINTRESOURCE(IDR_MENU_Folder) );
+
+		if ( NULL != hmenuSimpleNS )
+		{
+		InsertMenu ( m_hMenu, FCIDM_MENU_HELP, MF_BYCOMMAND | MF_POPUP,
+		(UINT_PTR) GetSubMenu ( hmenuSimpleNS, 0 ),
+		L"&SimpleNSExt" );
+		}
+
+		// Add an about item to Explorer's help menu.  We first need to get
+		// the handle to the Help submenu.  We could do this by position,
+		// using GetSubMenu(), since we can calculate its offset using the
+		// numbers in the OLEMENUGROUPWIDTHS struct, but since we know the
+		// command ID, that's less error-prone to use.
+
+		MENUITEMINFO mii = { sizeof(MENUITEMINFO), MIIM_SUBMENU };
+
+		if ( GetMenuItemInfo ( m_hMenu, FCIDM_MENU_HELP, FALSE, &mii ))
+		{
+		InsertMenu ( mii.hSubMenu, -1, MF_BYPOSITION,
+		(UINT_PTR)&L"Show the namespace extension's about box", L"About &SimpleNSExt" );
+		}
+
+		// If our UI state is active with the focus, we have a bit more
+		// work to do.
+		if ( SVUIA_ACTIVATE_FOCUS == uState )
+		{
+		// The Edit menu created by Explorer is empty, so we can 
+		// nuke it.
+
+		DeleteMenu ( m_hMenu, FCIDM_MENU_EDIT, MF_BYCOMMAND );
+		}
+
+		// Set the new menu.
+		m_spShellBrowser->SetMenuSB ( m_hMenu, NULL, m_hWnd );
+		}
+		*/
+	}
+
+	// Save the current state
+	m_uUIState = uState;
+}
+
+void CShellViewImpl::HandleDeactivate()
+{
+	if ( SVUIA_DEACTIVATE != m_uUIState )
+	{
+		/*
+		if ( NULL != m_hMenu )
+		{
+		m_spShellBrowser->SetMenuSB ( NULL, NULL, NULL );
+		m_spShellBrowser->RemoveMenusSB ( m_hMenu );
+
+		DestroyMenu ( m_hMenu );    // also destroys the SimpleNSExt submenu
+		m_hMenu = NULL;
+		}*/
+
+		m_uUIState = SVUIA_DEACTIVATE;
+	}
 }

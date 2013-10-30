@@ -4,6 +4,7 @@
 CShellFolderImpl::CShellFolderImpl(void): 
 	_cRef(1) // IUnknown
 	,m_pIDFolder(NULL),m_PIDLCurrent(NULL)
+	,_expanded_in_tree(FALSE)
 {
 	::PrintLog(L"CShellFolderImpl.ctor");
 
@@ -37,6 +38,7 @@ IFACEMETHODIMP CShellFolderImpl::QueryInterface(REFIID riid, void ** ppv)
 {
 	static const QITAB qit[] =
 	{
+		QITABENT(CShellFolderImpl, IQueryInfo),
 		QITABENT(CShellFolderImpl, IShellFolder),
 		QITABENT(CShellFolderImpl, IPersistFolder),
 		{0},
@@ -119,30 +121,44 @@ HRESULT CShellFolderImpl::BindToObject(
 	CoTaskMemFree(str);
 #endif
 
-	HRESULT hr = S_FALSE;
-
-	IShellFolder *pShellFolder = NULL;
-	hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
-	if( hr == S_OK )
+	HRESULT hr = E_NOINTERFACE;
+	if ( riid == IID_IShellFolder )
 	{
-		hr = ((CShellFolderImpl*)pShellFolder)->Init ( m_pIDFolder,(PIDLIST_RELATIVE) pidl );
-
-		auto data = m_PidlMgr.GetData(pidl);
-		::PrintLog(L"ShellFolder::BindToObject: %s",data->wszDisplayName);
-
-		if ( FAILED(hr) )
+		IShellFolder *pShellFolder = NULL;
+		hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
+		if( hr == S_OK )
 		{
-			pShellFolder->Release();
-			return hr;
-		}
+			hr = ((CShellFolderImpl*)pShellFolder)->Init ( m_pIDFolder,(PIDLIST_RELATIVE) pidl );
 
-		hr = pShellFolder->QueryInterface(riid,ppvOut);
-		pShellFolder->Release();
+			auto data = m_PidlMgr.GetData(pidl);
+			::PrintLog(L"ShellFolder::BindToObject: %s",data->wszDisplayName);
+
+			if ( FAILED(hr) )
+			{
+				pShellFolder->Release();
+				return hr;
+			}
+
+			hr = pShellFolder->QueryInterface(riid,ppvOut);
+			pShellFolder->Release();
+		}
 	}
 
 	return hr;
 }
 
+HRESULT CShellFolderImpl::BindToStorage(
+	PCUIDLIST_RELATIVE pidl,
+	IBindCtx *pbc,
+	REFIID riid,
+	void **ppvOut
+	){	return S_OK;	};
+
+HRESULT CShellFolderImpl::CompareIDs(
+	LPARAM lParam,
+	PCUIDLIST_RELATIVE pidl1,
+	PCUIDLIST_RELATIVE pidl2
+	){	return S_OK;	};
 
 HRESULT CShellFolderImpl::CreateViewObject(
 	HWND hwndOwner,
@@ -171,7 +187,7 @@ HRESULT CShellFolderImpl::CreateViewObject(
 		return E_POINTER;
 
 	*ppv = NULL;
-	HRESULT hr = S_FALSE;
+	HRESULT hr = E_NOINTERFACE;
 	IShellView* pShellView = NULL;
 
 	// Create a new ShellViewImpl COM object.
@@ -195,10 +211,7 @@ HRESULT CShellFolderImpl::CreateViewObject(
 		hr = pShellView->QueryInterface ( riid, ppv );
 		pShellView->Release();
 	}
-	else
-	{
-		hr = CoCreateInstance(riid, NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellView)); 
-	}
+
 	return hr;
 }
 
@@ -217,11 +230,15 @@ HRESULT CShellFolderImpl::EnumObjects(
 	MYPIDLDATA* data = NULL;
 	*ppEnumIDList = NULL;
 
-	// grfFlags is SHCONTF_FOLDERS or SHCONTF_NONFOLDERS, see CShellViewImpl::FillList();
+	// TODO: make sure the tag could not be expanded in the tree on the left side.
+	// the value of grfFlags will be:
+	// expand: SHCONTF_NAVIGATION_ENUM | SHCONTF_INCLUDEHIDDEN | SHCONTF_FOLDERS
+	// double click on the icon in ExporerBrowser: SHCONTF_FOLDERS or SHCONTF_NONFOLDERS, see CShellViewImpl::FillList();
+	// see more: CShellFolderImpl::GetAttributesOf
 	if ( grfFlags & SHCONTF_NONFOLDERS )
 	{
 		data = m_PidlMgr.GetData(m_PIDLCurrent);
-		if ( data != NULL )
+		if ( data != NULL && data->Type == MYSHITEMTYPE_TAG)
 		{
 			// if MYPIDLDATA exists, then show files in tag.
 			isShowFilesInTag = TRUE;
@@ -235,6 +252,8 @@ HRESULT CShellFolderImpl::EnumObjects(
 	{
 		this->TagHelper.LoadTags();
 	}
+
+	GlobalLock((HGLOBAL)pEnum);
 
 	if ( isShowFilesInTag )
 	{
@@ -254,6 +273,7 @@ HRESULT CShellFolderImpl::EnumObjects(
 	}
 	else
 	{
+		// TODO: make sure the tag could not be expanded in the tree on the left side.
 		for (UINT i = 0; i < TagHelper.TagCount; i++)
 		{
 			MYPIDLDATA d = {sizeof(MYPIDLDATA)};
@@ -268,6 +288,8 @@ HRESULT CShellFolderImpl::EnumObjects(
 		}
 	}
 
+	GlobalUnlock((HGLOBAL)pEnum);
+
 	pEnum->Init(m_pIDFolder,items);
 
 	// Return an IEnumIDList interface to the caller.
@@ -278,12 +300,54 @@ HRESULT CShellFolderImpl::EnumObjects(
 }
 
 HRESULT CShellFolderImpl::GetAttributesOf(
-	UINT cidl,
-	LPCITEMIDLIST *apidl,
-	SFGAOF *rgfInOut
+	UINT uCount,
+	LPCITEMIDLIST *aPidls,
+	SFGAOF *pdwAttribs
 	) 
 {
-	*rgfInOut = SFGAO_CANDELETE | SFGAO_FILESYSANCESTOR;
+	UINT  i;
+
+	for(i = 0; i < uCount; i++)
+	{
+		DWORD dwAttribs = 0;
+
+		auto data = m_PidlMgr.GetData(aPidls[i]);
+		// Is this item a MYPIDLDATA?
+		if(data != NULL)
+		{
+			if( data->Type = MYSHITEMTYPE_TAG )
+			{
+				dwAttribs |= SFGAO_NONENUMERATED | SFGAO_FILESYSANCESTOR | SFGAO_STORAGE | SFGAO_BROWSABLE | SFGAO_GHOSTED | SFGAO_HASPROPSHEET | SFGAO_CANRENAME;
+				
+				// set SFGAO_FOLDER will let the tag could be expand, and response clicks. but also lead to a bug that expanding in a loopping way.
+				//dwAttribs |= SFGAO_FOLDER;
+			}
+			else
+			{
+				IShellItem *psi;
+				HRESULT	hr = SHCreateItemFromParsingName(data->wszDisplayName,NULL,IID_PPV_ARGS(&psi));
+				if( SUCCEEDED(hr) )
+				{
+					psi->GetAttributes( 0xFFFFFFFF,pdwAttribs);
+				}
+			}
+		}
+		else
+		{
+			IShellItem *psi;
+			HRESULT hr = SHCreateShellItem(this->m_pIDFolder,NULL,aPidls[i],&psi);
+			if( SUCCEEDED(hr) )
+			{
+				psi->GetAttributes( 0xFFFFFFFF,pdwAttribs);
+			}
+		}
+
+		/*
+		On entry, *pdwAttributes contains the attributes that are being
+		requested, so just use it as a mask.
+		*/ 
+		*pdwAttribs &= dwAttribs;
+	}
 	return S_OK;
 }
 
@@ -339,20 +403,7 @@ HRESULT CShellFolderImpl::GetUIObjectOf(
 
 	if ( IID_IContextMenu == riid )
 	{
-		this->Init(m_pIDFolder,(LPITEMIDLIST)*apidl);
-
-		DEFCONTEXTMENU pdcm = {0};
-		pdcm.hwnd = hwndOwner;
-		pdcm.pidlFolder = NULL;
-		pdcm.psf = static_cast<IShellFolder *>(this);
-		pdcm.cidl = cidl;
-		pdcm.apidl = apidl;
-
-		hr = SHCreateDefaultContextMenu(&pdcm,riid, ppv);
-
-		::PrintLog(L"ShellFolder::GetUIObjectOf -- SHCreateDefaultContextMenu: %d",hr);
-		/*	HMENU m_hMenu = CreateMenu();
-		m_hMenu*/
+		hr = QueryInterface(riid,ppv);
 	}
 	else if ( IID_IExtractIcon == riid )
 	{
@@ -394,5 +445,21 @@ HRESULT CShellFolderImpl::ParseDisplayName(
 	::PrintLog(L"ShellFolder::ParseDisplayName");
 	return S_OK;
 }
+
+HRESULT CShellFolderImpl::SetNameOf(
+	HWND hwndOwner,
+	PCUITEMID_CHILD pidl,
+	LPCWSTR pszName,
+	SHGDNF uFlags,
+	PITEMID_CHILD *ppidlOut
+	){	return S_OK;	};
+
 #pragma endregion
 
+// IQueryInfo
+HRESULT CShellFolderImpl::GetInfoTip(DWORD dwFlags, PWSTR *ppwszTip)
+{
+	ppwszTip = (PWSTR*)CoTaskMemAlloc(12);
+	memcpy(ppwszTip,L"SDFSDF",12);
+	return S_OK;
+}

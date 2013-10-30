@@ -6,8 +6,9 @@
 #include "PidlMgr.h"
 
 class CShellFolderImpl:
-	public IShellFolder,		// ShellFolder
-	public IPersistFolder		// ShellFolder
+	public IQueryInfo,
+	public IShellFolder,	
+	public IPersistFolder	
 {
 public:
 	CShellFolderImpl(void);
@@ -17,15 +18,13 @@ public:
 	IFACEMETHODIMP QueryInterface(REFIID riid, void ** ppv);
 	IFACEMETHODIMP_(ULONG) AddRef();
 	IFACEMETHODIMP_(ULONG) Release();
-	
+
 	// IPersistFolder
 	// @pidl: The address of the ITEMIDLIST (item identifier list) structure that specifies the absolute location of the folder.
 	HRESULT Initialize(LPCITEMIDLIST pidl);
 
 	// IPersist which is the base of IPersistFolder
-	HRESULT GetClassID(
-		CLSID *pClassID
-		);
+	HRESULT GetClassID(CLSID *pClassID);
 
 	// IShellFolder
 #pragma region IShellFolder
@@ -41,13 +40,13 @@ public:
 		IBindCtx *pbc,
 		REFIID riid,
 		void **ppvOut
-		){	return S_OK;	};
+		);
 
 	HRESULT CompareIDs(
 		LPARAM lParam,
 		PCUIDLIST_RELATIVE pidl1,
 		PCUIDLIST_RELATIVE pidl2
-		){	return S_OK;	};
+		);
 
 	HRESULT CreateViewObject(
 		HWND hwndOwner,
@@ -97,8 +96,12 @@ public:
 		LPCWSTR pszName,
 		SHGDNF uFlags,
 		PITEMID_CHILD *ppidlOut
-		){	return S_OK;	};
+		);
 #pragma endregion
+
+	// IQueryInfo
+	HRESULT GetInfoFlags(DWORD *pdwFlags) { pdwFlags = 0; return S_OK;} // This method is not currently used.
+	HRESULT GetInfoTip(DWORD dwFlags, PWSTR *ppwszTip);
 
 	// Init function - call right after constructing a CShellFolderImpl object.
 	HRESULT Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current )
@@ -118,6 +121,7 @@ private:
 
 	// IUnknown
 	long _cRef;
+	BOOL _expanded_in_tree;
 
 	CPidlMgr m_PidlMgr;
 };

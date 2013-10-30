@@ -58,10 +58,12 @@ private:
 
 	// IUnknown
 	long _cRef;
+	// AddPropertySheetPages
+	UINT _dllRefCount;
 
 	IExplorerBrowser *_peb;
 	IResultsFolder *_prf;
-	
+
 	HWND m_hwndParent;
 	HWND m_hWnd;
 
@@ -72,6 +74,7 @@ private:
 	CPidlMgr     m_PidlMgr;
 
 	void FillList();
+	void InitExplorerBrowserColumns(IFolderView2* pfv2);
 
 	// In C++ you must employ a free (C) function or a static
 	// class member function as the thread entry-point-function.
@@ -81,4 +84,8 @@ private:
 	static unsigned __stdcall FillList_Asyn(void * pThis);
 	BOOL _isRefreshing;
 
+	UINT         m_uUIState;	// current state
+	HMENU        m_hMenu;
+	void HandleActivate(UINT uState);
+	void HandleDeactivate();
 };

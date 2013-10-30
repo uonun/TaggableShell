@@ -55,6 +55,7 @@
     <None Include="onbuild.bat" />
     <None Include="Register.ContextMenu.reg" />
     <None Include="Register.PropertyPage.reg" />
+    <None Include="Register.Settings.reg" />
     <None Include="Register.ShellFolder.reg" />
     <None Include="src\Export.def" />
     <None Include="UnRegister.reg" />
