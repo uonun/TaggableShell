@@ -5,7 +5,7 @@ Review notes:
 
 
 Known bugs:
-	- 直接在地址栏输入Folder路径及标签路径会导致异常
+	- [FIXED]直接在地址栏输入Folder路径及标签路径会导致异常
 	- 大量文件批次操作时，可能导致异常
 	- 打开未关联文件的标签时，显示的提示文字不正确
 	- 界面刷新不稳定，有时会出现未正常刷新的现象，比如文件载入了但未显示、文件名未正常显示等
@@ -14,6 +14,7 @@ TBD:
 	- Folder 
 		- 菜单栏，切换视图
 		- 标签文件夹的自定义右键菜单
+		- 应支持直接在地址栏点击标签名称（支持 CShellFolderImpl::GetUIObjectOf with IID_IContextMenu）
 	
 	- 不允许给非法Item添加标签
 		- Folder 本身

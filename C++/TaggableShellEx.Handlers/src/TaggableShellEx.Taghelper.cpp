@@ -602,9 +602,11 @@ BOOL CTaghelper::IsTagExists(LPCWSTR & tag)
 HRESULT CTaghelper::GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagIdInDb)
 {
 	_ASSERT_EXPR( files != NULL ,L"files could not be null.");
-	_ASSERT_EXPR( tagIdInDb > 0,L"tagIdInDb must be greater than 0.");
-
+	
 	count = 0;
+
+	if ( tagIdInDb < 1 )
+		return S_FALSE;
 
 	char * sSQLFormater = NULL;
 	char sSQL[MAXLENGTH_SQL];

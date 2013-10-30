@@ -318,7 +318,7 @@ HRESULT CShellFolderImpl::GetAttributesOf(
 			if( data->Type = MYSHITEMTYPE_TAG )
 			{
 				dwAttribs |= SFGAO_NONENUMERATED | SFGAO_FILESYSANCESTOR | SFGAO_STORAGE | SFGAO_BROWSABLE | SFGAO_GHOSTED | SFGAO_HASPROPSHEET | SFGAO_CANRENAME;
-				
+
 				// set SFGAO_FOLDER will let the tag could be expand, and response clicks. but also lead to a bug that expanding in a loopping way.
 				//dwAttribs |= SFGAO_FOLDER;
 			}
@@ -442,8 +442,16 @@ HRESULT CShellFolderImpl::ParseDisplayName(
 	ULONG *pdwAttributes
 	)
 {
-	::PrintLog(L"ShellFolder::ParseDisplayName");
-	return S_OK;
+	::PrintLog(L"ShellFolder::ParseDisplayName: %s",pszDisplayName);
+	HRESULT hr = S_FALSE;
+
+	hr = SHILCreateFromPath(pszDisplayName,ppidl,pdwAttributes);
+	if ( SUCCEEDED(hr) )
+	{
+		ULONG n = sizeof(pszDisplayName) / sizeof(pszDisplayName[0]);
+		pchEaten = &n;
+	}
+	return hr;
 }
 
 HRESULT CShellFolderImpl::SetNameOf(
