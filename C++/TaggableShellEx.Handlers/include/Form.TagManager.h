@@ -1,6 +1,6 @@
 #pragma once
 #include "dllmain.h"
-#include "TaggableShellEx.CHandler.h"
+#include "CHandler.h"
 
 class FormTagManager
 {

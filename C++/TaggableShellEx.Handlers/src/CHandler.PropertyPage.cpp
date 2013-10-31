@@ -1,7 +1,7 @@
 #pragma once
 #include "../include/dllmain.h"
-#include "../include/TaggableShellEx.Taghelper.h"
-#include "../include/TaggableShellEx.CHandler.h"
+#include "../include/Taghelper.h"
+#include "../include/CHandler.h"
 
 
 INT_PTR CALLBACK PageDlgProc(     

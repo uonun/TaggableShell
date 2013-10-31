@@ -6,21 +6,48 @@ Review notes:
 
 Known bugs:
 	- [FIXED]直接在地址栏输入Folder路径及标签路径会导致异常
+	- [FIXED]打开未关联文件的标签时，显示的提示文字不正确
+	- [FIXED]界面刷新不稳定，有时会出现未正常刷新的现象，比如文件载入了但未显示、文件名未正常显示等
 	- 大量文件批次操作时，可能导致异常
-	- 打开未关联文件的标签时，显示的提示文字不正确
-	- 界面刷新不稳定，有时会出现未正常刷新的现象，比如文件载入了但未显示、文件名未正常显示等
 	- 在文件、文件夹上直接点击右键，不做任何操作，取消右键菜单，此时在任务管理器中观察到16字节的内存泄露。
+	- 左侧树形菜单中的标签，展开后不应该仍然显示所有标签，而应该置空，即标签应当是最底层目录。
+
+Improvement:	
+	- 点击、选择标签、文件、文件夹时，资源管理器底部应当有正确的响应
+	- 在切换标签后，地址栏应当正常刷新显示新的地址（此时EDIT版本和DISPLAY版本显示的地址不一致）：
+		- 点击左侧树形菜单，从Folder跳转到标签，或者从一个标签跳转到另一个标签时
+		- 直接在地址栏输入另外标签名时
+	- 应当允许通过点击按钮“更改您的视图”来切换视图显示。
+	- 应当保存ExplorerBrowser的状态。
+		- 点击ExplorerBrowser的列头进行排序，切换到其他文件夹，再返回，ExplorerBrowser的排序已被重置。
 
 TBD:
 	- 在桌面、我的电脑上显示Folder。
 	- Folder
 		- 菜单栏，切换视图
 		- 标签文件夹的自定义右键菜单
-		- 应支持直接在地址栏点击标签名称（支持 CShellFolderImpl::GetUIObjectOf with IID_IContextMenu）
 	
 	- 不允许给非法Item添加标签
-		- Folder 本身
 
 	- 允许在 Folder 内直接新增、删除、编辑Tag
 
 
+OTHER NOTES:
+{000214E6-0000-0000-C000-000000000046} IShellFolder
+{000214EE-0000-0000-C000-000000000046} IShellLinkA
+{000214F9-0000-0000-C000-000000000046} IShellLinkW
+{0000010B-0000-0000-C000-000000000046} IPersistFile
+{00000109-0000-0000-C000-000000000046} IPersistStream
+{000214E8-0000-0000-C000-000000000046} IShellExtInit
+{000214E4-0000-0000-C000-000000000046} IContextMenu
+{000214F4-0000-0000-C000-000000000046} IContextMenu2
+{BCFCE0A0-EC17-11D0-8D10-00A0C90F2719} IContextMenu3
+{00000122-0000-0000-C000-000000000046} IDropTarget
+{000214EB-0000-0000-C000-000000000046} IExtractIconA
+{000214FA-0000-0000-C000-000000000046} IExtractIconW
+{45E2B4AE-B1C3-11D0-B92F-00A0C90312E1} IShellLinkDataList
+{00021500-0000-0000-C000-000000000046} IQueryInfo
+{37D84F60-42CB-11CE-8135-00AA004BB851} IPersistPropertyBag
+{FC4801A3-2BA9-11CF-A229-00AA003D7352} IObjectWithSite
+{6D5140C1-7436-11CE-8034-00AA006009FA} IServiceProvider
+{89BCB740-6119-101A-BCB7-00DD010655AF} IFilter

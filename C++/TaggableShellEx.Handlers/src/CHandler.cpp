@@ -1,5 +1,5 @@
 #pragma once
-#include "../include/TaggableShellEx.CHandler.h"
+#include "../include/CHandler.h"
 
 CHandler::CHandler() : 
 	_cRef(1) // IUnknown
@@ -29,6 +29,12 @@ CHandler::~CHandler(void)
 			delete m_szFiles[i];
 			m_szFiles[i] = NULL;
 		}
+	}
+
+	if ( NULL != _hSubmenu )
+	{
+		DestroyMenu ( _hSubmenu );
+		_hSubmenu = NULL;
 	}
 
 	DllRelease();

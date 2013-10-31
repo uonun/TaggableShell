@@ -1,8 +1,8 @@
 #pragma once
 #include "dllmain.h"
-#include "TaggableShellEx.NsExt.CShellFolderImpl.h"
-#include "TaggableShellEx.NsExt.CEnumIDListImpl.h"
-//#include "TaggableShellEx.NsExt.CShellItemImpl_Tag.h"
+#include "NsExt.CShellFolderImpl.h"
+#include "NsExt.CEnumIDListImpl.h"
+//#include "NsExt.CShellItemImpl_Tag.h"
 #include "PidlMgr.h"
 
 class CShellViewImpl:
@@ -61,15 +61,14 @@ private:
 	// AddPropertySheetPages
 	UINT _dllRefCount;
 
-	IExplorerBrowser *_peb;
-	IResultsFolder *_prf;
-
 	HWND m_hwndParent;
 	HWND m_hWnd;
 
 	CShellFolderImpl*      m_psfContainingFolder;
 	FOLDERSETTINGS m_FolderSettings;
-	IShellBrowser* m_spShellBrowser;
+	IShellBrowser* m_spShellBrowser;	// the container of IExplorerBrowser, witch is in the Shell window.
+	IExplorerBrowser *_peb;
+	IResultsFolder *_prf;
 
 	CPidlMgr     m_PidlMgr;
 

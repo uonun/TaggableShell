@@ -1,5 +1,5 @@
 #pragma once
-#include "../include/TaggableShellEx.NsExt.CEnumIDListImpl.h"
+#include "../include/NsExt.CEnumIDListImpl.h"
 
 CEnumIDListImpl::CEnumIDListImpl(void):
 	_cRef(1) // IUnknown

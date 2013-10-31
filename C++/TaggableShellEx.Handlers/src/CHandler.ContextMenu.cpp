@@ -1,7 +1,7 @@
 #pragma once
 #include "../include/dllmain.h"
-#include "../include/TaggableShellEx.CHandler.h"
-#include "../include/TaggableShellEx.Form.TagManager.h"
+#include "../include/CHandler.h"
+#include "../include/Form.TagManager.h"
 
 
 HRESULT CHandler::QueryContextMenu (
@@ -12,6 +12,11 @@ HRESULT CHandler::QueryContextMenu (
 	if ( uFlags & CMF_DEFAULTONLY )
 		return MAKE_HRESULT ( SEVERITY_SUCCESS, FACILITY_NULL, 0 );
 
+	if ( NULL != _hSubmenu )
+	{
+		DestroyMenu ( _hSubmenu );
+		_hSubmenu = NULL;
+	}
 	// create and populate a submenu.
 	_hSubmenu = CreatePopupMenu();
 	UINT uIdx = 0;

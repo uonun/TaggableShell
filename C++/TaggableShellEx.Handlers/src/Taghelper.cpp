@@ -1,4 +1,4 @@
-#include "../include/TaggableShellEx.Taghelper.h"
+#include "../include/Taghelper.h"
 
 /*
 1. delete records from ASSO_FILE_TAG where file,tag does not exist any more.
@@ -644,7 +644,7 @@ HRESULT CTaghelper::GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagI
 				::Str2WStr( pazResult[i],fname);
 				files[count++] = fname;
 
-				::PrintLog("Got file: %s",fname);
+				::PrintLog(L"Got file: %s",fname);
 			}
 		}else{
 			::PrintLog("Fail to get file associated with tag: id = %d.",tagIdInDb);
