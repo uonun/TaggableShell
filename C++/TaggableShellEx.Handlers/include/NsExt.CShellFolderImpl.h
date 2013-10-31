@@ -1,11 +1,12 @@
 #pragma once
 #include "dllmain.h"
-#include "TaggableShellEx.Taghelper.h"
-#include "TaggableShellEx.NsExt.CShellViewImpl.h"
-#include "TaggableShellEx.NsExt.CEnumIDListImpl.h"
+#include "Taghelper.h"
+#include "NsExt.CShellViewImpl.h"
+#include "NsExt.CEnumIDListImpl.h"
 #include "PidlMgr.h"
 
 class CShellFolderImpl:
+	public IContextMenu,
 	public IQueryInfo,
 	public IShellFolder,	
 	public IPersistFolder	
@@ -102,6 +103,12 @@ public:
 	// IQueryInfo
 	HRESULT GetInfoFlags(DWORD *pdwFlags) { pdwFlags = 0; return S_OK;} // This method is not currently used.
 	HRESULT GetInfoTip(DWORD dwFlags, PWSTR *ppwszTip);
+	
+	// IContextMenu
+	STDMETHODIMP GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT* pwReserved, LPSTR pszName, UINT cchMax);
+	STDMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pCmdInfo);
+	STDMETHODIMP QueryContextMenu(HMENU hmenu, UINT uMenuIndex, UINT uidFirstCmd, UINT uidLastCmd, UINT uFlags);
+
 
 	// Init function - call right after constructing a CShellFolderImpl object.
 	HRESULT Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current )
@@ -121,7 +128,10 @@ private:
 
 	// IUnknown
 	long _cRef;
-	BOOL _expanded_in_tree;
 
+	// IContextMenu
+	HMENU _hSubmenu;	
+
+	wchar_t _FolderPath[MAX_PATH];
 	CPidlMgr m_PidlMgr;
 };

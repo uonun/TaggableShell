@@ -1,6 +1,6 @@
 #pragma once
 #include "StdAfx.h"
-#include "TaggableShellEx.Utils.h"
+#include "Utils.h"
 
 class DECLSPEC_UUID("20130929-1982-0805-819F-6D66853DDD60") CHandler;
 class DECLSPEC_UUID("20130929-1982-0805-819F-6D66853DDD70") CShellFolderImpl;

@@ -1,5 +1,5 @@
 #pragma once
-#include "..\include\TaggableShellEx.NsExt.CShellViewImpl.h"
+#include "..\include\NsExt.CShellViewImpl.h"
 #include <Winuser.h> // GWLP_WNDPROC, GWLP_USERDATA
 #include <propkey.h>
 
@@ -169,6 +169,7 @@ STDMETHODIMP CShellViewImpl::OnDefaultCommand(IShellView * psv)
 					{
 						::PrintLog(L"CShellViewImpl::OnDefaultCommand: %s",data->wszDisplayName);
 						hr = m_spShellBrowser->BrowseObject(last, SBSP_DEFBROWSER | SBSP_RELATIVE);
+						m_spShellBrowser->OnViewWindowActive(psv);
 					}
 					else
 					{
@@ -225,11 +226,10 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 		CShellViewImpl * pthX = (CShellViewImpl*)pThis;
 		pthX->_isRefreshing = TRUE;
 
-		LPWSTR infoLoading = 0,infoLoaded = 0;
+		LPWSTR infoLoaded = 0;
 		BOOL isShowTag = pthX->IsShowTag();
 		if ( isShowTag )
 		{
-			infoLoading = ::MyLoadString(IDS_MSG_LOADING_TAGS);
 			infoLoaded = ::MyLoadString(IDS_MSG_NO_TAG_WITH_DETAIL);
 		}
 		else
@@ -237,20 +237,14 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 			auto data = pthX->m_PidlMgr.GetData(pthX->m_psfContainingFolder->m_PIDLCurrent);
 			LPWSTR currentTag = data->wszDisplayName;
 
-			WCHAR tmp[MAX_PATH];
-			wsprintf ( tmp,::MyLoadString(IDS_MSG_LOADING_FILES_FOR_TAG),currentTag);
-			infoLoading = tmp;
-
 			WCHAR tmp2[MAX_PATH];
 			wsprintf ( tmp2,::MyLoadString(IDS_MSG_NO_FILE_IN_TAG_WITH_DETAIL),currentTag);
 			infoLoaded = tmp2;			
 		}
 
 		try{
-			pthX->_peb->SetEmptyText(infoLoading);
+			pthX->_peb->SetEmptyText(infoLoaded);
 			pthX->_peb->RemoveAll();
-
-			UpdateWindow(pthX->m_hWnd);
 
 			// Stop redrawing to avoid flickering
 			SendMessage( pthX->m_hWnd,WM_SETREDRAW,FALSE,0);
@@ -266,47 +260,70 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 			{
 				// Add items.
 				DWORD dwFetched;
+				int nLoaded = 0;		// total of loaded items, including nNotAvailable.
+				int nNotAvailable = 0;	// total of loaded items which is FILE_NOT_FOUND or else..
 				while ( pEnum->Next(1, &pidl, &dwFetched) == S_OK )	// the pidl is relative.
 				{
 					IShellItem *psi;
-					if( pthX->IsShowTag() )
+					auto data = pthX->m_PidlMgr.GetData(pidl);
+					if ( data != NULL )
 					{
-						hr = SHCreateShellItem(pthX->m_psfContainingFolder->m_pIDFolder,NULL,pidl,&psi);
-					}else{
-						auto data = pthX->m_PidlMgr.GetData(pidl);
-						if ( data != NULL )
+						WCHAR tmp3[MAX_PATH];
+
+						if ( data->Type == MYSHITEMTYPE_FILE )
 						{
 							hr = SHCreateItemFromParsingName(data->wszDisplayName,NULL,IID_PPV_ARGS(&psi));
+							wsprintf ( tmp3,::MyLoadString(IDS_MSG_LOADING_FILE),data->wszDisplayName);
+						}else{
+							hr = SHCreateShellItem(pthX->m_psfContainingFolder->m_pIDFolder,NULL,pidl,&psi);
+							wsprintf ( tmp3,::MyLoadString(IDS_MSG_LOADING_TAG),data->wszDisplayName);
 						}
+
+						pthX->m_spShellBrowser->SetStatusTextSB(tmp3);
+					}
+					else
+					{
+						hr = S_FALSE;
 					}
 
 					if (SUCCEEDED(hr))
 					{
 						hr = pthX->_prf->AddItem(psi);
 						psi->Release();
-					}else{
+					}
+					else
+					{
 						// ERROR_FILE_NOT_FOUND
 						// ERROR_PATH_NOT_FOUND
 						// ERROR_INVALID_DRIVE
 						// ....
+						nNotAvailable++;
 					}
+
+					nLoaded++;
 
 					// free memory allocated by pEnum->Next
 					CoTaskMemFree(pidl);
 				}
+
+				WCHAR tmp4[MAX_PATH];
+				wsprintf ( tmp4,::MyLoadString(IDS_MSG_N_FILES_LOADED_FOR_TAG_WITH_NOT_FOUND),nLoaded,nNotAvailable);
+				pthX->m_spShellBrowser->SetStatusTextSB(tmp4);
+				UpdateWindow(pthX->m_hWnd);
 			}
 		}
 		catch(int e)
 		{
+			// do nothing
 		}
 
 		// the calling application must free the returned IEnumIDList object by calling its Release method.
 		if ( NULL != pEnum )
 			pEnum->Release();
 
-		pthX->_peb->SetEmptyText(infoLoaded);
 		UpdateWindow( pthX->m_hWnd );
 		SendMessage( pthX->m_hWnd,WM_SETREDRAW,TRUE,0);	// Restart redrawing to avoid flickering
+
 		pthX->HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
 
 		pthX->_isRefreshing = FALSE;
@@ -642,11 +659,45 @@ STDMETHODIMP CShellViewImpl::QueryStatus ( const GUID* pguidCmdGroup, ULONG cCmd
 	if ( NULL == prgCmds )
 		return E_POINTER;
 
-	// The only useful standard command I've figured out is "refresh".  I've put
-	// some trace messages in so you can see the other commands that the
-	// browser sends our way.  If you can figure out what they're all for,
-	// let me know!
+	for ( UINT u = 0; u < cCmds; u++ )
+	{
+		PrintLog(">> Query - DEFAULT: %u\n", prgCmds[u]);
 
+		switch ( prgCmds[u].cmdID )
+		{
+		case OLECMDID_OPEN:
+		case OLECMDID_PROPERTIES:
+		case OLECMDID_CUT:
+		case OLECMDID_COPY:
+		case OLECMDID_PASTE:
+		case OLECMDID_SELECTALL:
+		case OLECMDID_CLEARSELECTION:
+		case OLECMDID_UPDATECOMMANDS:
+		case OLECMDID_REFRESH:
+		case OLECMDID_STOP:
+		case OLECMDID_HIDETOOLBARS:
+		case OLECMDID_SETPROGRESSMAX:
+		case OLECMDID_SETPROGRESSPOS:
+		case OLECMDID_SETPROGRESSTEXT:
+		case OLECMDID_SETTITLE:
+		case OLECMDID_ONTOOLBARACTIVATED:
+		case OLECMDID_FIND:
+		case OLECMDID_DELETE:
+		case OLECMDID_ENABLE_INTERACTION:
+		case OLECMDID_ONUNLOAD:
+		case OLECMDID_PREREFRESH:
+		case OLECMDID_SHOWFIND:
+		case OLECMDID_CLOSE:
+		case OLECMDID_ALLOWUILESSSAVEAS:
+		case OLECMDID_WINDOWSTATECHANGED:
+			prgCmds[u].cmdf = OLECMDF_SUPPORTED | OLECMDF_ENABLED;
+			break;
+		}
+	}
+	return S_OK;
+
+	/*
+	// http://msdn.microsoft.com/en-us/library/windows/desktop/ms691264(v=vs.85).aspx
 	if ( NULL == pguidCmdGroup )
 	{
 		for ( UINT u = 0; u < cCmds; u++ )
@@ -655,7 +706,31 @@ STDMETHODIMP CShellViewImpl::QueryStatus ( const GUID* pguidCmdGroup, ULONG cCmd
 
 			switch ( prgCmds[u].cmdID )
 			{
+			case OLECMDID_OPEN:
+			case OLECMDID_PROPERTIES:
+			case OLECMDID_CUT:
+			case OLECMDID_COPY:
+			case OLECMDID_PASTE:
+			case OLECMDID_SELECTALL:
+			case OLECMDID_CLEARSELECTION:
+			case OLECMDID_UPDATECOMMANDS:
 			case OLECMDID_REFRESH:
+			case OLECMDID_STOP:
+			case OLECMDID_HIDETOOLBARS:
+			case OLECMDID_SETPROGRESSMAX:
+			case OLECMDID_SETPROGRESSPOS:
+			case OLECMDID_SETPROGRESSTEXT:
+			case OLECMDID_SETTITLE:
+			case OLECMDID_ONTOOLBARACTIVATED:
+			case OLECMDID_FIND:
+			case OLECMDID_DELETE:
+			case OLECMDID_ENABLE_INTERACTION:
+			case OLECMDID_ONUNLOAD:
+			case OLECMDID_PREREFRESH:
+			case OLECMDID_SHOWFIND:
+			case OLECMDID_CLOSE:
+			case OLECMDID_ALLOWUILESSSAVEAS:
+			case OLECMDID_WINDOWSTATECHANGED:
 				prgCmds[u].cmdf = OLECMDF_SUPPORTED | OLECMDF_ENABLED;
 				break;
 			}
@@ -676,7 +751,7 @@ STDMETHODIMP CShellViewImpl::QueryStatus ( const GUID* pguidCmdGroup, ULONG cCmd
 		{
 			PrintLog(">> Query - DOCVIEW: %u\n", prgCmds[u]);
 		}
-	}
+	}*/
 
 	return OLECMDERR_E_UNKNOWNGROUP;
 }

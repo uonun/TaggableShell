@@ -1,112 +1,6 @@
 #pragma once
-#include "../include/TaggableShellEx.NsExt.CShellFolderImpl.h"
+#include "../include/NsExt.CShellFolderImpl.h"
 
-CShellFolderImpl::CShellFolderImpl(void): 
-	_cRef(1) // IUnknown
-	,m_pIDFolder(NULL),m_PIDLCurrent(NULL)
-	,_expanded_in_tree(FALSE)
-{
-	::PrintLog(L"CShellFolderImpl.ctor");
-
-	DllAddRef();
-}
-
-
-CShellFolderImpl::~CShellFolderImpl(void)
-{
-	::PrintLog(L"CShellFolderImpl.~ctor");
-
-	DllRelease();
-}
-
-HRESULT CShellFolderImpl_CreateInstance(REFIID riid, void **ppv)
-{
-	::PrintLog(L"CShellFolderImpl_CreateInstance");
-	CShellFolderImpl *pNew = new(std::nothrow) CShellFolderImpl;
-	HRESULT hr = pNew ? S_OK : E_OUTOFMEMORY;
-	if (pNew)
-	{
-		hr = pNew->QueryInterface(riid, ppv);
-		pNew->Release();
-	}
-	return hr;
-}
-
-
-// IUnknown
-IFACEMETHODIMP CShellFolderImpl::QueryInterface(REFIID riid, void ** ppv)
-{
-	static const QITAB qit[] =
-	{
-		QITABENT(CShellFolderImpl, IQueryInfo),
-		QITABENT(CShellFolderImpl, IShellFolder),
-		QITABENT(CShellFolderImpl, IPersistFolder),
-		{0},
-	};
-	return QISearch(this, qit, riid, ppv);
-}
-
-IFACEMETHODIMP_(ULONG) CShellFolderImpl::AddRef()
-{
-	return InterlockedIncrement(&_cRef);
-}
-
-IFACEMETHODIMP_(ULONG) CShellFolderImpl::Release()
-{
-	long cRef = InterlockedDecrement(&_cRef);
-	if (cRef == 0)
-	{
-		delete this;
-	}
-	return cRef;
-}
-
-// IPersistFolder
-HRESULT CShellFolderImpl::Initialize(LPCITEMIDLIST pIDFolder)
-{
-	::PrintLog(L"CShellFolderImpl::Initialize");
-
-	// If Initialize has already been called, release the old PIDL
-	if(m_pIDFolder!=NULL){
-		ILFree(m_pIDFolder);
-		m_pIDFolder = NULL;
-	}
-
-	//Store the new PIDL.
-	if(pIDFolder)
-	{
-		m_pIDFolder = ILClone(pIDFolder);
-
-		HRESULT hr;
-		IShellItem* si;
-		hr = SHCreateShellItem(NULL,NULL,m_pIDFolder,&si);
-		if ( SUCCEEDED(hr) )
-		{
-			LPWSTR path;
-			si->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING,&path);
-			::PrintLog(L"Get in path: %s",path);
-		}
-		si->Release();
-	}
-
-	return S_OK;
-}
-
-// IPersist which is the base of IPersistFolder
-HRESULT CShellFolderImpl::GetClassID(
-	CLSID *pClassID
-	)
-{
-	if ( NULL == pClassID )
-		return E_POINTER;
-
-	pClassID = (CLSID *)&__uuidof(CShellFolderImpl);
-
-	return S_OK;
-}
-
-// IShellFolder
-#pragma region IShellFolder
 HRESULT CShellFolderImpl::BindToObject(
 	PCUIDLIST_RELATIVE pidl,
 	IBindCtx *pbc,
@@ -114,16 +8,11 @@ HRESULT CShellFolderImpl::BindToObject(
 	void **ppvOut
 	)
 {
-#ifdef _DEBUG
-	LPOLESTR str;
-	StringFromIID(riid,&str);
-	::PrintLog(L"ShellFolder::BindToObject: riid =%s",str);
-	CoTaskMemFree(str);
-#endif
-
 	HRESULT hr = E_NOINTERFACE;
 	if ( riid == IID_IShellFolder )
 	{
+		::PrintLog(L"ShellFolder::BindToObject: riid = IID_IShellFolder");
+
 		IShellFolder *pShellFolder = NULL;
 		hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
 		if( hr == S_OK )
@@ -131,7 +20,7 @@ HRESULT CShellFolderImpl::BindToObject(
 			hr = ((CShellFolderImpl*)pShellFolder)->Init ( m_pIDFolder,(PIDLIST_RELATIVE) pidl );
 
 			auto data = m_PidlMgr.GetData(pidl);
-			::PrintLog(L"ShellFolder::BindToObject: %s",data->wszDisplayName);
+			::PrintLog(L"ShellFolder::BindToObject: Got object: %s",data->wszDisplayName);
 
 			if ( FAILED(hr) )
 			{
@@ -143,6 +32,15 @@ HRESULT CShellFolderImpl::BindToObject(
 			pShellFolder->Release();
 		}
 	}
+#ifdef _DEBUG
+	else
+	{
+		LPOLESTR str;
+		StringFromIID(riid,&str);
+		::PrintLog(L"ShellFolder::BindToObject: riid =%s",str);
+		CoTaskMemFree(str);
+	}
+#endif
 
 	return hr;
 }
@@ -176,13 +74,6 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	{IID_IFrameLayoutDefinitionFactory}
 	{IID_IFrameLayoutDefinition}
 	*/
-#ifdef _DEBUG
-	LPOLESTR str;
-	StringFromIID(riid,&str);
-	::PrintLog(L"ShellFolder::CreateViewObject: riid =%s",str);
-	CoTaskMemFree(str);
-#endif
-
 	if ( NULL == ppv )
 		return E_POINTER;
 
@@ -193,6 +84,8 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	// Create a new ShellViewImpl COM object.
 	if ( IID_IShellView == riid )
 	{
+		::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IShellView");
+
 		hr = CoCreateInstance(__uuidof(CShellViewImpl), NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellView)); 
 
 		if ( FAILED(hr) )
@@ -211,6 +104,35 @@ HRESULT CShellFolderImpl::CreateViewObject(
 		hr = pShellView->QueryInterface ( riid, ppv );
 		pShellView->Release();
 	}
+#ifdef _DEBUG
+	else if ( IID_IDropTarget == riid)
+	{
+		::PrintLog(L"ShellFolder::CreateViewObject: Not implemented riid = IID_IDropTarget");
+	}
+	//else if ( IID_IConnectionFactory == riid)
+	//{
+	//	::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IConnectionFactory");
+	//}
+	//else if ( IID_ITopViewAwareItem == riid)
+	//{
+	//	::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_ITopViewAwareItem");
+	//}
+	//else if ( IID_IFrameLayoutDefinitionFactory == riid)
+	//{
+	//	::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IFrameLayoutDefinitionFactory");
+	//}
+	//else if ( IID_IFrameLayoutDefinition == riid)
+	//{
+	//	::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IFrameLayoutDefinition");
+	//}
+	else
+	{
+		LPOLESTR str;
+		StringFromIID(riid,&str);
+		::PrintLog(L"ShellFolder::CreateViewObject: Not implemented riid =%s",str);
+		CoTaskMemFree(str);
+	}
+#endif
 
 	return hr;
 }
@@ -320,7 +242,7 @@ HRESULT CShellFolderImpl::GetAttributesOf(
 				dwAttribs |= SFGAO_NONENUMERATED | SFGAO_FILESYSANCESTOR | SFGAO_STORAGE | SFGAO_BROWSABLE | SFGAO_GHOSTED | SFGAO_HASPROPSHEET | SFGAO_CANRENAME;
 
 				// set SFGAO_FOLDER will let the tag could be expand, and response clicks. but also lead to a bug that expanding in a loopping way.
-				//dwAttribs |= SFGAO_FOLDER;
+				dwAttribs |= SFGAO_FOLDER;
 			}
 			else
 			{
@@ -357,29 +279,82 @@ HRESULT CShellFolderImpl::GetDisplayNameOf(
 	STRRET *pName
 	)
 {
-	::PrintLog(L"ShellFolder::GetDisplayNameOf");
+	::PrintLog(L"ShellFolder::GetDisplayNameOf: uFlags = 0x%X",uFlags);
 	/*
-	SIGDN_NORMALDISPLAY:				新建文本文档.txt
-	SIGDN_PARENTRELATIVEPARSING:		新建文本文档.txt
-	SIGDN_DESKTOPABSOLUTEPARSING:		E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
-	SIGDN_PARENTRELATIVEEDITING:		新建文本文档.txt
-	SIGDN_DESKTOPABSOLUTEEDITING:		E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
-	SIGDN_FILESYSPATH:					E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
-	SIGDN_URL:							file:///E:/Works/UDNZ/udnz.com.ShellEx.TaggableShell/C++/_Debug/x64/新建文本文档.txt
-	SIGDN_PARENTRELATIVEFORADDRESSBAR:	新建文本文档.txt
-	SIGDN_PARENTRELATIVE:				新建文本文档.txt
-	SIGDN_PARENTRELATIVEFORUI:			新建文本文档.txt
+	SHGDN_NORMAL | SHGDN_FORPARSING
+	Returns the fully qualified parsing name.
+
+	SHGDN_INFOLDER | SHGDN_FORPARSING
+	Returns the parsing name relative to the parent folder.
+
+	SHGDN_INFOLDER | SHGDN_FOREDITING
+	Returns the editing name relative to the parent folder.
+
+	SHGDN_INFOLDER
+	Returns the display name relative to the parent folder.
+
+	SHGDN_NORMAL
+	Returns the display name relative to the desktop.
 	*/
 
+	HRESULT hr = S_OK;
+
 	auto data =  m_PidlMgr.GetData ( pidl );
-	pName->uType = STRRET_WSTR;
-	pName->pOleStr = (LPWSTR) CoTaskMemAlloc(sizeof(data->wszDisplayName));
+	if ( data != NULL )
+	{
+		pName->uType = STRRET_WSTR;
+		pName->pOleStr = (LPWSTR)CoTaskMemAlloc(MAX_PATH);
+		if ( data->Type == MYSHITEMTYPE_TAG )
+		{
+			// relative to the parent folder.
+			if ( SHGDN_INFOLDER & uFlags )
+			{
+				StringCbCopy(pName->pOleStr,MAX_PATH,data->wszDisplayName);
+			}
+			else
+			{
+				LPWSTR _path;
+				HRESULT hr;
+				IShellItem* si;
+				hr = SHCreateShellItem(NULL,NULL,m_pIDFolder,&si);
+				if ( SUCCEEDED(hr) )
+				{
+					si->GetDisplayName(SIGDN_DESKTOPABSOLUTEEDITING,&_path);
+					StringCbCopy(pName->pOleStr,MAX_PATH,_path);
+					CoTaskMemFree(_path);
 
-	StringCbCopy(pName->pOleStr,sizeof(data->wszDisplayName),data->wszDisplayName);
+					StrCat(pName->pOleStr,L"\\");
+					StrCat(pName->pOleStr,data->wszDisplayName);
+				}
+			}
 
-	::PrintLog(L"Got name: %s",pName->pOleStr);
+		}else{
+			// relative to the parent folder.
+			if ( SHGDN_INFOLDER & uFlags )
+			{
+				std::tr2::sys::wpath p(data->wszDisplayName);
+				wstring itemname = p.filename();
+				auto a = itemname.c_str();
+				StringCbCopy(pName->pOleStr,MAX_PATH,a);
+			}
+			else
+			{
+				StringCbCopy(pName->pOleStr,MAX_PATH,data->wszDisplayName);
+			}
+		}
+	}
+	else
+	{
+		IShellFolder* psfParent;
+		hr = SHBindToParent(m_pIDFolder,IID_PPV_ARGS(&psfParent),&pidl);
+		if( SUCCEEDED(hr) )
+		{
+			psfParent->GetDisplayNameOf(pidl, uFlags, pName);
+			psfParent->Release();
+		}
+	}
 
-	return S_OK;
+	return hr;
 }
 
 HRESULT CShellFolderImpl::GetUIObjectOf(
@@ -407,26 +382,26 @@ HRESULT CShellFolderImpl::GetUIObjectOf(
 	}
 	else if ( IID_IExtractIcon == riid )
 	{
-		IExtractIcon *pxi;
-		IDefaultExtractIconInit *pdxi;
-		hr = SHCreateDefaultExtractIcon(IID_PPV_ARGS(&pdxi));
-		if (SUCCEEDED(hr) &&
-			SUCCEEDED(hr = pdxi->SetFlags(GIL_PERCLASS)) &&
-			//SUCCEEDED(hr = pdxi->SetKey(hkey)) &&   // optional
-			SUCCEEDED(hr = pdxi->SetNormalIcon(g_DllFullName, 110)) &&
-			SUCCEEDED(hr = pdxi->SetOpenIcon(NULL, SIID_FOLDEROPEN)) && // optional
-			SUCCEEDED(hr = pdxi->SetDefaultIcon(NULL, SIID_FOLDER)) && // optional
-			SUCCEEDED(hr = pdxi->SetShortcutIcon(g_DllFullName, 110))) // optional
-		{
-			hr = pdxi->QueryInterface(IID_PPV_ARGS(&pxi));
-			if (SUCCEEDED(hr))
-				ppv = (void**)&pxi;
-		}
+		//IExtractIcon *pxi;
+		//IDefaultExtractIconInit *pdxi;
+		//hr = SHCreateDefaultExtractIcon(IID_PPV_ARGS(&pdxi));
+		//if (SUCCEEDED(hr) &&
+		//	SUCCEEDED(hr = pdxi->SetFlags(GIL_PERCLASS)) &&
+		//	//SUCCEEDED(hr = pdxi->SetKey(hkey)) &&   // optional
+		//	SUCCEEDED(hr = pdxi->SetNormalIcon(g_DllFullName, 110)) &&
+		//	SUCCEEDED(hr = pdxi->SetOpenIcon(NULL, SIID_FOLDEROPEN)) && // optional
+		//	SUCCEEDED(hr = pdxi->SetDefaultIcon(NULL, SIID_FOLDER)) && // optional
+		//	SUCCEEDED(hr = pdxi->SetShortcutIcon(g_DllFullName, 110))) // optional
+		//{
+		//	hr = pdxi->QueryInterface(IID_PPV_ARGS(&pxi));
+		//	if (SUCCEEDED(hr))
+		//		ppv = (void**)&pxi;
+		//}
 
-		if (pdxi)
-		{
-			pdxi->Release();
-		}
+		//if (pdxi)
+		//{
+		//	pdxi->Release();
+		//}
 
 	}
 
@@ -460,14 +435,8 @@ HRESULT CShellFolderImpl::SetNameOf(
 	LPCWSTR pszName,
 	SHGDNF uFlags,
 	PITEMID_CHILD *ppidlOut
-	){	return S_OK;	};
+	)
+{	
+	return S_OK;	
+};
 
-#pragma endregion
-
-// IQueryInfo
-HRESULT CShellFolderImpl::GetInfoTip(DWORD dwFlags, PWSTR *ppwszTip)
-{
-	ppwszTip = (PWSTR*)CoTaskMemAlloc(12);
-	memcpy(ppwszTip,L"SDFSDF",12);
-	return S_OK;
-}

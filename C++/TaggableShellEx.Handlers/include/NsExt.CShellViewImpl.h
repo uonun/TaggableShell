@@ -1,8 +1,8 @@
 #pragma once
 #include "dllmain.h"
-#include "TaggableShellEx.NsExt.CShellFolderImpl.h"
-#include "TaggableShellEx.NsExt.CEnumIDListImpl.h"
-//#include "TaggableShellEx.NsExt.CShellItemImpl_Tag.h"
+#include "NsExt.CShellFolderImpl.h"
+#include "NsExt.CEnumIDListImpl.h"
+//#include "NsExt.CShellItemImpl_Tag.h"
 #include "PidlMgr.h"
 
 class CShellViewImpl:

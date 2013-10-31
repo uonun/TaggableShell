@@ -30,34 +30,46 @@
     <ClCompile Include="src\stdafx.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\TaggableShellEx.CHandler.ContextMenu.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TaggableShellEx.CHandler.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TaggableShellEx.CHandler.PropertyPage.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TaggableShellEx.Taghelper.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TaggableShellEx.Utils.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TaggableShellEx.Form.TagManager.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TaggableShellEx.NsExt.CShellViewImpl.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TaggableShellEx.NsExt.CShellFolderImpl.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TaggableShellEx.NsExt.CEnumIDListImpl.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\PidlMgr.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CHandler.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CHandler.ContextMenu.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CHandler.PropertyPage.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Form.TagManager.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CEnumIDListImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CShellFolderImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CShellViewImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Taghelper.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Utils.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CShellFolderImpl.IShellFolder.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CShellFolderImpl.IContextMenu.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CShellFolderImpl.IPersistFolder.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CShellFolderImpl.IQueryInfo.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,34 +86,34 @@
     <ClInclude Include="include\stdafx.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\TaggableShellEx.CHandler.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\TaggableShellEx.Taghelper.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\TaggableShellEx.Utils.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="include\targetver.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\TaggableShellEx.Form.TagManager.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="src\resource.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\TaggableShellEx.NsExt.CShellViewImpl.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\TaggableShellEx.NsExt.CShellFolderImpl.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\TaggableShellEx.NsExt.CEnumIDListImpl.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="include\PidlMgr.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CHandler.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Form.TagManager.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\NsExt.CEnumIDListImpl.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\NsExt.CShellFolderImpl.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\NsExt.CShellViewImpl.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Taghelper.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Utils.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
