@@ -12,7 +12,8 @@ Known bugs:
 	- 在文件、文件夹上直接点击右键，不做任何操作，取消右键菜单，此时在任务管理器中观察到16字节的内存泄露。
 
 TBD:
-	- Folder 
+	- 在桌面、我的电脑上显示Folder。
+	- Folder
 		- 菜单栏，切换视图
 		- 标签文件夹的自定义右键菜单
 		- 应支持直接在地址栏点击标签名称（支持 CShellFolderImpl::GetUIObjectOf with IID_IContextMenu）
