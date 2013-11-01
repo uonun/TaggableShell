@@ -694,8 +694,8 @@ STDMETHODIMP CShellViewImpl::QueryStatus ( const GUID* pguidCmdGroup, ULONG cCmd
 			break;
 		}
 	}
-	return S_OK;
 
+	return S_OK;
 	/*
 	// http://msdn.microsoft.com/en-us/library/windows/desktop/ms691264(v=vs.85).aspx
 	if ( NULL == pguidCmdGroup )

@@ -154,24 +154,23 @@ HRESULT CShellFolderImpl::EnumObjects(
 	BOOL isShowFilesInTag = FALSE;
 	MYPIDLDATA* data = NULL;
 	*ppEnumIDList = NULL;
+
+	// create a new instance, but released by caller.
 	CEnumIDListImpl *pEnum = new CEnumIDListImpl();
 
-	// TODO: make sure the tag could not be expanded in the tree on the left side.
+	// make sure the tag could not be expanded in the tree on the left side.
+	//
 	// the value of grfFlags will be:
 	// expand:
 	//		expand Folder: SHCONTF_NAVIGATION_ENUM | SHCONTF_INCLUDEHIDDEN | SHCONTF_FOLDERS
 	//		expand Tag: SHCONTF_NAVIGATION_ENUM | SHCONTF_INCLUDEHIDDEN | SHCONTF_FOLDERS
 	//
-	// double click on the icon in ExporerBrowser:
+	// double click on the icon in IExporerBrowser:
 	//		SHCONTF_FOLDERS or SHCONTF_NONFOLDERS for the first time, see CShellViewImpl::FillList();
 	//		SHCONTF_ENABLE_ASYNC | SHCONTF_FASTITEMS | SHCONTF_NONFOLDERS | SHCONTF_INIT_ON_FIRST_NEXT for the second time.
-	// see more: CShellFolderImpl::GetAttributesOf
-	// create a new instance, but released by caller.
-
-	if ( !_folderInTreeExpanded
-		|| ( !_folderInTreeExpanded && (grfFlags & SHCONTF_NAVIGATION_ENUM) )
-		|| !(grfFlags & SHCONTF_NAVIGATION_ENUM) )
-	{
+	//
+	// list the tags/files only initialized or open from IExplorerBrowser, see the comment on _initialized.
+	if ( _initialized || 0 == (grfFlags & SHCONTF_NAVIGATION_ENUM)){
 		if ( grfFlags & SHCONTF_NONFOLDERS )
 		{
 			data = m_PidlMgr.GetData(m_PIDLCurrent);

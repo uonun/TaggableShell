@@ -103,7 +103,7 @@ public:
 	// IQueryInfo
 	HRESULT GetInfoFlags(DWORD *pdwFlags) { pdwFlags = 0; return S_OK;} // This method is not currently used.
 	HRESULT GetInfoTip(DWORD dwFlags, PWSTR *ppwszTip);
-	
+
 	// IContextMenu
 	STDMETHODIMP GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT* pwReserved, LPSTR pszName, UINT cchMax);
 	STDMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pCmdInfo);
@@ -132,7 +132,13 @@ private:
 	// IContextMenu
 	HMENU _hSubmenu;	
 
-	BOOL _folderInTreeExpanded;
+	// mark up current instance is initialized.
+	// for by USER actions, the IPersistFolder::Initialize(LPCITEMIDLIST) will be called only if:
+	//		click the Folder on the tree-view
+	//		open the Folder on the IExplorerBrowser.
+	// and will NOT be called while:
+	//		open the Tag in Folder on the IExplorerBrowser.
+	BOOL _initialized;
 
 	wchar_t _FolderPath[MAX_PATH];
 	CPidlMgr m_PidlMgr;

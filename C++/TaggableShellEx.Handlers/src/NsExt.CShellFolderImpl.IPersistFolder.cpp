@@ -17,8 +17,10 @@ HRESULT CShellFolderImpl::Initialize(LPCITEMIDLIST pIDFolder)
 	{
 		m_pIDFolder = ILClone(pIDFolder);
 
+		_initialized = TRUE;
+
 		SHGetPathFromIDList(m_pIDFolder,_FolderPath);
-		::PrintLog(L"Get in path: %s",_FolderPath);
+		::PrintLog(L"CShellFolderImpl::Initialize: Get in path: %s",_FolderPath);
 
 		/*
 		SIGDN_NORMALDISPLAY				MyFolder

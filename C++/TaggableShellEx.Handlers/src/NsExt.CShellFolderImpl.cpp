@@ -5,7 +5,7 @@ CShellFolderImpl::CShellFolderImpl(void):
 	_cRef(1) // IUnknown
 	,m_pIDFolder(NULL),m_PIDLCurrent(NULL)
 	,_hSubmenu(NULL)
-	,_folderInTreeExpanded(FALSE)
+	,_initialized(FALSE)
 {
 	::PrintLog(L"CShellFolderImpl.ctor");
 
