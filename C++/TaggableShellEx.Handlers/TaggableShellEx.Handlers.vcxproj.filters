@@ -72,6 +72,9 @@
     <ClCompile Include="src\NsExt.CShellFolderImpl.IQueryInfo.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\RegisterExtension.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite-201310070036\src\sqlite3.h">
@@ -116,6 +119,9 @@
     <ClInclude Include="include\Utils.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="include\RegisterExtension.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="UnRegister.reg" />
@@ -128,6 +134,9 @@
     <None Include="Register.ShellFolder.reg" />
     <None Include="building.bat" />
     <None Include="Register.Settings.reg" />
+    <None Include="RegScript.rgs">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="src\TaggableShellEx.Handlers.rc">

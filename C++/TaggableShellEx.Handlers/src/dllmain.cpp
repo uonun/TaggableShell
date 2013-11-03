@@ -6,6 +6,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved
 
 #include "../include/dllmain.h"
+#include "../include/RegisterExtension.h"
 
 typedef HRESULT (*PFNCREATEINSTANCE)(REFIID riid, void **ppvObject);
 struct CLASS_OBJECT_INIT
@@ -197,7 +198,7 @@ private:
 	~CClassFactory()
 	{
 		::PrintLog(L"CClassFactory.~ctor");
-		
+
 		DllRelease();
 	}
 
@@ -211,16 +212,144 @@ STDAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void **ppv)
 	return CClassFactory::CreateInstance(clsid, c_rgClassObjectInit, ARRAYSIZE(c_rgClassObjectInit), riid, ppv);
 }
 
+
 STDAPI DllRegisterServer()
 {	
 	::PrintLog(L"DllRegisterServer");
-	return S_OK;
-	//return RegisterHandler();
+
+	HRESULT hr = S_FALSE;
+
+	// buffer for strings to Register.
+	LPCWSTR _regStrBufferTmp = NULL;
+
+	WCHAR c_szProgID[LOADSTRING_BUFFERSIZE] = {0}
+	,c_szInfoTip[LOADSTRING_BUFFERSIZE] = {0}
+	,c_szIntroText[LOADSTRING_BUFFERSIZE] = {0}
+	,c_szLocalizedString[LOADSTRING_BUFFERSIZE] = {0}
+	,folderFriendlyName[LOADSTRING_BUFFERSIZE] = {0}
+	,handlerFriendlyName[LOADSTRING_BUFFERSIZE] = {0};
+
+	_regStrBufferTmp = ::MyLoadString(IDS_REG_ProgID);
+	StrCpy(c_szProgID,_regStrBufferTmp);
+
+	_regStrBufferTmp = ::MyLoadString(IDS_REG_ProgID_InfoTip);
+	StrCpy(c_szInfoTip,_regStrBufferTmp);
+
+	_regStrBufferTmp =  ::MyLoadString(IDS_REG_ProgID_IntroText);
+	StrCpy(c_szIntroText,_regStrBufferTmp);
+
+	_regStrBufferTmp = ::MyLoadString(IDS_REG_ProgID_LocalizedString);
+	StrCpy(c_szLocalizedString,_regStrBufferTmp);
+
+	_regStrBufferTmp = ::MyLoadString(IDS_REG_FOLDER_FriendlyName);
+	StrCpy(folderFriendlyName,_regStrBufferTmp);
+
+	_regStrBufferTmp = ::MyLoadString(IDS_REG_HANDLER_FriendlyName);
+	StrCpy(handlerFriendlyName,_regStrBufferTmp);
+
+#pragma region register namespace extension
+	// register the shell folder with the system
+	CRegisterExtension reFolder(__uuidof(CShellFolderImpl), HKEY_LOCAL_MACHINE);
+
+	//[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\<clsid>]
+	hr = reFolder.RegisterCLSID(folderFriendlyName, L"Apartment",TRUE, c_szInfoTip,c_szIntroText,c_szLocalizedString);
+	if (SUCCEEDED(hr))
+	{
+		//[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\<clsid>\DefaultIcon]
+		hr = reFolder.RegisterDefaultIcon(IDI_ICON_48);
+
+		if (SUCCEEDED(hr))
+		{
+			//[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\<clsid>\ShellFolder]
+			//the first argument "attributes" see: http://msdn.microsoft.com/en-us/library/bb762589(v=vs.85).aspx
+			hr = reFolder.RegisterShellFolder(0xA0005040,TRUE);
+
+			if (SUCCEEDED(hr))
+			{
+				//http://msdn.microsoft.com/en-us/library/cc144096(v=vs.85).aspx
+				//[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\<clsid>]
+				hr = reFolder.RegisterShellFolderNameSpace(folderFriendlyName,L"MyComputer");
+
+				if (SUCCEEDED(hr))
+				{
+					// register the shell view with the system
+					CRegisterExtension reView(__uuidof(CShellViewImpl), HKEY_LOCAL_MACHINE);
+					hr = reView.RegisterCLSID(folderFriendlyName, L"Apartment",TRUE, c_szInfoTip,c_szIntroText,c_szLocalizedString);
+				}
+			}
+		}
+	}
+#pragma endregion
+
+#pragma region register handler
+	// register the context menu handler with the system
+	CRegisterExtension reHandler(__uuidof(CHandler), HKEY_LOCAL_MACHINE);
+
+	//[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\<clsid>]
+	hr = reHandler.RegisterCLSID(handlerFriendlyName, L"Apartment",TRUE, c_szInfoTip,c_szIntroText,c_szLocalizedString);
+	if (SUCCEEDED(hr))
+	{
+		hr = reHandler.RegisterContextMenu(L"*");
+		if (SUCCEEDED(hr))
+		{
+			hr = reHandler.RegisterContextMenu(L"Directory");
+			if (SUCCEEDED(hr))
+			{
+				hr = reHandler.RegisterContextMenu(L"Folder");
+			}
+		}
+
+		hr = reHandler.RegisterPropertyPage(L"*");
+		if (SUCCEEDED(hr))
+		{
+			hr = reHandler.RegisterPropertyPage(L"Directory");
+			if (SUCCEEDED(hr))
+			{
+				hr = reHandler.RegisterPropertyPage(L"Folder");
+			}
+		}
+	}
+#pragma endregion
+
+	return hr;
 }
 
 STDAPI DllUnregisterServer()
 {
 	::PrintLog(L"DllUnregisterServer");
-	return S_OK;
-	//return UnregisterHandler();
+
+	HRESULT hr = S_FALSE;
+
+#pragma region unregister namespace extension
+	// Remove the COM object registration.
+	CRegisterExtension reFolder(__uuidof(CShellFolderImpl), HKEY_LOCAL_MACHINE);
+	hr = reFolder.UnRegisterObject();
+	if (SUCCEEDED(hr))
+	{
+		// Remove the COM object registration.
+		CRegisterExtension reView(__uuidof(CShellViewImpl), HKEY_LOCAL_MACHINE);
+		hr = reView.UnRegisterObject();
+		if (SUCCEEDED(hr))
+		{
+			hr = reFolder.UnRegisterShellFolderNameSpace(L"MyComputer");
+		}
+	}
+#pragma endregion
+
+#pragma region unregister handler
+	CRegisterExtension reHandler(__uuidof(CHandler), HKEY_LOCAL_MACHINE);
+	hr = reHandler.UnRegisterObject();
+	if (SUCCEEDED(hr))
+	{
+		reHandler.UnRegisterContextMenu(L"*");
+		reHandler.UnRegisterContextMenu(L"Directory");
+		reHandler.UnRegisterContextMenu(L"Folder");
+
+		reHandler.UnRegisterPropertyPage(L"*");
+		reHandler.UnRegisterPropertyPage(L"Directory");
+		reHandler.UnRegisterPropertyPage(L"Folder");
+	}
+#pragma endregion
+
+	return hr;
 }

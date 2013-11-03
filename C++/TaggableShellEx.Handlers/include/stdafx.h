@@ -36,11 +36,16 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 using namespace std;
 using namespace std::tr2::sys;
 
+#define CLSID_CHandler					"20130929-1982-0805-819F-6D66853DDD60"
+#define CLSID_CShellFolderImpl			"20130929-1982-0805-819F-6D66853DDD70"
+#define CLSID_CShellViewImpl			"20130929-1982-0805-819F-6D66853DDD71"
+
 
 #ifdef LOG4CPP
 #pragma comment(lib, "log4cpp.lib")
 #define LOG_FILENAME					L"TaggableShell.log"
 #endif
+
 
 #define LOADSTRING_BUFFERSIZE			10240				// NOTE: could not be 102400, will throw exception while print log. not sure why.
 #define MAXLENGTH_SQL					10000				// The maximum number of bytes in the text of an SQL statement is limited to SQLITE_MAX_SQL_LENGTH which defaults to 1000000. You can redefine this limit to be as large as the smaller of SQLITE_MAX_LENGTH and 1073741824

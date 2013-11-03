@@ -29,6 +29,7 @@
     <ClCompile Include="src\PidlMgr.cpp" />
     <ClCompile Include="src\NsExt.CEnumIDListImpl.cpp" />
     <ClCompile Include="src\NsExt.CShellViewImpl.cpp" />
+    <ClCompile Include="src\RegisterExtension.cpp" />
     <ClCompile Include="src\stdafx.cpp" />
     <ClCompile Include="src\CHandler.ContextMenu.cpp" />
     <ClCompile Include="src\CHandler.cpp" />
@@ -43,6 +44,7 @@
     <ClInclude Include="include\PidlMgr.h" />
     <ClInclude Include="include\NsExt.CEnumIDListImpl.h" />
     <ClInclude Include="include\NsExt.CShellViewImpl.h" />
+    <ClInclude Include="include\RegisterExtension.h" />
     <ClInclude Include="include\stdafx.h" />
     <ClInclude Include="include\CHandler.h" />
     <ClInclude Include="include\Form.TagManager.h" />
@@ -61,6 +63,7 @@
     <None Include="Register.PropertyPage.reg" />
     <None Include="Register.Settings.reg" />
     <None Include="Register.ShellFolder.reg" />
+    <None Include="RegScript.rgs" />
     <None Include="src\Export.def" />
     <None Include="UnRegister.reg" />
   </ItemGroup>
