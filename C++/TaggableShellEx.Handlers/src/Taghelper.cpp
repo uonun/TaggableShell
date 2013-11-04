@@ -132,8 +132,7 @@ void CTaghelper::SetCurrentFiles(LPWSTR* ppv,const int count)
 			SIGDN_PARENTRELATIVEFORUI:			新建文本文档.txt
 			*/
 
-			_targetFileNamesInSQL[i] = new char[MAXLENGTH_SQL]; // will be deleted automatically. not need to delete in ~ctor.
-			memset(_targetFileNamesInSQL[i],0,MAXLENGTH_SQL * sizeof(_targetFileNamesInSQL[i][0]));
+			_targetFileNamesInSQL[i] = new char[MAXLENGTH_SQL]; // will be deleted in ~ctor.
 
 			::UnicodeToANSI(TargetFileNames[i],_targetFileNamesInSQL[i]);
 			string s(_targetFileNamesInSQL[i]);
@@ -602,7 +601,7 @@ BOOL CTaghelper::IsTagExists(LPCWSTR & tag)
 HRESULT CTaghelper::GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagIdInDb)
 {
 	_ASSERT_EXPR( files != NULL ,L"files could not be null.");
-	
+
 	count = 0;
 
 	if ( tagIdInDb < 1 )

@@ -49,7 +49,7 @@ HRESULT CShellFolderImpl::QueryContextMenu (
 	mii.dwTypeData = ::MyLoadString(IDS_CONTEXTMENU_MAIN_TEXT);
 
 	// TODO: take no effect, may be in a wrong way.
-	mii.hbmpItem = LoadBitmap(g_hInst, MAKEINTRESOURCE(IDB_PNG_16));
+	//mii.hbmpItem = LoadBitmap(g_hInst, MAKEINTRESOURCE(IDB_PNG_16));
 
 	InsertMenuItem  ( hmenu, uMenuIndex, true,&mii );
 
