@@ -6,6 +6,7 @@ CShellFolderImpl::CShellFolderImpl(void):
 	,m_pIDFolder(NULL),m_PIDLCurrent(NULL)
 	,_hSubmenu(NULL)
 	,_initialized(FALSE)
+	,_pView(NULL)
 {
 	::PrintLog(L"CShellFolderImpl.ctor");
 
@@ -21,6 +22,12 @@ CShellFolderImpl::~CShellFolderImpl(void)
 	{
 		DestroyMenu ( _hSubmenu );
 		_hSubmenu = NULL;
+	}
+
+	if ( NULL != _pView )
+	{
+		_pView->Release();
+		_pView = NULL;
 	}
 
 	DllRelease();

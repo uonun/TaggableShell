@@ -142,4 +142,5 @@ private:
 
 	wchar_t _FolderPath[MAX_PATH];
 	CPidlMgr m_PidlMgr;
+	IShellView* _pView;
 };

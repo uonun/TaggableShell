@@ -13,27 +13,15 @@ HRESULT CShellFolderImpl::BindToObject(
 	{
 		::PrintLog(L"ShellFolder::BindToObject: riid = IID_IShellFolder");
 
-		IShellFolder *pShellFolder = NULL;
-		hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
-		if( hr == S_OK )
-		{
-			hr = ((CShellFolderImpl*)pShellFolder)->Init ( m_pIDFolder,(PIDLIST_RELATIVE) pidl );
+		Init ( m_pIDFolder,(PIDLIST_RELATIVE) pidl );
 
-			wchar_t tmp[MAX_PATH];
-			SHGetPathFromIDList(m_pIDFolder,tmp);
+		wchar_t tmp[MAX_PATH];
+		SHGetPathFromIDList(m_pIDFolder,tmp);
 
-			auto data = m_PidlMgr.GetData(pidl);
-			::PrintLog(L"ShellFolder::BindToObject: Got object: %s, m_pIDFolder = %s",data->wszDisplayName,tmp);
+		auto data = m_PidlMgr.GetData(pidl);
+		::PrintLog(L"ShellFolder::BindToObject: Got object: %s, m_pIDFolder = %s",data->wszDisplayName,tmp);
 
-			if ( FAILED(hr) )
-			{
-				pShellFolder->Release();
-				return hr;
-			}
-
-			hr = pShellFolder->QueryInterface(riid,ppvOut);
-			pShellFolder->Release();
-		}
+		hr = this->QueryInterface(riid,ppvOut);
 	}
 #ifdef _DEBUG
 	else
@@ -82,30 +70,25 @@ HRESULT CShellFolderImpl::CreateViewObject(
 
 	*ppv = NULL;
 	HRESULT hr = E_NOINTERFACE;
-	IShellView* pShellView = NULL;
 
 	// Create a new ShellViewImpl COM object.
 	if ( IID_IShellView == riid )
 	{
 		::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IShellView");
 
-		hr = CoCreateInstance(__uuidof(CShellViewImpl), NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellView)); 
-
-		if ( FAILED(hr) )
-			return hr;
-
-		// Object initialization - pass the object its containing folder (this).
-		hr = ((CShellViewImpl*)pShellView)->Init ( this );
-
-		if ( FAILED(hr) )
+		if ( NULL == _pView )
 		{
-			pShellView->Release();
-			return hr;
+			hr = CoCreateInstance(__uuidof(CShellViewImpl), NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&_pView)); 
+
+			if ( FAILED(hr) )
+				return hr;
+
+			// Object initialization - pass the object its containing folder (this).
+			hr = ((CShellViewImpl*)_pView)->Init ( this );
 		}
 
 		// Return the requested interface back to the shell.
-		hr = pShellView->QueryInterface ( riid, ppv );
-		pShellView->Release();
+		hr = _pView->QueryInterface ( riid, ppv );
 	}
 #ifdef _DEBUG
 	else if ( IID_IDropTarget == riid)
@@ -162,15 +145,20 @@ HRESULT CShellFolderImpl::EnumObjects(
 	//
 	// the value of grfFlags will be:
 	// expand:
-	//		expand Folder: SHCONTF_NAVIGATION_ENUM | SHCONTF_INCLUDEHIDDEN | SHCONTF_FOLDERS
-	//		expand Tag: SHCONTF_NAVIGATION_ENUM | SHCONTF_INCLUDEHIDDEN | SHCONTF_FOLDERS
+	//		expand Folder:	0x10A0 = SHCONTF_NAVIGATION_ENUM | SHCONTF_FOLDERS | SHCONTF_INCLUDEHIDDEN
+	//		expand Tag:		0x10A0 = SHCONTF_NAVIGATION_ENUM | SHCONTF_FOLDERS | SHCONTF_INCLUDEHIDDEN
+	//		(the flag SHCONTF_INCLUDEHIDDEN depends on the settings of system.)
 	//
 	// double click on the icon in IExporerBrowser:
-	//		SHCONTF_FOLDERS or SHCONTF_NONFOLDERS for the first time, see CShellViewImpl::FillList();
-	//		SHCONTF_ENABLE_ASYNC | SHCONTF_FASTITEMS | SHCONTF_NONFOLDERS | SHCONTF_INIT_ON_FIRST_NEXT for the second time.
+	//		0x0020 = SHCONTF_FOLDERS or 0x0040 = SHCONTF_NONFOLDERS for the first time, see CShellViewImpl::FillList();
+	//		0xA0A0 = SHCONTF_ENABLE_ASYNC | SHCONTF_FASTITEMS | SHCONTF_NONFOLDERS | SHCONTF_INIT_ON_FIRST_NEXT for the second time.
 	//
 	// list the tags/files only initialized or open from IExplorerBrowser, see the comment on _initialized.
-	if ( _initialized || 0 == (grfFlags & SHCONTF_NAVIGATION_ENUM)){
+	if (		(!_initialized && (grfFlags & SHCONTF_NAVIGATION_ENUM)) || 0 == (grfFlags & SHCONTF_NAVIGATION_ENUM)	)
+	{
+		if ( (grfFlags & SHCONTF_NAVIGATION_ENUM) )			
+			_initialized = true;
+
 		if ( grfFlags & SHCONTF_NONFOLDERS )
 		{
 			data = m_PidlMgr.GetData(m_PIDLCurrent);
@@ -384,24 +372,7 @@ HRESULT CShellFolderImpl::GetUIObjectOf(
 	if ( IID_IContextMenu == riid )
 	{
 		::PrintLog(L"ShellFolder::GetUIObjectOf: riid = IID_IContextMenu");
-		IContextMenu *pcm = NULL;
-		hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pcm));
-		if( hr == S_OK )
-		{
-			hr = ((CShellFolderImpl*)pcm)->Init ( m_pIDFolder,(PIDLIST_RELATIVE)*apidl );
-
-			auto data = m_PidlMgr.GetData(*apidl);
-			::PrintLog(L"ShellFolder::GetUIObjectOf: Got object: %s",data->wszDisplayName);
-
-			if ( FAILED(hr) )
-			{
-				pcm->Release();
-				return hr;
-			}
-
-			hr = pcm->QueryInterface(riid,ppv);
-			pcm->Release();
-		}
+		hr = this->QueryInterface(riid,ppv);
 	}
 	else if ( IID_IExtractIcon == riid )
 	{

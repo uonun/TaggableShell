@@ -26,6 +26,10 @@
     <ClCompile Include="src\NsExt.CShellFolderImpl.IPersistFolder.cpp" />
     <ClCompile Include="src\NsExt.CShellFolderImpl.IQueryInfo.cpp" />
     <ClCompile Include="src\NsExt.CShellFolderImpl.IShellFolder.cpp" />
+    <ClCompile Include="src\NsExt.CShellViewImpl.ICommDlgBrowser.cpp" />
+    <ClCompile Include="src\NsExt.CShellViewImpl.IFolderView.cpp" />
+    <ClCompile Include="src\NsExt.CShellViewImpl.IOleCommandTarget.cpp" />
+    <ClCompile Include="src\NsExt.CShellViewImpl.IShellView.cpp" />
     <ClCompile Include="src\PidlMgr.cpp" />
     <ClCompile Include="src\NsExt.CEnumIDListImpl.cpp" />
     <ClCompile Include="src\NsExt.CShellViewImpl.cpp" />

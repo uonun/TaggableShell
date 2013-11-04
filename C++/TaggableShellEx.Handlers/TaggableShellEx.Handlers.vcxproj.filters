@@ -75,6 +75,18 @@
     <ClCompile Include="src\RegisterExtension.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\NsExt.CShellViewImpl.IFolderView.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CShellViewImpl.IShellView.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CShellViewImpl.ICommDlgBrowser.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CShellViewImpl.IOleCommandTarget.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite-201310070036\src\sqlite3.h">
