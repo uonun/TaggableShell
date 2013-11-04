@@ -73,8 +73,7 @@
     <Text Include="..\Notes.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="resources\16x16.png" />
-    <Image Include="resources\48x48.ico" />
+    <Image Include="resources\ico.ico" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7B7293B6-EDCA-4A43-A75A-25C515AB47D0}</ProjectGuid>

@@ -256,7 +256,7 @@ STDAPI DllRegisterServer()
 	if (SUCCEEDED(hr))
 	{
 		//[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\<clsid>\DefaultIcon]
-		hr = reFolder.RegisterDefaultIcon(IDI_ICON_48);
+		hr = reFolder.RegisterDefaultIcon(IDI_ICON);
 
 		if (SUCCEEDED(hr))
 		{

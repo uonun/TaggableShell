@@ -141,14 +141,11 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="resources\16x16.png">
-      <Filter>资源文件</Filter>
-    </Image>
-    <Image Include="resources\48x48.ico">
-      <Filter>资源文件</Filter>
-    </Image>
+    <Text Include="..\Notes.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\Notes.txt" />
+    <Image Include="resources\ico.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>
