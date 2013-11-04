@@ -615,7 +615,7 @@ STDMETHODIMP CShellViewImpl::AddPropertySheetPages(DWORD dwReserved, LPFNADDPROP
 	psp.pfnDlgProc  = PageDlgProc_ShellViewImpl;
 	psp.lParam      = (LPARAM) this;
 	psp.pfnCallback = PageCallbackProc_ShellViewImpl;
-	psp.pcRefParent = (UINT*)&_dllRefCount;
+	psp.pcRefParent = (UINT*)&_cRef;
 
 	// Create the page & get a handle.
 	hPage = CreatePropertySheetPage ( &psp );

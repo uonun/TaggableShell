@@ -82,7 +82,7 @@ STDMETHODIMP CHandler::AddPages(LPFNADDPROPSHEETPAGE lpfnAddPage, LPARAM lParam)
 	psp.pfnDlgProc  = PageDlgProc;
 	psp.lParam      = (LPARAM) this;
 	psp.pfnCallback = PageCallbackProc;
-	psp.pcRefParent = (UINT*)&_dllRefCount;
+	psp.pcRefParent = (UINT*)&_cRef;
 
 	// Create the page & get a handle.
 	hPage = CreatePropertySheetPage ( &psp );

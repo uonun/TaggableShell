@@ -8,7 +8,6 @@
 #include "targetver.h"
 
 #define WIN32_LEAN_AND_MEAN             //  从 Windows 头文件中排除极少使用的信息
-
 #include <Windows.h>  
 #include <Windowsx.h>
 #include <new> // std::nothrow
@@ -36,10 +35,12 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 using namespace std;
 using namespace std::tr2::sys;
 
-#define CLSID_CHandler					"20130929-1982-0805-819F-6D66853DDD60"
-#define CLSID_CShellFolderImpl			"20130929-1982-0805-819F-6D66853DDD70"
-#define CLSID_CShellViewImpl			"20130929-1982-0805-819F-6D66853DDD71"
-
+/*
+for the CLSIDs: ASCII(C2DEBAE9C1D6) = Author
+*/
+#define CLSID_CHandler					"8F08EB50-3F01-1982-0805-C2DEBAE9C1D6"
+#define CLSID_CShellFolderImpl			"8F08EB60-3F01-1982-0805-C2DEBAE9C1D6"
+#define CLSID_CShellViewImpl			"8F08EB61-3F01-1982-0805-C2DEBAE9C1D6"
 
 #ifdef LOG4CPP
 #pragma comment(lib, "log4cpp.lib")

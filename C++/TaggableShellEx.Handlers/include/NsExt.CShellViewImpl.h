@@ -58,8 +58,6 @@ private:
 
 	// IUnknown
 	long _cRef;
-	// AddPropertySheetPages
-	UINT _dllRefCount;
 
 	HWND m_hwndParent;
 	HWND m_hWnd;

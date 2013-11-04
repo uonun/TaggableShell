@@ -63,7 +63,6 @@
     <None Include="Register.PropertyPage.reg" />
     <None Include="Register.Settings.reg" />
     <None Include="Register.ShellFolder.reg" />
-    <None Include="RegScript.rgs" />
     <None Include="src\Export.def" />
     <None Include="UnRegister.reg" />
   </ItemGroup>
@@ -190,7 +189,7 @@
       <ModuleDefinitionFile>./src/Export.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>onbuild.bat $(Configuration) $(PlatformTarget)</Command>
+      <Command>onbuild.bat $(Configuration) $(PlatformTarget) $(TargetPath)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>building.bat</Command>
