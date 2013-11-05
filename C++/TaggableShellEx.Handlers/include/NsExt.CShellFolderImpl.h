@@ -6,6 +6,7 @@
 #include "PidlMgr.h"
 
 class CShellFolderImpl:
+	public IExtractIcon,
 	public IContextMenu,
 	public IQueryInfo,
 	public IShellFolder,	
@@ -104,6 +105,10 @@ public:
 	HRESULT GetInfoFlags(DWORD *pdwFlags) { pdwFlags = 0; return S_OK;} // This method is not currently used.
 	HRESULT GetInfoTip(DWORD dwFlags, PWSTR *ppwszTip);
 
+	// IExtractIcon
+	HRESULT Extract(PCTSTR pszFile,UINT nIconIndex,HICON *phiconLarge,HICON *phiconSmall,UINT nIconSize);
+	HRESULT GetIconLocation(UINT uFlags,PTSTR pszIconFile,UINT cchMax,int *piIndex,UINT *pwFlags);
+
 	// IContextMenu
 	STDMETHODIMP GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT* pwReserved, LPSTR pszName, UINT cchMax);
 	STDMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pCmdInfo);
@@ -111,18 +116,18 @@ public:
 
 
 	// Init function - call right after constructing a CShellFolderImpl object.
-	HRESULT Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current )
-	{
-		m_pIDFolder = pidl_perent;
-		m_PIDLCurrent = pidl_current;
-		return S_OK;
-	}
+	HRESULT Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current );
 
 	CTaghelper TagHelper;
 
+	// current shell item data. (m_PIDLCurrent)
+	MYPIDLDATA* CurrentShellItemData;
+
+	// absolute path of the folder (m_pIDFolder)
+	wchar_t FolderPath[MAX_PATH];
+
 	// IPersistFolder
 	PIDLIST_ABSOLUTE  m_pIDFolder;           // absolute location of the folder
-	PIDLIST_RELATIVE  m_PIDLCurrent;		 // relevant location to the folder
 
 private:
 
@@ -131,16 +136,7 @@ private:
 
 	// IContextMenu
 	HMENU _hSubmenu;	
-
-	// mark up current instance is initialized.
-	// for by USER actions, the IPersistFolder::Initialize(LPCITEMIDLIST) will be called only if:
-	//		click the Folder on the tree-view
-	//		open the Folder on the IExplorerBrowser.
-	// and will NOT be called while:
-	//		open the Tag in Folder on the IExplorerBrowser.
-	BOOL _initialized;
-
-	wchar_t _FolderPath[MAX_PATH];
 	CPidlMgr m_PidlMgr;
 	IShellView* _pView;
+	PIDLIST_RELATIVE  m_PIDLCurrent;		 // relevant location to the folder
 };

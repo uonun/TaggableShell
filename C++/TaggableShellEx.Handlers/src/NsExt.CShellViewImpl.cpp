@@ -166,12 +166,16 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 		}
 		else
 		{
-			auto data = pthX->m_PidlMgr.GetData(pthX->m_psfContainingFolder->m_PIDLCurrent);
-			LPWSTR currentTag = data->wszDisplayName;
+			LPWSTR currentTag = L"";
+			auto &data = pthX->m_psfContainingFolder->CurrentShellItemData;
+			if ( NULL != data )
+			{
+				currentTag = data->wszDisplayName;
+			}
 
 			WCHAR tmp2[MAX_PATH];
 			wsprintf ( tmp2,::MyLoadString(IDS_MSG_NO_FILE_IN_TAG_WITH_DETAIL),currentTag);
-			infoLoaded = tmp2;			
+			infoLoaded = tmp2;
 		}
 
 		try{
@@ -362,7 +366,7 @@ HRESULT CShellViewImpl::Init ( CShellFolderImpl* pContainingFolder )
 
 BOOL CShellViewImpl::IsShowTag()
 {
-	if ( NULL != m_psfContainingFolder && NULL != m_psfContainingFolder->m_PIDLCurrent )
+	if ( NULL != m_psfContainingFolder && NULL != m_psfContainingFolder->CurrentShellItemData )
 	{
 		//auto data = m_PidlMgr.GetData(m_psfContainingFolder->m_PIDLCurrent);
 		//return data != NULL && data->Type == MYSHITEMTYPE_TAG ? TRUE : FALSE;
@@ -388,7 +392,7 @@ void CShellViewImpl::HandleActivate ( UINT uState )
 	if ( SVUIA_DEACTIVATE != uState )
 	{
 		m_spShellBrowser->OnViewWindowActive(this);
-		
+
 		/*
 		// First, create a new menu.
 		if ( NULL != m_hMenu )

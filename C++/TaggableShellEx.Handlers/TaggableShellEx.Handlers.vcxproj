@@ -23,6 +23,7 @@
     <ClCompile Include="sqlite-201310070036\src\sqlite3.c" />
     <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\NsExt.CShellFolderImpl.IContextMenu.cpp" />
+    <ClCompile Include="src\NsExt.CShellFolderImpl.IExtractIcon.cpp" />
     <ClCompile Include="src\NsExt.CShellFolderImpl.IPersistFolder.cpp" />
     <ClCompile Include="src\NsExt.CShellFolderImpl.IQueryInfo.cpp" />
     <ClCompile Include="src\NsExt.CShellFolderImpl.IShellFolder.cpp" />

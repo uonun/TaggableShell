@@ -87,6 +87,9 @@
     <ClCompile Include="src\NsExt.CShellViewImpl.IOleCommandTarget.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\NsExt.CShellFolderImpl.IExtractIcon.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite-201310070036\src\sqlite3.h">

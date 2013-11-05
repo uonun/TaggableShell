@@ -5,8 +5,8 @@ CShellFolderImpl::CShellFolderImpl(void):
 	_cRef(1) // IUnknown
 	,m_pIDFolder(NULL),m_PIDLCurrent(NULL)
 	,_hSubmenu(NULL)
-	,_initialized(FALSE)
 	,_pView(NULL)
+	,CurrentShellItemData(NULL)
 {
 	::PrintLog(L"CShellFolderImpl.ctor");
 
@@ -52,6 +52,7 @@ IFACEMETHODIMP CShellFolderImpl::QueryInterface(REFIID riid, void ** ppv)
 {
 	static const QITAB qit[] =
 	{
+		QITABENT(CShellFolderImpl, IExtractIcon),
 		QITABENT(CShellFolderImpl, IContextMenu),
 		QITABENT(CShellFolderImpl, IQueryInfo),
 		QITABENT(CShellFolderImpl, IShellFolder),
@@ -74,4 +75,15 @@ IFACEMETHODIMP_(ULONG) CShellFolderImpl::Release()
 		delete this;
 	}
 	return cRef;
+}
+
+
+// Init function - call right after constructing a CShellFolderImpl object.
+HRESULT CShellFolderImpl::Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current )
+{
+	m_pIDFolder = pidl_perent;
+	m_PIDLCurrent = pidl_current;
+	CurrentShellItemData = m_PidlMgr.GetData(m_PIDLCurrent);
+
+	return S_OK;
 }

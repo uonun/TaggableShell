@@ -15,11 +15,8 @@ HRESULT CShellFolderImpl::BindToObject(
 
 		Init ( m_pIDFolder,(PIDLIST_RELATIVE) pidl );
 
-		wchar_t tmp[MAX_PATH];
-		SHGetPathFromIDList(m_pIDFolder,tmp);
-
 		auto data = m_PidlMgr.GetData(pidl);
-		::PrintLog(L"ShellFolder::BindToObject: Got object: %s, m_pIDFolder = %s",data->wszDisplayName,tmp);
+		::PrintLog(L"ShellFolder::BindToObject: Got object: %s, FolderPath = %s",data->wszDisplayName,FolderPath);
 
 		hr = this->QueryInterface(riid,ppvOut);
 	}
@@ -135,12 +132,16 @@ HRESULT CShellFolderImpl::EnumObjects(
 	HRESULT hr;
 	vector<MYPIDLDATA> items;
 	BOOL isShowFilesInTag = FALSE;
-	MYPIDLDATA* data = NULL;
 	*ppEnumIDList = NULL;
+
+	if ( CurrentShellItemData != NULL && CurrentShellItemData->Type == MYSHITEMTYPE_TAG)
+	{
+		// if MYPIDLDATA exists, then show files in tag.
+		isShowFilesInTag = TRUE;
+	}
 
 	// create a new instance, but released by caller.
 	CEnumIDListImpl *pEnum = new CEnumIDListImpl();
-
 	// make sure the tag could not be expanded in the tree on the left side.
 	//
 	// the value of grfFlags will be:
@@ -153,22 +154,13 @@ HRESULT CShellFolderImpl::EnumObjects(
 	//		0x0020 = SHCONTF_FOLDERS or 0x0040 = SHCONTF_NONFOLDERS for the first time, see CShellViewImpl::FillList();
 	//		0xA0A0 = SHCONTF_ENABLE_ASYNC | SHCONTF_FASTITEMS | SHCONTF_NONFOLDERS | SHCONTF_INIT_ON_FIRST_NEXT for the second time.
 	//
-	// list the tags/files only initialized or open from IExplorerBrowser, see the comment on _initialized.
-	if (		(!_initialized && (grfFlags & SHCONTF_NAVIGATION_ENUM)) || 0 == (grfFlags & SHCONTF_NAVIGATION_ENUM)	)
+	// list the tags/files only initialized or open from IExplorerBrowser
+
+	if (
+		(NULL == CurrentShellItemData && (grfFlags & SHCONTF_NAVIGATION_ENUM))	// list the details when expanding the Folder.(CurrentShellItemData will not be NULL while expanding tags)
+		|| 0 == (grfFlags & SHCONTF_NAVIGATION_ENUM	)							// list the details when opening from IExplorerBrowser
+		)
 	{
-		if ( (grfFlags & SHCONTF_NAVIGATION_ENUM) )			
-			_initialized = true;
-
-		if ( grfFlags & SHCONTF_NONFOLDERS )
-		{
-			data = m_PidlMgr.GetData(m_PIDLCurrent);
-			if ( data != NULL && data->Type == MYSHITEMTYPE_TAG)
-			{
-				// if MYPIDLDATA exists, then show files in tag.
-				isShowFilesInTag = TRUE;
-			}
-		}
-
 		if ( this->TagHelper.OpenDb() )
 		{
 			this->TagHelper.LoadTags();
@@ -180,7 +172,7 @@ HRESULT CShellFolderImpl::EnumObjects(
 		{
 			LPWSTR *files = new LPWSTR[MAXCOUNT_TOTAL_ITEMS];
 			UINT count = 0;
-			TagHelper.GetFilesByTagID(files,count,data->TagID);
+			TagHelper.GetFilesByTagID(files,count,CurrentShellItemData->TagID);
 			for (UINT i = 0; i < count; i++)
 			{
 				MYPIDLDATA d = {sizeof(MYPIDLDATA)};
@@ -239,7 +231,7 @@ HRESULT CShellFolderImpl::GetAttributesOf(
 		{
 			if( data->Type = MYSHITEMTYPE_TAG )
 			{
-				dwAttribs |= SFGAO_NONENUMERATED | SFGAO_FILESYSANCESTOR | SFGAO_STORAGE | SFGAO_BROWSABLE | SFGAO_GHOSTED | SFGAO_HASPROPSHEET | SFGAO_CANRENAME;
+				dwAttribs |= SFGAO_FILESYSANCESTOR | SFGAO_STORAGE | SFGAO_BROWSABLE | SFGAO_HASPROPSHEET | SFGAO_CANRENAME;
 
 				// set SFGAO_FOLDER will let the tag could be expand, and response clicks. but also lead to a bug that expanding in a loopping way.
 				dwAttribs |= SFGAO_FOLDER;
@@ -299,7 +291,7 @@ HRESULT CShellFolderImpl::GetDisplayNameOf(
 
 	HRESULT hr = S_OK;
 
-	auto data =  m_PidlMgr.GetData ( pidl );
+	auto data = m_PidlMgr.GetData ( pidl );
 	if ( data != NULL )
 	{
 		pName->uType = STRRET_WSTR;
@@ -371,34 +363,11 @@ HRESULT CShellFolderImpl::GetUIObjectOf(
 
 	if ( IID_IContextMenu == riid )
 	{
-		::PrintLog(L"ShellFolder::GetUIObjectOf: riid = IID_IContextMenu");
 		hr = this->QueryInterface(riid,ppv);
 	}
 	else if ( IID_IExtractIcon == riid )
 	{
-		::PrintLog(L"ShellFolder::GetUIObjectOf: riid = IID_IExtractIcon");
-
-		//IExtractIcon *pxi;
-		//IDefaultExtractIconInit *pdxi;
-		//hr = SHCreateDefaultExtractIcon(IID_PPV_ARGS(&pdxi));
-		//if (SUCCEEDED(hr) &&
-		//	SUCCEEDED(hr = pdxi->SetFlags(GIL_PERCLASS)) &&
-		//	//SUCCEEDED(hr = pdxi->SetKey(hkey)) &&   // optional
-		//	SUCCEEDED(hr = pdxi->SetNormalIcon(g_DllFullName, 110)) &&
-		//	SUCCEEDED(hr = pdxi->SetOpenIcon(NULL, SIID_FOLDEROPEN)) && // optional
-		//	SUCCEEDED(hr = pdxi->SetDefaultIcon(NULL, SIID_FOLDER)) && // optional
-		//	SUCCEEDED(hr = pdxi->SetShortcutIcon(g_DllFullName, 110))) // optional
-		//{
-		//	hr = pdxi->QueryInterface(IID_PPV_ARGS(&pxi));
-		//	if (SUCCEEDED(hr))
-		//		ppv = (void**)&pxi;
-		//}
-
-		//if (pdxi)
-		//{
-		//	pdxi->Release();
-		//}
-
+		hr = this->QueryInterface(riid,ppv);
 	}
 #ifdef _DEBUG
 	else
