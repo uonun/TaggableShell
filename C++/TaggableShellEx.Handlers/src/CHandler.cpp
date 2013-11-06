@@ -9,6 +9,7 @@ CHandler::CHandler() :
 	,_hdlg(NULL)
 	,FileCount(0)
 	,pTagHelper(NULL)
+	,_contextMenuSupposed(FALSE)
 {
 	::PrintLog(L"CHandler.ctor");
 
@@ -124,6 +125,9 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 
 		if(SUCCEEDED(m_pDataObj->GetData(&fe, &medium)))
 		{
+			// got data, should display context menu.
+			_contextMenuSupposed = TRUE;
+
 			// Get the count of files dropped.
 			FileCount = DragQueryFile((HDROP)medium.hGlobal, (UINT)-1, NULL, 0);
 

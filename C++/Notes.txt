@@ -1,4 +1,4 @@
-Review notes:
+﻿Review notes:
 	- 变量必须初始化
 	- new/delete
 	- 变量申请空间必须足够
@@ -32,7 +32,7 @@ TBD:
 		- 标签文件夹的自定义右键菜单
 	
 	- 不允许给非法Item添加标签
-		- Folder
+		- [DONE]Folder
 		- Tag
 
 	- 允许在 Folder 内直接新增、删除、编辑Tag

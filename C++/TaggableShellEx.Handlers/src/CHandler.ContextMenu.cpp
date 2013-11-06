@@ -9,7 +9,7 @@ HRESULT CHandler::QueryContextMenu (
 	UINT uidLastCmd, UINT uFlags )
 {
 	// If the flags include CMF_DEFAULTONLY then we shouldn't do anything.
-	if ( uFlags & CMF_DEFAULTONLY )
+	if ( uFlags & CMF_DEFAULTONLY || !_contextMenuSupposed)
 		return MAKE_HRESULT ( SEVERITY_SUCCESS, FACILITY_NULL, 0 );
 
 	if ( NULL != _hSubmenu )
@@ -48,11 +48,13 @@ HRESULT CHandler::QueryContextMenu (
 	mii.wID = uIdx++;
 	mii.hSubMenu = _hSubmenu;
 	mii.dwTypeData = ::MyLoadString(IDS_CONTEXTMENU_MAIN_TEXT);
-
 	// TODO: take no effect, may be in a wrong way.
 	mii.hbmpItem = LoadBitmap(g_hInst, MAKEINTRESOURCE(IDI_ICON));
 
-	InsertMenuItem  ( hmenu, uMenuIndex, true,&mii );
+	InsertMenu ( hmenu, uMenuIndex++ , MF_BYPOSITION | MF_SEPARATOR, _firstSpecialCmdID , L"MF_SEPARATOR" ); 
+	uIdx++;
+
+	InsertMenuItem  ( hmenu, uMenuIndex, true, &mii );
 
 	return MAKE_HRESULT ( SEVERITY_SUCCESS, FACILITY_NULL, uIdx );
 }
@@ -104,15 +106,6 @@ HRESULT CHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserve
 	return E_INVALIDARG;
 }
 
-LRESULT CALLBACK DlgProc_TagManager(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
-	FormTagManager *pebhd = reinterpret_cast<FormTagManager *>(GetWindowLongPtr(hwnd, DWLP_USER));
-	if (uMsg == WM_INITDIALOG)
-	{
-		pebhd = FormTagManager::instance();
-		SetWindowLongPtr(hwnd, DWLP_USER, reinterpret_cast<LONG_PTR>(pebhd));
-	}
-	return pebhd ? pebhd->DlgProc(hwnd, uMsg, wParam, lParam) : 0;
-}
 
 // http://msdn.microsoft.com/en-us/library/windows/desktop/bb776096(v=vs.85).aspx
 HRESULT CHandler::InvokeCommand (
@@ -156,10 +149,10 @@ HRESULT CHandler::InvokeCommand (
 			}
 			break;
 		case CMD_SETTINGS:
-			MessageBox ( pCmdInfo->hwnd, L"CMD_SETTINGS", L"SimpleShlExt", MB_ICONINFORMATION );
+			_hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_PROPERTYPAGE),pCmdInfo->hwnd,NULL);
 			break;
 		case CMD_ABOUT:
-			MessageBox ( pCmdInfo->hwnd, L"CMD_ABOUT", L"SimpleShlExt", MB_ICONINFORMATION );
+			_hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_ABOUT),pCmdInfo->hwnd,DlgProc_About);
 			break;
 		default:
 			{
@@ -173,31 +166,7 @@ HRESULT CHandler::InvokeCommand (
 			ShowWindow(_hdlg, SW_SHOW);
 			UpdateWindow(_hdlg);
 
-			if( createNew )
-			{
-				//// message queue.
-				//MSG msg;
-				//BOOL bRet;
-				//while( (bRet = GetMessage( &msg, NULL, 0, 0 )) != 0)
-				//{
-				//	if (bRet == -1)
-				//	{
-				//		DWORD e = GetLastError();
-				//		::PrintLog(L"Got error = %d",e);
-				//		MessageBox(pCmdInfo->hwnd,L"Got error",L"Error",MB_OK);
-				//		return E_FAIL;
-				//	}
-				//	else
-				//	{
-				//		TranslateMessage(&msg);
-				//		if (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP ) {
-				//			SendMessage (_hdlg, msg.message, msg.wParam, msg.lParam);
-				//		}
-				//		DispatchMessage(&msg);     
-				//	}
-				//}
-			}
-			else
+			if( !createNew )
 			{
 				SetWindowPos(_hdlg,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW);
 			}
@@ -210,4 +179,61 @@ HRESULT CHandler::InvokeCommand (
 	}
 
 	return S_OK;
+}
+
+LRESULT CALLBACK DlgProc_TagManager(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
+	FormTagManager *pebhd = reinterpret_cast<FormTagManager *>(GetWindowLongPtr(hwnd, DWLP_USER));
+	if (uMsg == WM_INITDIALOG)
+	{
+		pebhd = FormTagManager::instance();
+		SetWindowLongPtr(hwnd, DWLP_USER, reinterpret_cast<LONG_PTR>(pebhd));
+	}
+	return pebhd ? pebhd->DlgProc(hwnd, uMsg, wParam, lParam) : 0;
+}
+
+LRESULT CALLBACK DlgProc_About(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
+	switch(uMsg)     
+	{   
+	case WM_INITDIALOG:
+		{
+			SetWindowText(hwnd,::MyLoadString(IDS_DLG_ABOUT_BU_CLOSE));
+			SetDlgItemText(hwnd, IDC_ABOUT_BU_CLOSE,::MyLoadString(IDS_DLG_ABOUT_BU_CLOSE));
+
+			wchar_t info[LOADSTRING_BUFFERSIZE] = {0};
+			StrCat(info,::MyLoadString(IDS_ProductName));StrCat(info,L"\r\n");
+			StrCat(info,::MyLoadString(IDS_ProductIntro));StrCat(info,L"\r\n");
+			StrCat(info,L"Author: ");
+			StrCat(info,::MyLoadString(IDS_ProductAuthor));StrCat(info,L"\r\n");
+			StrCat(info,L"Contact: ");
+			StrCat(info,::MyLoadString(IDS_ProductAuthorMail));StrCat(info,L"\r\n");
+			StrCat(info,L"Homepage: ");
+			StrCat(info,::MyLoadString(IDS_ProductHomepage));StrCat(info,L"\r\n");
+			SetDlgItemText(hwnd, IDC_ABOUT_INFO,info);
+
+			SendDlgItemMessage(hwnd, IDC_ABOUT_ICON, STM_SETIMAGE,IMAGE_ICON,(WPARAM)LoadIcon(g_hInst, MAKEINTRESOURCE(IDI_ICON)));
+
+			break;
+		}
+	case WM_COMMAND:
+		{
+			switch(LOWORD(wParam))     
+			{    
+			case IDC_ABOUT_BU_CLOSE:
+				DestroyWindow(hwnd);
+				break;
+			default:
+				break;
+			}
+		}
+		break;
+	case WM_DESTROY:     
+		{
+			PostQuitMessage(0);
+		}
+		break;
+	default:
+		break;
+	}
+
+	return (INT_PTR)FALSE;
 }

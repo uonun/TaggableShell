@@ -49,5 +49,10 @@ private:
 	UINT _dllRefCount;
 
 	// IContextMenu
-	HMENU _hSubmenu;	
+	HMENU _hSubmenu;
+
+	BOOL _contextMenuSupposed;
 };
+
+LRESULT CALLBACK DlgProc_TagManager(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam);
+LRESULT CALLBACK DlgProc_About(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam);
