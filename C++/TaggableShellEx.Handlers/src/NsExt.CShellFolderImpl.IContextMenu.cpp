@@ -20,20 +20,20 @@ HRESULT CShellFolderImpl::QueryContextMenu (
 	_hSubmenu = CreatePopupMenu();
 	UINT uIdx = 0;
 
-	for (unsigned int i = 0; i < this->TagHelper.TagCount; i++)
+	for (unsigned int i = 0; i < this->pTagHelper->TagCount; i++)
 	{
 		if(AppendMenu (
 			_hSubmenu,  
-			this->TagHelper.Tags[i].bAsso ? MF_BYPOSITION | MF_CHECKED : MF_BYPOSITION,
-			uidFirstCmd + i, this->TagHelper.Tags[i].Tag ))
+			this->pTagHelper->Tags[i].bAsso ? MF_BYPOSITION | MF_CHECKED : MF_BYPOSITION,
+			uidFirstCmd + i, this->pTagHelper->Tags[i].Tag ))
 		{
 			uIdx++;
 		}else{
-			::PrintLog(L"Fail to add tag into the submenu: %s",this->TagHelper.Tags[i]);
+			::PrintLog(L"Fail to add tag into the submenu: %s",this->pTagHelper->Tags[i]);
 		}
 	}
 
-	UINT _firstSpecialCmdID = uidFirstCmd + this->TagHelper.TagCount;
+	UINT _firstSpecialCmdID = uidFirstCmd + this->pTagHelper->TagCount;
 
 	// MF_BYCOMMAND  MF_BYPOSITION
 	InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION | MF_SEPARATOR, _firstSpecialCmdID , L"MF_SEPARATOR" );
@@ -64,16 +64,16 @@ HRESULT CShellFolderImpl::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* p
 	{
 		LPWSTR info = NULL;
 		if( _hSubmenu != NULL ){
-			if( idCmd < this->TagHelper.TagCount)
+			if( idCmd < this->pTagHelper->TagCount)
 			{
 				LPWSTR formater = ::MyLoadString(IDS_COMMANDSTRING_TAG);
 				wchar_t tmp[LOADSTRING_BUFFERSIZE] = {0};
-				wsprintf ( tmp,formater,this->TagHelper.Tags[idCmd].Tag );
+				wsprintf ( tmp,formater,this->pTagHelper->Tags[idCmd].Tag );
 				info = tmp;
 			}
 			else
 			{	
-				switch (idCmd - this->TagHelper.TagCount)
+				switch (idCmd - this->pTagHelper->TagCount)
 				{
 				case CMD_NEWTAG:
 					info = ::MyLoadString(IDS_COMMANDSTRING_CMD_NEWTAG);

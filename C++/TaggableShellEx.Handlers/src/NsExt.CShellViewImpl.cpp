@@ -13,6 +13,8 @@ CShellViewImpl::CShellViewImpl(void):
 	,m_uUIState(SVUIA_DEACTIVATE)
 {
 	::PrintLog(L"CShellViewImpl.ctor");
+
+	DllAddRef();
 }
 
 
@@ -26,17 +28,19 @@ CShellViewImpl::~CShellViewImpl(void)
 		m_psfContainingFolder = NULL;
 	}
 
+	if ( NULL != m_spShellBrowser )
+	{
+		m_spShellBrowser->Release();
+		m_spShellBrowser = NULL;
+	}
+
 	if ( NULL != _peb )
 	{
 		_peb->Destroy();
 		_peb = NULL;
 	}
 
-	if ( NULL != m_spShellBrowser )
-	{
-		m_spShellBrowser->Release();
-		m_spShellBrowser = NULL;
-	}
+	DllRelease();
 }
 
 HRESULT CShellViewImpl_CreateInstance(REFIID riid, void **ppv)
@@ -154,31 +158,33 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 	if (SUCCEEDED(hr))
 	{
 		IEnumIDList *pEnum = NULL;
-
 		CShellViewImpl * pthX = (CShellViewImpl*)pThis;
-		pthX->_isRefreshing = TRUE;
+	
+		try{
 
-		LPWSTR infoLoaded = 0;
-		BOOL isShowTag = pthX->IsShowTag();
-		if ( isShowTag )
-		{
-			infoLoaded = ::MyLoadString(IDS_MSG_NO_TAG_WITH_DETAIL);
-		}
-		else
-		{
-			LPWSTR currentTag = L"";
-			auto &data = pthX->m_psfContainingFolder->CurrentShellItemData;
-			if ( NULL != data )
+			pthX->AddRef();
+			pthX->_isRefreshing = TRUE;
+
+			LPWSTR infoLoaded = 0;
+			BOOL isShowTag = pthX->IsShowTag();
+			if ( isShowTag )
 			{
-				currentTag = data->wszDisplayName;
+				infoLoaded = ::MyLoadString(IDS_MSG_NO_TAG_WITH_DETAIL);
+			}
+			else
+			{
+				LPWSTR currentTag = L"";
+				auto &data = pthX->m_psfContainingFolder->CurrentShellItemData;
+				if ( NULL != data )
+				{
+					currentTag = data->wszDisplayName;
+				}
+
+				WCHAR tmp2[MAX_PATH];
+				wsprintf ( tmp2,::MyLoadString(IDS_MSG_NO_FILE_IN_TAG_WITH_DETAIL),currentTag);
+				infoLoaded = tmp2;
 			}
 
-			WCHAR tmp2[MAX_PATH];
-			wsprintf ( tmp2,::MyLoadString(IDS_MSG_NO_FILE_IN_TAG_WITH_DETAIL),currentTag);
-			infoLoaded = tmp2;
-		}
-
-		try{
 			pthX->_peb->SetEmptyText(infoLoaded);
 			pthX->_peb->RemoveAll();
 
@@ -248,22 +254,36 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 				pthX->m_spShellBrowser->SetStatusTextSB(tmp4);
 				UpdateWindow(pthX->m_hWnd);
 			}
+
+
+			UpdateWindow( pthX->m_hWnd );
+			SendMessage( pthX->m_hWnd,WM_SETREDRAW,TRUE,0);	// Restart redrawing to avoid flickering
+
+			// the calling application must free the returned IEnumIDList object by calling its Release method.
+			if ( NULL != pEnum )
+				pEnum->Release();
+
+			//pthX->HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
+
+			pthX->_isRefreshing = FALSE;
+			pthX->Release();
+
 		}
-		catch(int e)
+		catch(...)
 		{
-			// do nothing
+
+			UpdateWindow( pthX->m_hWnd );
+			SendMessage( pthX->m_hWnd,WM_SETREDRAW,TRUE,0);	// Restart redrawing to avoid flickering
+
+			// the calling application must free the returned IEnumIDList object by calling its Release method.
+			if ( NULL != pEnum )
+				pEnum->Release();
+
+			//pthX->HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
+
+			pthX->_isRefreshing = FALSE;
+			pthX->Release();
 		}
-
-		// the calling application must free the returned IEnumIDList object by calling its Release method.
-		if ( NULL != pEnum )
-			pEnum->Release();
-
-		UpdateWindow( pthX->m_hWnd );
-		SendMessage( pthX->m_hWnd,WM_SETREDRAW,TRUE,0);	// Restart redrawing to avoid flickering
-
-		pthX->HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
-
-		pthX->_isRefreshing = FALSE;
 
 		CoUninitialize();
 	}
@@ -361,6 +381,7 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 HRESULT CShellViewImpl::Init ( CShellFolderImpl* pContainingFolder )
 {
 	m_psfContainingFolder = pContainingFolder;
+	m_psfContainingFolder->AddRef();
 	return S_OK;
 }
 
@@ -379,7 +400,9 @@ BOOL CShellViewImpl::IsShowTag()
 void CShellViewImpl::FillList()
 {
 	if( !_isRefreshing )
+	{
 		_beginthreadex(0,0,FillList_Asyn,this,0,0);
+	}
 }
 
 void CShellViewImpl::HandleActivate ( UINT uState )

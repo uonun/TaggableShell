@@ -13,6 +13,8 @@ FormTagManager::FormTagManager(void):
 	,_msgColor(COLOR_MY_DEFAULT)
 {
 	::PrintLog(L"FormTagManager.ctor.");
+
+	DllAddRef();
 }
 
 
@@ -36,6 +38,8 @@ FormTagManager::~FormTagManager(void)
 			_sysImgList = NULL;
 		}
 	}
+
+	DllRelease();
 }
 
 // to keep the instance after the Form opend.
@@ -74,7 +78,7 @@ void FormTagManager::LoadTags(void)
 
 	ListView_DeleteAllItems(_hListTags);
 
-	auto &_tagHelper = _handler->TagHelper;
+	auto &_tagHelper = *_handler->pTagHelper;
 
 	// reload tags.
 	_tagHelper.LoadTags(true);
@@ -103,7 +107,7 @@ void FormTagManager::LoadSelectedFiles(void)
 
 	ListView_DeleteAllItems(_hListFiles);
 
-	auto &_tagHelper = _handler->TagHelper;
+	auto &_tagHelper = *_handler->pTagHelper;
 	if ( _tagHelper.FileCount > 0 )
 	{
 		LVITEM item = {0};
@@ -135,13 +139,13 @@ void FormTagManager::AddTag(void)
 	{
 		::PrintLog(L"Got new tag =[ %s ], adding to database.", key);
 		BOOL isAttchWithFilesChecked = Button_GetCheck(_hCheckAttachToFiles) == BST_CHECKED;
-		int count = isAttchWithFilesChecked ? _handler->TagHelper.FileCount : 0;
-		UINT TID = _handler->TagHelper.InsertTag(key,count); // not need to reload tags here, as they will be reloaded after be associated with files.
+		int count = isAttchWithFilesChecked ? _handler->pTagHelper->FileCount : 0;
+		UINT TID = _handler->pTagHelper->InsertTag(key,count); // not need to reload tags here, as they will be reloaded after be associated with files.
 		if( TID != DB_RECORD_NOT_EXIST )
 		{
 			if( isAttchWithFilesChecked )
 			{
-				_handler->TagHelper.SetTagByRecordId(TID);
+				_handler->pTagHelper->SetTagByRecordId(TID);
 			}
 
 			LoadTags();
@@ -209,7 +213,7 @@ void FormTagManager::DelTags(void)
 		int result = MessageBox(_hwnd,msg,::MyLoadString(IDS_MSGBOX_CAPTION_WARNING),MB_YESNO|MB_ICONWARNING|MB_DEFBUTTON1);
 		if( IDYES == result )
 		{
-			this->_handler->TagHelper.DeleteTags(selectedTags,count);
+			this->_handler->pTagHelper->DeleteTags(selectedTags,count);
 			LoadTags();
 		}
 		else
@@ -235,7 +239,7 @@ BOOL FormTagManager::IsNewTagOk(_Out_ wchar_t* key,_Out_  UINT & keyLength)
 	if( keyLength > 0 )
 	{
 		LPCWSTR tmp = key;
-		auto &_tagHelper = _handler->TagHelper;
+		auto &_tagHelper = *_handler->pTagHelper;
 		result = !_tagHelper.IsTagExists(tmp);
 	}
 
@@ -260,7 +264,7 @@ void FormTagManager::InitText()
 
 	LPWSTR tmpFormater = ::MyLoadString(IDS_DLG_TAGMANAGER_CHECKBOX_ATTACHNEWTAGTOFILE);
 	wchar_t str[LOADSTRING_BUFFERSIZE];
-	wsprintf ( str,tmpFormater,this->_handler->TagHelper.FileCount );
+	wsprintf ( str,tmpFormater,this->_handler->pTagHelper->FileCount );
 	SetDlgItemText(_hwnd, IDC_TAGMANAGER_CHECK_AttachNewTagToFiles,str);
 
 	SetDlgItemText(_hwnd, IDC_TAGMANAGER_BU_EDIT,::MyLoadString(IDS_DLG_TAGMANAGER_BU_EDIT));
@@ -317,13 +321,13 @@ void FormTagManager::GetListColValue_Tags(NMLVDISPINFO* & plvdi)
 	{
 	case 0:
 		{
-			plvdi->item.pszText = _handler->TagHelper.Tags[plvdi->item.iItem].Tag;
+			plvdi->item.pszText = _handler->pTagHelper->Tags[plvdi->item.iItem].Tag;
 			plvdi->item.iImage = 0;
 		}
 		break;
 
 	case 1:
-		_itow_s((int) _handler->TagHelper.Tags[plvdi->item.iItem].UseCount,plvdi->item.pszText,10,10);
+		_itow_s((int) _handler->pTagHelper->Tags[plvdi->item.iItem].UseCount,plvdi->item.pszText,10,10);
 		break;
 
 	default:
@@ -337,7 +341,7 @@ void FormTagManager::GetListColValue_Files(NMLVDISPINFO* & plvdi)
 	{
 	case 0:
 		{
-			LPWSTR fileName = _handler->TagHelper.TargetFileNames[plvdi->item.iItem];
+			LPWSTR fileName = _handler->pTagHelper->TargetFileNames[plvdi->item.iItem];
 			auto imgIdx = GetImgIdxInList(fileName);
 			plvdi->item.pszText = fileName;
 			plvdi->item.iImage = imgIdx;

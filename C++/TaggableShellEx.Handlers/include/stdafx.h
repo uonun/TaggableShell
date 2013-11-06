@@ -32,6 +32,8 @@
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
 processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
+#define _DELETE(obj) if (obj != NULL) {delete obj , obj = NULL;}
+
 using namespace std;
 using namespace std::tr2::sys;
 
@@ -42,9 +44,23 @@ for the CLSIDs: ASCII(C2DEBAE9C1D6) = Author
 #define CLSID_CShellFolderImpl			"8F08EB60-3F01-1982-0805-C2DEBAE9C1D6"
 #define CLSID_CShellViewImpl			"8F08EB61-3F01-1982-0805-C2DEBAE9C1D6"
 
+
+#ifdef LOG	// the global switch of log
+#ifndef SIMPLELOG
+#define SIMPLELOG
+#endif
+
+
 #ifdef LOG4CPP
+
+// log4cpp need this
+#ifndef WIN32
+#define WIN32
+#endif
+
 #pragma comment(lib, "log4cpp.lib")
 #define LOG_FILENAME					L"TaggableShell.log"
+#endif
 #endif
 
 
@@ -85,7 +101,7 @@ extern WCHAR g_DllDirectory[MAX_PATH];
 extern WCHAR g_DllFullName[MAX_PATH];
 extern WCHAR g_ProfileDirectory[MAX_PATH];
 extern WCHAR g_UserDb[MAX_PATH];
+extern WCHAR g_LogDirectory[MAX_PATH];
 #ifdef LOG4CPP
 extern WCHAR g_LogFullName[MAX_PATH];
-extern WCHAR g_LogDirectory[MAX_PATH];
 #endif

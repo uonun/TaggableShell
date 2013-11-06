@@ -90,6 +90,9 @@
     <ClCompile Include="src\NsExt.CShellFolderImpl.IExtractIcon.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\Log.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite-201310070036\src\sqlite3.h">
@@ -135,6 +138,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\RegisterExtension.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Log.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

@@ -239,7 +239,8 @@ STDMETHODIMP 	CShellViewImpl::GetItemObject(UINT uItem, REFIID riid, void** ppv)
 	if ( IID_IDispatch == riid )
 	{
 		// 
-	}else
+	}
+	else
 	{
 		// 
 	}

@@ -118,7 +118,7 @@ public:
 	// Init function - call right after constructing a CShellFolderImpl object.
 	HRESULT Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current );
 
-	CTaghelper TagHelper;
+	CTaghelper* pTagHelper;
 
 	// current shell item data. (m_PIDLCurrent)
 	MYPIDLDATA* CurrentShellItemData;
@@ -137,6 +137,5 @@ private:
 	// IContextMenu
 	HMENU _hSubmenu;	
 	CPidlMgr m_PidlMgr;
-	IShellView* _pView;
 	PIDLIST_RELATIVE  m_PIDLCurrent;		 // relevant location to the folder
 };

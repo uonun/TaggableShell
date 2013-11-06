@@ -30,7 +30,7 @@ public:
 	STDMETHODIMP AddPages(LPFNADDPROPSHEETPAGE lpfnAddPage, LPARAM lParam);
 	STDMETHODIMP ReplacePage(UINT uPageID,LPFNADDPROPSHEETPAGE pfnReplacePage,LPARAM lParam){ return E_NOTIMPL; }
 
-	CTaghelper TagHelper;
+	CTaghelper* pTagHelper;
 	UINT	   FileCount;
 
 	HWND _hdlg;

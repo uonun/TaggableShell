@@ -8,8 +8,11 @@ CHandler::CHandler() :
 	,_hSubmenu(NULL) // IContextMenu
 	,_hdlg(NULL)
 	,FileCount(0)
+	,pTagHelper(NULL)
 {
 	::PrintLog(L"CHandler.ctor");
+
+	pTagHelper = CTaghelper::instance();
 
 	for (UINT i = 0; i < FileCount; i++)
 	{
@@ -27,8 +30,7 @@ CHandler::~CHandler(void)
 		for (UINT i = 0; i < FileCount; i++)
 		{
 			if ( m_szFiles[i] != NULL ){
-				delete m_szFiles[i];
-				m_szFiles[i] = NULL;
+				_DELETE(m_szFiles[i]);
 			}
 		}
 	}
@@ -133,10 +135,10 @@ HRESULT CHandler::Initialize(LPCITEMIDLIST pIDFolder,
 					DragQueryFile((HDROP)medium.hGlobal, i, m_szFiles[i], MAX_PATH * sizeof(TCHAR));
 				}
 
-				if ( this->TagHelper.OpenDb() )
+				if ( this->pTagHelper->OpenDb() )
 				{
-					this->TagHelper.SetCurrentFiles(m_szFiles,FileCount);
-					this->TagHelper.LoadTags();
+					this->pTagHelper->SetCurrentFiles(m_szFiles,FileCount);
+					this->pTagHelper->LoadTags(true);
 
 					hr = S_OK;
 				}

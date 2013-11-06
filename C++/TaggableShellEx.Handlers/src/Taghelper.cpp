@@ -12,6 +12,8 @@ const LPSTR sSQL_CLEARNUP
 	  UPDATE [TAGS] SET [USECOUNT]=(SELECT COUNT(*) FROM [ASSO_FILE_TAG] A WHERE A.[TAGID]=[TAGS].[ID]);\
 	  ";
 
+CTaghelper* CTaghelper::p_instance_ = NULL;
+
 CTaghelper::CTaghelper(void): 
 	_cached(false)
 	,TagCount(0),FileCount(0)
@@ -23,13 +25,16 @@ CTaghelper::CTaghelper(void):
 	for each (LPSTR var in _targetFileNamesInSQL) { var = NULL; }
 	for each (TAG4FILE var in Tags) {
 		var.bAsso= false; 
-		var.Tag = NULL;
+		memset(var.Tag,0,ARRAYSIZE(var.Tag));
 		var.TagID = 0;
 		var.TagIdx = 0;
 		var.UseCount = 0;
 	}
 
-	::WStr2Str(g_UserDb,_dbFile);
+	LPSTR tmp;
+	::WStr2Str(g_UserDb,tmp);
+	StrCatA(_dbFile,tmp);
+	_DELETE( tmp );
 }
 
 
@@ -37,30 +42,30 @@ CTaghelper::~CTaghelper(void)
 {
 	::PrintLog(L"CTaghelper.~ctor");
 
-	// new by ::WStr2Str in ctor, so need to delete manual.
-	delete _dbFile;
-	_dbFile = NULL;
-
-	for (UINT i = 0; i < TagCount; i++)
-	{
-		if(NULL !=Tags[i].Tag)
+	try{
+		for (UINT i = 0; i < FileCount; i++)
 		{
-			delete Tags[i].Tag;
-			Tags[i].Tag = NULL;
+			if(NULL !=TargetFileNames[i])
+			{
+				_DELETE(TargetFileNames[i]);
+			}
 		}
-	}
+	}catch(...)
+	{}
 
-	for (UINT i = 0; i < FileCount; i++)
-	{
-		if(NULL !=_targetFileNamesInSQL[i])
+	try{
+		for (UINT i = 0; i < FileCount; i++)
 		{
-			delete _targetFileNamesInSQL[i];
-			_targetFileNamesInSQL[i] = NULL;
+			if(NULL !=_targetFileNamesInSQL[i])
+			{
+				_DELETE(_targetFileNamesInSQL[i]);
+			}
 		}
-	}
+	}catch(...)
+	{}
 
 	sqlite3_close(_db);  
-	_db = NULL; 
+	_db = NULL;
 }
 
 BOOL CTaghelper::OpenDb()
@@ -94,7 +99,10 @@ int _callback_exec_load_tags(void * tagHelper,int argc, char ** argv, char ** as
 		tag.TagID = atoi(argv[0]);
 		tag.TagIdx = h->TagCount;
 		tag.UseCount = atoi(argv[2]);
-		::Str2WStr(argv[1],tag.Tag);
+		LPWSTR tmpTag;
+		::Str2WStr(argv[1],tmpTag);
+		memcpy(tag.Tag,tmpTag,ARRAYSIZE(tag.Tag));
+		delete tmpTag;
 
 		::PrintLog( L"Got tag: %s",tag.Tag );
 
@@ -116,28 +124,15 @@ void CTaghelper::SetCurrentFiles(LPWSTR* ppv,const int count)
 	{
 		for (int i = 0; i < count; i++)
 		{
-			TargetFileNames[i] = ppv[i];
-
-			//HRESULT hr = _targetShellItem->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING,(LPWSTR*)&_targetFileName);
-			/*
-			SIGDN_NORMALDISPLAY:				新建文本文档.txt
-			SIGDN_PARENTRELATIVEPARSING:		新建文本文档.txt
-			SIGDN_DESKTOPABSOLUTEPARSING:		E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
-			SIGDN_PARENTRELATIVEEDITING:		新建文本文档.txt
-			SIGDN_DESKTOPABSOLUTEEDITING:		E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
-			SIGDN_FILESYSPATH:					E:\Works\UDNZ\udnz.com.ShellEx.TaggableShell\C++\_Debug\x64\新建文本文档.txt
-			SIGDN_URL:							file:///E:/Works/UDNZ/udnz.com.ShellEx.TaggableShell/C++/_Debug/x64/新建文本文档.txt
-			SIGDN_PARENTRELATIVEFORADDRESSBAR:	新建文本文档.txt
-			SIGDN_PARENTRELATIVE:				新建文本文档.txt
-			SIGDN_PARENTRELATIVEFORUI:			新建文本文档.txt
-			*/
-
+			TargetFileNames[i] = new wchar_t[MAXLENGTH_SQL]; // will be deleted in ~ctor.
 			_targetFileNamesInSQL[i] = new char[MAXLENGTH_SQL]; // will be deleted in ~ctor.
+
+			StrCpy(TargetFileNames[i],ppv[i]);
 
 			::UnicodeToANSI(TargetFileNames[i],_targetFileNamesInSQL[i]);
 			string s(_targetFileNamesInSQL[i]);
 			::replace_all_distinct(s,"'","''");
-			memcpy(_targetFileNamesInSQL[i],s.c_str(),s.length());
+			StrCpyA(_targetFileNamesInSQL[i],s.c_str());
 		}
 	}
 	return;
@@ -186,6 +181,7 @@ void CTaghelper::LoadTags(bool ignoreCache)
 			::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
 			sqlite3_free(pErrMsg);  
 		}
+
 		_cached = true;
 	}
 }
@@ -195,6 +191,8 @@ HRESULT CTaghelper::SetTagByRecordId(UINT & tagIdInDb)
 	_ASSERT_EXPR( tagIdInDb > 0,L"tagIdInDb must be greater than 0.");
 
 	HRESULT hr = S_FALSE;
+
+	LoadTags(true);
 
 	TAG4FILE * currentTag = NULL;
 	for (UINT i = 0; i < TagCount; i++)
@@ -292,6 +290,7 @@ HRESULT CTaghelper::SetTagByRecordId(UINT & tagIdInDb)
 			}
 		}
 
+		_cached = false;	// reload tags.
 		hr = S_OK;
 
 	}else{
@@ -407,7 +406,7 @@ UINT CTaghelper::GetTagID(LPWSTR & tag)
 
 UINT CTaghelper::InsertFile(LPWSTR & targetFile)
 {
-	_ASSERT_EXPR(NULL != targetFile,"_targetFile could not be NULL");
+	_ASSERT_EXPR(NULL != targetFile,L"_targetFile could not be NULL");
 
 	char tmp[MAX_PATH] = {0};
 	::UnicodeToANSI(targetFile,tmp);
@@ -428,7 +427,7 @@ UINT CTaghelper::InsertFile(LPWSTR & targetFile)
 	// get file full name for sql, replace ' to ''
 	char targetFileInSQL[MAX_PATH] = {0};
 	::UnicodeToANSI(targetFile,targetFileInSQL);
-	_ASSERT_EXPR(NULL != targetFileInSQL,"_targetFileInSQL could not be NULL");
+	_ASSERT_EXPR(NULL != targetFileInSQL,L"_targetFileInSQL could not be NULL");
 	string s(targetFileInSQL);
 	::replace_all_distinct(s,"'","''");
 	memcpy(targetFileInSQL,s.c_str(),s.length());
@@ -527,8 +526,7 @@ UINT CTaghelper::InsertTag(LPWSTR & newTag, const int useCount)
 
 		sqlite3_free_table(pazResult);
 
-		// reload tags.
-		LoadTags(true);
+		_cached = false;	// reload tags.
 	}
 
 	return id;
@@ -572,8 +570,7 @@ void CTaghelper::DeleteTags(wchar_t tags[MAXCOUNT_TAG][MAXLENGTH_EACHTAG], const
 	}
 	else
 	{
-		// reload tags.
-		LoadTags(true);
+		_cached = false;	// reload tags.
 	}
 }
 
@@ -653,47 +650,4 @@ HRESULT CTaghelper::GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagI
 
 	return S_OK;
 }
-/*
-写文件
-wofstream f;
-f.imbue(locale( "", locale::all ^ locale::numeric));  
-f.open("E:\\Works\\UDNZ\\udnz.com.ShellEx.TaggableShell\\C++\\_Debug\\x64\\1.d",ios::out|ios::binary,_SH_DENYNO);
-f << "IShellItem:" << name;
-f.close();
-*/
 
-
-
-/*
-按行读取文件
-_pfile->open(g_TagsFullName,ios::in,_SH_DENYNO);
-if(!_pfile->fail())
-{	
-TagCount = 0;
-int maxloop = 1000;
-const int buffLen = TAG_LENGTH * 10;
-while(_pfile->peek() != EOF && maxloop-- > 0)
-{
-char tmp[buffLen];
-memset(tmp,0,sizeof(tmp) * sizeof(char));
-_pfile->getline(tmp,buffLen,'\n');
-
-if(tmp[0]!='\0'){
-Tags[TagCount] = new wchar_t[TAG_LENGTH];
-memset(Tags[TagCount],0,TAG_LENGTH * sizeof(wchar_t));
-
-DWORD dwNum = MultiByteToWideChar(CP_UTF8,NULL,tmp,-1,NULL,0);
-if(dwNum > 0){
-MultiByteToWideChar(CP_UTF8,NULL,tmp,-1,Tags[TagCount],TAG_LENGTH);
-Tags[TagCount][TAG_LENGTH] = '\0'; // end the string. in case of the string "tmp" is null-terminated.
-TagCount++;
-}
-
-if(TagCount>= MAXCOUNT_TAG)
-break;
-}
-}
-_cached = true;
-}
-_pfile->close();
-*/

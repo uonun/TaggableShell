@@ -5,10 +5,12 @@ CShellFolderImpl::CShellFolderImpl(void):
 	_cRef(1) // IUnknown
 	,m_pIDFolder(NULL),m_PIDLCurrent(NULL)
 	,_hSubmenu(NULL)
-	,_pView(NULL)
 	,CurrentShellItemData(NULL)
+	,pTagHelper(NULL)
 {
 	::PrintLog(L"CShellFolderImpl.ctor");
+
+	pTagHelper = CTaghelper::instance();
 
 	DllAddRef();
 }
@@ -22,12 +24,6 @@ CShellFolderImpl::~CShellFolderImpl(void)
 	{
 		DestroyMenu ( _hSubmenu );
 		_hSubmenu = NULL;
-	}
-
-	if ( NULL != _pView )
-	{
-		_pView->Release();
-		_pView = NULL;
 	}
 
 	DllRelease();
@@ -54,7 +50,7 @@ IFACEMETHODIMP CShellFolderImpl::QueryInterface(REFIID riid, void ** ppv)
 	{
 		QITABENT(CShellFolderImpl, IExtractIcon),
 		QITABENT(CShellFolderImpl, IContextMenu),
-		QITABENT(CShellFolderImpl, IQueryInfo),
+		//QITABENT(CShellFolderImpl, IQueryInfo),
 		QITABENT(CShellFolderImpl, IShellFolder),
 		QITABENT(CShellFolderImpl, IPersistFolder),
 		{0},

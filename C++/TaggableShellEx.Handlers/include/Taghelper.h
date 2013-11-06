@@ -14,15 +14,12 @@ typedef struct tagTAG4FILE
 	UINT TagID;		// the ID of current tag in database.
 	UINT TagIdx;	// the index of current tag in CTaghelper::Tags
 	UINT UseCount;	// the count of files associated with current tag.
-	LPWSTR Tag;		// the name of current tag in database.
+	WCHAR Tag[MAXLENGTH_EACHTAG];		// the name of current tag in database.
 }TAG4FILE,*LPTAG4FILE;
 
 class CTaghelper
 {
 public:
-	CTaghelper(void);
-	virtual ~CTaghelper(void);
-
 	BOOL OpenDb();
 
 	void SetCurrentFiles(LPWSTR* ppv,const int count);
@@ -40,7 +37,7 @@ public:
 
 	BOOL IsAsso(LPCWSTR file, LPCWSTR tag);
 	BOOL IsTagExists(LPCWSTR & tag);
-	
+
 	UINT GetFileID(LPSTR* fileNameInSQL);				// return DB_RECORD_NOT_EXIST if fail
 	UINT GetTagID(LPWSTR & tag);						// return DB_RECORD_NOT_EXIST if fail
 	UINT InsertFile(LPWSTR & targetFile);				// return DB_RECORD_NOT_EXIST if fail
@@ -50,12 +47,32 @@ public:
 
 	HRESULT GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagIdInDb);
 
-private:
+#pragma region singleton
+public:
+	static CTaghelper *instance () 
+	{ 
+		if (0 == p_instance_) { 
+			static CTaghelper instance; 
+			p_instance_ = &instance; 
+		} 
+		return p_instance_; 
+	} 
+
+
+private :
+	CTaghelper();
+	~CTaghelper();
+
+	// use instance() instead!
+	static CTaghelper *p_instance_; 
+
+#pragma endregion
+
+private :
 	bool _cached;									// does tags loaded from database cached.
 	LPSTR _targetFileNamesInSQL[MAXCOUNT_SELECTED_ITEM];		// the file full path of target item with "'" replaced to "''" for SQL.
 
 	sqlite3 * _db;
-	LPSTR _dbFile;
-
+	CHAR _dbFile[MAX_PATH];
 };
 

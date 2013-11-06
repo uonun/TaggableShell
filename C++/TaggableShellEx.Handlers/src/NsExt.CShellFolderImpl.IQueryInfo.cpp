@@ -5,6 +5,6 @@
 HRESULT CShellFolderImpl::GetInfoTip(DWORD dwFlags, PWSTR *ppwszTip)
 {
 	ppwszTip = (PWSTR*)CoTaskMemAlloc(12);
-	memcpy(ppwszTip,L"SDFSDF",12);
+	memcpy(ppwszTip,L"SDFSDF",7);
 	return S_OK;
 }

@@ -28,13 +28,13 @@ long g_cRefModule = 0;
 
 // Handle the the DLL's module
 HINSTANCE g_hInst = NULL;
-WCHAR g_DllFullName[MAX_PATH];
-WCHAR g_DllDirectory[MAX_PATH];
-WCHAR g_ProfileDirectory[MAX_PATH];
-WCHAR g_UserDb[MAX_PATH];
+WCHAR g_DllFullName[MAX_PATH] = {0};
+WCHAR g_DllDirectory[MAX_PATH] = {0};
+WCHAR g_ProfileDirectory[MAX_PATH] = {0};
+WCHAR g_UserDb[MAX_PATH] = {0};
+WCHAR g_LogDirectory[MAX_PATH] = {0};
 
 #ifdef LOG4CPP
-WCHAR g_LogDirectory[MAX_PATH];
 WCHAR g_LogFullName[MAX_PATH];
 #endif
 ///////////////////////////////////////////////////////////////////////////
@@ -48,15 +48,19 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 	GetModuleFileName(hInstance,g_DllFullName, sizeof(g_DllFullName) / sizeof(g_DllFullName[0]) - 1);
 	std::tr2::sys::wpath p(g_DllFullName);
 	wpath dir = p.parent_path();
-	wsprintf ( g_DllDirectory, L"%s", dir.string().c_str() );
+	StrCpy(g_DllDirectory,dir.string().c_str() );
+
+	WCHAR tmp_g_LogDirectory[MAX_PATH] = {0};
+	wsprintf ( tmp_g_LogDirectory, L"%s/%s\0", g_DllDirectory,FOLDER_LOG );
+	std::tr2::sys::wpath p_g_LogDirectory(tmp_g_LogDirectory); 
+	StrCpy(g_LogDirectory,p_g_LogDirectory.directory_string().c_str()); // change the "/" to "\"
 
 #ifdef LOG4CPP
-	wsprintf ( g_LogDirectory, L"%s/%s\0", g_DllDirectory,FOLDER_LOG );
-	wsprintf ( g_LogFullName, L"%s/%s\0",g_LogDirectory,LOG_FILENAME );
-	::Replace(g_LogFullName,'/','\\');
+	wsprintf ( g_LogFullName, L"%s\\%s\0",g_LogDirectory,LOG_FILENAME );
+
 	OutputDebugString(L"Log file: ");
 	OutputDebugString(g_LogFullName);
-	OutputDebugString(L"\n");
+	OutputDebugString(L"\r\n");
 #endif
 
 	if (dwReason == DLL_PROCESS_ATTACH)
@@ -75,7 +79,7 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 			)
 		{
 			::PrintLog(L"===================================================================================================");
-			::PrintLog(L"DllMain, dwReason = %d. (DLL_PROCESS_DETACH = 0, DLL_PROCESS_ATTACH = 1, DLL_THREAD_ATTACH = 2, DLL_THREAD_DETACH = 3)",dwReason);
+			::PrintLog(L"DllMain, DLL_PROCESS_ATTACH");
 			::PrintLog(L"OS Version: %s", GetOSVersionStr());
 			::PrintLog(L"	g_DllDirectory:			%s",g_DllDirectory);
 			::PrintLog(L"	g_DllFullName:			%s",g_DllFullName);
@@ -85,16 +89,34 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 			::PrintLog(L"	g_LogDirectory:			%s",g_LogDirectory);
 			::PrintLog(L"	g_LogFullName:			%s",g_LogFullName);
 #endif
+
 			g_hInst = hInstance;
-			DisableThreadLibraryCalls(hInstance);
+			DisableThreadLibraryCalls(hInstance);			
 		}
 		else
 		{
-			// Failed to create log directory.
+			// Failed to create log/profile directory.
 			return FALSE;
 		}
-	}else{
-		::PrintLog(L"DllMain Exit.\r\n\r\n\r\n",dwReason);
+	}
+	else if( dwReason == DLL_THREAD_ATTACH)
+	{
+		::PrintLog(L"DllMain Exit, DLL_THREAD_ATTACH.\r\n\r\n\r\n");
+		DllAddRef();
+	}
+	else if( dwReason == DLL_THREAD_DETACH)
+	{
+		::PrintLog(L"DllMain Exit, DLL_THREAD_DETACH.\r\n\r\n\r\n");
+		DllRelease();
+	}
+	else if( dwReason == DLL_PROCESS_DETACH)
+	{
+		::PrintLog(L"DllMain Exit, DLL_PROCESS_DETACH.\r\n\r\n\r\n");
+		DllRelease();
+	}
+	else
+	{
+		::PrintLog(L"DllMain, dwReason = %d. (DLL_PROCESS_DETACH = 0, DLL_PROCESS_ATTACH = 1, DLL_THREAD_ATTACH = 2, DLL_THREAD_DETACH = 3)",dwReason);
 	}
 	return TRUE;
 }
@@ -145,7 +167,6 @@ public:
 
 	CClassFactory(PFNCREATEINSTANCE pfnCreate) : _cRef(1), _pfnCreate(pfnCreate)
 	{
-		::PrintLog(L"CClassFactory.ctor");
 		DllAddRef();
 	}
 
@@ -197,8 +218,6 @@ public:
 private:
 	~CClassFactory()
 	{
-		::PrintLog(L"CClassFactory.~ctor");
-
 		DllRelease();
 	}
 
@@ -215,8 +234,6 @@ STDAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void **ppv)
 
 STDAPI DllRegisterServer()
 {	
-	::PrintLog(L"DllRegisterServer");
-
 	HRESULT hr = S_FALSE;
 
 	// buffer for strings to Register.
@@ -316,8 +333,6 @@ STDAPI DllRegisterServer()
 
 STDAPI DllUnregisterServer()
 {
-	::PrintLog(L"DllUnregisterServer");
-
 	HRESULT hr = S_FALSE;
 
 #pragma region unregister namespace extension

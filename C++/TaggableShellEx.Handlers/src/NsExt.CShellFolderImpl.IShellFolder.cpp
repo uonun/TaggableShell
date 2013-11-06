@@ -52,7 +52,7 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	void **ppv
 	)
 {
-	// TODO: THERE MUST BE A BUG THAT IShellView* WILL NOT BE RELEASED AFTER THE SHELL FOLDER CLOSED!!
+	// TODO: THERE MAY BE A BUG THAT IShellView* WILL NOT BE RELEASED AFTER THE SHELL FOLDER CLOSED!!
 	/*
 	riid = 
 	{IID_IConnectionFactory}
@@ -73,19 +73,18 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	{
 		::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IShellView");
 
-		if ( NULL == _pView )
-		{
-			hr = CoCreateInstance(__uuidof(CShellViewImpl), NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&_pView)); 
+		CShellViewImpl* v;
+		hr = CoCreateInstance(__uuidof(CShellViewImpl), NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS((IShellView**)&v)); 
 
-			if ( FAILED(hr) )
-				return hr;
+		if ( FAILED(hr) )
+			return hr;
 
-			// Object initialization - pass the object its containing folder (this).
-			hr = ((CShellViewImpl*)_pView)->Init ( this );
-		}
-
+		// Object initialization - pass the object its containing folder (this).
+		hr = ((CShellViewImpl*)v)->Init ( this );
 		// Return the requested interface back to the shell.
-		hr = _pView->QueryInterface ( riid, ppv );
+		hr = v->QueryInterface ( riid, ppv );
+		v->Release();
+
 	}
 #ifdef _DEBUG
 	else if ( IID_IDropTarget == riid)
@@ -161,18 +160,16 @@ HRESULT CShellFolderImpl::EnumObjects(
 		|| 0 == (grfFlags & SHCONTF_NAVIGATION_ENUM	)							// list the details when opening from IExplorerBrowser
 		)
 	{
-		if ( this->TagHelper.OpenDb() )
+		if ( this->pTagHelper->OpenDb() )
 		{
-			this->TagHelper.LoadTags();
+			this->pTagHelper->LoadTags();
 		}
-
-		GlobalLock((HGLOBAL)pEnum);
 
 		if ( isShowFilesInTag )
 		{
 			LPWSTR *files = new LPWSTR[MAXCOUNT_TOTAL_ITEMS];
 			UINT count = 0;
-			TagHelper.GetFilesByTagID(files,count,CurrentShellItemData->TagID);
+			pTagHelper->GetFilesByTagID(files,count,CurrentShellItemData->TagID);
 			for (UINT i = 0; i < count; i++)
 			{
 				MYPIDLDATA d = {sizeof(MYPIDLDATA)};
@@ -187,21 +184,19 @@ HRESULT CShellFolderImpl::EnumObjects(
 		else
 		{
 			// TODO: make sure the tag could not be expanded in the tree on the left side.
-			for (UINT i = 0; i < TagHelper.TagCount; i++)
+			for (UINT i = 0; i < pTagHelper->TagCount; i++)
 			{
 				MYPIDLDATA d = {sizeof(MYPIDLDATA)};
 				d.cb = sizeof(MYPIDLDATA);
 				d.Type = MYSHITEMTYPE_TAG;
-				d.TagID = TagHelper.Tags[i].TagID;
-				d.TagIdx = TagHelper.Tags[i].TagIdx;
-				d.UseCount = TagHelper.Tags[i].UseCount;
-				StringCbCopyW(d.wszDisplayName,sizeof(d.wszDisplayName), TagHelper.Tags[i].Tag);
+				d.TagID = pTagHelper->Tags[i].TagID;
+				d.TagIdx = pTagHelper->Tags[i].TagIdx;
+				d.UseCount = pTagHelper->Tags[i].UseCount;
+				StringCbCopyW(d.wszDisplayName,sizeof(d.wszDisplayName), pTagHelper->Tags[i].Tag);
 
 				items.push_back(d);
 			}
 		}
-
-		GlobalUnlock((HGLOBAL)pEnum);
 	}
 
 	pEnum->Init(m_pIDFolder,items);

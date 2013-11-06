@@ -1,3 +1,4 @@
+#pragma once
 #include "../include/Utils.h"
 
 #ifdef LOG4CPP
@@ -7,9 +8,13 @@
 #include "log4cpp/Priority.hh"
 #include "log4cpp/PatternLayout.hh"
 using namespace log4cpp;
+#else
+#ifdef SIMPLELOG
+#include "../include/Log.h"
+#else
+//
 #endif
-
-static wchar_t LogBuffer[LOADSTRING_BUFFERSIZE] = {0};
+#endif
 
 wchar_t * MyLoadString(__in UINT uID){
 	static wchar_t buffer[LOADSTRING_BUFFERSIZE];
@@ -44,6 +49,7 @@ void WStr2Str(const LPWSTR & s1,LPSTR & result)
 	}
 }
 
+static wchar_t LogBuffer[LOADSTRING_BUFFERSIZE] = {0};
 void __print_log_core()
 {
 	// http://www.tutorialspoint.com/cplusplus/cpp_date_time.htm
@@ -54,9 +60,10 @@ void __print_log_core()
 
 	StrCat(buffer,LogBuffer);
 	StrCat(buffer,L"\r\n");
-
 	OutputDebugString(buffer);
 
+#pragma region write log
+#ifdef LOG
 #ifdef LOG4CPP
 	if(CreateDirectory(g_LogDirectory, NULL) || ERROR_ALREADY_EXISTS == GetLastError())
 	{
@@ -64,18 +71,19 @@ void __print_log_core()
 		//std::string的目标
 		std::string szDst; 
 		//WideCharToMultiByte的运用 
-		DWORD dwNum = WideCharToMultiByte(CP_OEMCP,NULL,buf,-1,NULL,0,NULL,FALSE);
+		DWORD dwNum = WideCharToMultiByte(CP_OEMCP,NULL,buffer,-1,NULL,0,NULL,FALSE);
 		//psText为char*的临时数组，作为赋值给std::string的中间变量 
 		char *psText;
 		psText = new char[dwNum];
 		// WideCharToMultiByte的再次运用 
-		WideCharToMultiByte (CP_OEMCP,NULL,buf,-1,psText,dwNum,NULL,FALSE);
+		WideCharToMultiByte (CP_OEMCP,NULL,buffer,-1,psText,dwNum,NULL,FALSE);
 		//std::string赋值 
 		szDst = psText; //大功告成
 		//psText的清除 
 		delete []psText;
 
-		auto logPath = ::UnicodeToANSI(g_LogFullName);
+		char logPath[MAX_PATH];
+		::UnicodeToANSI(g_LogFullName,logPath);
 		log4cpp::Category &_log = log4cpp::Category::getRoot();
 		log4cpp::RollingFileAppender* osAppender = new log4cpp::RollingFileAppender("TaggableShell_Logs",logPath);
 		log4cpp::PatternLayout* pLayout = new log4cpp::PatternLayout();
@@ -88,8 +96,45 @@ void __print_log_core()
 		_log.debug(szDst);
 		log4cpp::Category::shutdown();    
 	}
-#endif
+#else
+#ifdef SIMPLELOG
+	char logMsg[LOADSTRING_BUFFERSIZE];
+	::UnicodeToANSI(buffer,logMsg);
 
+	char logDirectory[MAX_PATH];
+	::UnicodeToANSI(g_LogDirectory,logDirectory);
+
+	Log mainLog;  
+	mainLog.CommonLogInit(string(logDirectory)); 
+	mainLog.LogOutLn(logMsg);
+#else
+	HANDLE h; 
+	if ((h = RegisterEventSource(NULL,L"TaggableShellEx")) == NULL)
+	{ 
+		return ;
+	}
+
+	const wchar_t* ps = buffer;
+	WORD wType=EVENTLOG_INFORMATION_TYPE;
+	DWORD dwID=5001;
+	int iStr = 1;
+	BOOL bRet;
+	if (h) 
+	{
+		bRet=::ReportEvent(h,
+			wType,
+			0,
+			dwID,
+			NULL, // sid
+			iStr,
+			0,
+			&ps,
+			NULL);
+	}
+#endif
+#endif
+#endif
+#pragma endregion
 }
 // Print logs, depends on g_LogDirectory, g_LogFullName
 void PrintLog(const char *format, ...)
@@ -102,7 +147,7 @@ void PrintLog(const char *format, ...)
 
 	wchar_t *f = LogBuffer;
 	UTF8ToUnicode(buf,f);
-	
+
 	__print_log_core();
 }
 

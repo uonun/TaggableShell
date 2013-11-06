@@ -21,20 +21,20 @@ HRESULT CHandler::QueryContextMenu (
 	_hSubmenu = CreatePopupMenu();
 	UINT uIdx = 0;
 
-	for (unsigned int i = 0; i < this->TagHelper.TagCount; i++)
+	for (unsigned int i = 0; i < this->pTagHelper->TagCount; i++)
 	{
 		if(AppendMenu (
 			_hSubmenu,  
-			this->TagHelper.Tags[i].bAsso ? MF_BYPOSITION | MF_CHECKED : MF_BYPOSITION,
-			uidFirstCmd + i, this->TagHelper.Tags[i].Tag ))
+			this->pTagHelper->Tags[i].bAsso ? MF_BYPOSITION | MF_CHECKED : MF_BYPOSITION,
+			uidFirstCmd + i, this->pTagHelper->Tags[i].Tag ))
 		{
 			uIdx++;
 		}else{
-			::PrintLog(L"Fail to add tag into the submenu: %s",this->TagHelper.Tags[i]);
+			::PrintLog(L"Fail to add tag into the submenu: %s",this->pTagHelper->Tags[i]);
 		}
 	}
 
-	UINT _firstSpecialCmdID = uidFirstCmd + this->TagHelper.TagCount;
+	UINT _firstSpecialCmdID = uidFirstCmd + this->pTagHelper->TagCount;
 
 	// MF_BYCOMMAND  MF_BYPOSITION
 	InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION | MF_SEPARATOR, _firstSpecialCmdID , L"MF_SEPARATOR" );
@@ -65,16 +65,16 @@ HRESULT CHandler::GetCommandString (UINT_PTR idCmd, UINT uFlags, UINT* pwReserve
 	{
 		LPWSTR info = NULL;
 		if( _hSubmenu != NULL ){
-			if( idCmd < this->TagHelper.TagCount)
+			if( idCmd < this->pTagHelper->TagCount)
 			{
 				LPWSTR formater = ::MyLoadString(IDS_COMMANDSTRING_TAG);
 				wchar_t tmp[LOADSTRING_BUFFERSIZE] = {0};
-				wsprintf ( tmp,formater,this->TagHelper.Tags[idCmd].Tag );
+				wsprintf ( tmp,formater,this->pTagHelper->Tags[idCmd].Tag );
 				info = tmp;
 			}
 			else
 			{	
-				switch (idCmd - this->TagHelper.TagCount)
+				switch (idCmd - this->pTagHelper->TagCount)
 				{
 				case CMD_NEWTAG:
 					info = ::MyLoadString(IDS_COMMANDSTRING_CMD_NEWTAG);
@@ -124,10 +124,10 @@ HRESULT CHandler::InvokeCommand (
 
 	// Get the command index.
 	auto cmd =LOWORD( pCmdInfo->lpVerb );
-	if( cmd < this->TagHelper.TagCount)
+	if( cmd < this->pTagHelper->TagCount)
 	{
 		UINT cmd_tagIdx = cmd;
-		this->TagHelper.SetTagByIdx(cmd_tagIdx);
+		this->pTagHelper->SetTagByIdx(cmd_tagIdx);
 	}
 	else
 	{	
@@ -137,7 +137,7 @@ HRESULT CHandler::InvokeCommand (
 		// the caption of window, must be same as it when the window got msg WM_INITDIALOG.
 		wchar_t windowCaption[LOADSTRING_BUFFERSIZE] = {0};
 
-		switch (cmd - this->TagHelper.TagCount)
+		switch (cmd - this->pTagHelper->TagCount)
 		{
 		case CMD_NEWTAG:
 			{
@@ -203,7 +203,7 @@ HRESULT CHandler::InvokeCommand (
 			}
 		}else{
 			DWORD e = GetLastError();
-			::PrintLog(L"Can not create window. cmd = %d, error = %d",cmd - this->TagHelper.TagCount,e);
+			::PrintLog(L"Can not create window. cmd = %d, error = %d",cmd - this->pTagHelper->TagCount,e);
 			MessageBox(pCmdInfo->hwnd,L"Can not create window",L"Error",MB_OK);
 			return E_FAIL;
 		}
