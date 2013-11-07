@@ -119,6 +119,15 @@ STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void
 	{
 		hr = QueryInterface(riid, ppv);
 	}
+#ifdef _DEBUG
+	else
+	{
+		LPOLESTR str;
+		StringFromIID(guidService,&str);
+		::PrintLog(L"CShellViewImpl::QueryService: guidService =%s",str);
+		CoTaskMemFree(str);
+	}
+#endif
 	return hr;
 }
 
@@ -159,7 +168,7 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 	{
 		IEnumIDList *pEnum = NULL;
 		CShellViewImpl * pthX = (CShellViewImpl*)pThis;
-	
+
 		try{
 
 			pthX->AddRef();
@@ -216,9 +225,11 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 						{
 							hr = SHCreateItemFromParsingName(data->wszDisplayName,NULL,IID_PPV_ARGS(&psi));
 							wsprintf ( tmp3,::MyLoadString(IDS_MSG_LOADING_FILE),data->wszDisplayName);
-						}else{
+						}
+						else
+						{
 							// TODO: there may be a bug(0x000000C5) that "sf" is not available.
-							hr = SHCreateShellItem(sf->m_pIDFolder,NULL,pidl,&psi);
+							hr = SHCreateItemWithParent(sf->m_pIDFolder,NULL,pidl,IID_PPV_ARGS(&psi));
 							wsprintf ( tmp3,::MyLoadString(IDS_MSG_LOADING_TAG),data->wszDisplayName);
 						}
 
@@ -240,6 +251,7 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 						// ERROR_PATH_NOT_FOUND
 						// ERROR_INVALID_DRIVE
 						// ....
+						// HIDDEN
 						nNotAvailable++;
 					}
 
@@ -381,7 +393,7 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 HRESULT CShellViewImpl::Init ( CShellFolderImpl* pContainingFolder )
 {
 	m_psfContainingFolder = pContainingFolder;
-	m_psfContainingFolder->AddRef();
+	m_psfContainingFolder->AddRef();	// release in ~ctor
 	return S_OK;
 }
 

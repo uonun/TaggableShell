@@ -32,6 +32,8 @@
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
 processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
+#undef SUPPORT_SETTINGS_IN_REG	// we do not surrpot that right now.
+
 #define _DELETE(obj) if (obj != NULL) {delete obj , obj = NULL;}
 
 using namespace std;
@@ -105,3 +107,4 @@ extern WCHAR g_LogDirectory[MAX_PATH];
 #ifdef LOG4CPP
 extern WCHAR g_LogFullName[MAX_PATH];
 #endif
+

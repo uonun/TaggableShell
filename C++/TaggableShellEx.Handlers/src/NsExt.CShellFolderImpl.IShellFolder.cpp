@@ -13,12 +13,24 @@ HRESULT CShellFolderImpl::BindToObject(
 	{
 		::PrintLog(L"ShellFolder::BindToObject: riid = IID_IShellFolder");
 
-		Init ( m_pIDFolder,(PIDLIST_RELATIVE) pidl );
+		IShellFolder *pShellFolder = NULL;
+		hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
+		if( hr == S_OK )
+		{
+			hr = ((CShellFolderImpl*)pShellFolder)->Init ( m_pIDFolder,(PIDLIST_RELATIVE) pidl );
 
-		auto data = m_PidlMgr.GetData(pidl);
-		::PrintLog(L"ShellFolder::BindToObject: Got object: %s, FolderPath = %s",data->wszDisplayName,FolderPath);
+			auto data = m_PidlMgr.GetData(pidl);
+			::PrintLog(L"ShellFolder::BindToObject: Got object: %s, FolderPath = %s",data->wszDisplayName,FolderPath);
 
-		hr = this->QueryInterface(riid,ppvOut);
+			if ( FAILED(hr) )
+			{
+				pShellFolder->Release();
+				return hr;
+			}
+
+			hr = pShellFolder->QueryInterface(riid,ppvOut);
+			pShellFolder->Release();
+		}
 	}
 #ifdef _DEBUG
 	else
@@ -52,7 +64,7 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	void **ppv
 	)
 {
-	// TODO: THERE MAY BE A BUG THAT IShellView* WILL NOT BE RELEASED AFTER THE SHELL FOLDER CLOSED!!
+	// TODO: THERE MUST BE A BUG THAT IShellView* WILL NOT BE RELEASED AFTER THE SHELL FOLDER CLOSED!!
 	/*
 	riid = 
 	{IID_IConnectionFactory}
@@ -65,15 +77,15 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	if ( NULL == ppv )
 		return E_POINTER;
 
-	*ppv = NULL;
 	HRESULT hr = E_NOINTERFACE;
 
 	// Create a new ShellViewImpl COM object.
+	// A new view object must be created each time this method is called.
 	if ( IID_IShellView == riid )
 	{
 		::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IShellView");
 
-		CShellViewImpl* v;
+		CShellViewImpl* v = NULL;
 		hr = CoCreateInstance(__uuidof(CShellViewImpl), NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS((IShellView**)&v)); 
 
 		if ( FAILED(hr) )
@@ -81,6 +93,13 @@ HRESULT CShellFolderImpl::CreateViewObject(
 
 		// Object initialization - pass the object its containing folder (this).
 		hr = ((CShellViewImpl*)v)->Init ( this );
+
+		if ( FAILED(hr) )
+		{
+			v->Release();
+			return hr;
+		}
+
 		// Return the requested interface back to the shell.
 		hr = v->QueryInterface ( riid, ppv );
 		v->Release();

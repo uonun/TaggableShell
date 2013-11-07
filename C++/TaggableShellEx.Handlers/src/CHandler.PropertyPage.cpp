@@ -55,7 +55,7 @@ UINT CALLBACK PageCallbackProc(
 	case PSPCB_RELEASE:
 		CHandler* tmp = (CHandler*)ppsp->lParam;
 		tmp->Release();
-		MessageBox(hwnd,L"PSPCB_RELEASE",L"PSPCB_RELEASE",MB_OK);		
+		//MessageBox(hwnd,L"PSPCB_RELEASE",L"PSPCB_RELEASE",MB_OK);		
 		break;
 	}
 

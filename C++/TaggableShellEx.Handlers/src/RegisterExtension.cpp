@@ -913,6 +913,110 @@ HRESULT CRegisterExtension::RegisterPropertyPage(PCWSTR extension) const
 	return hr;
 }
 
+HRESULT CRegisterExtension::RegisterSettings(
+	PCWSTR settingsRegName,
+	PCWSTR settingsLocalizedName,
+	PCWSTR szShowOnDesktopLocalizedName,
+	PCWSTR szShowOnDesktopValueName,
+	BOOL showOnDesktopValue,
+	PCWSTR szShowInMyComputerLocalizedName,
+	PCWSTR szShowInMyComputerValueName,
+	BOOL showInMyComputerValue
+	) const
+{
+	HRESULT hr = _EnsureModule();
+	if (SUCCEEDED(hr))
+	{
+		hr = RegSetKeyValuePrintf(_hkeyRoot, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\%s", L"Type",L"group",settingsRegName);
+		if (SUCCEEDED(hr))
+		{
+			hr = RegSetKeyValuePrintf(_hkeyRoot, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\%s", L"Text",settingsLocalizedName,settingsRegName);
+			if (SUCCEEDED(hr))
+			{
+				// ico
+				hr = RegSetKeyValuePrintf(_hkeyRoot, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\%s", L"Bitmap",L"%SystemRoot%\\system32\\shell32.dll,4",settingsRegName);
+
+				// show on desktop
+				LPCWSTR path_ShowOnDesktop = L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\%s\\ShowOnDesktop";
+				hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowOnDesktop , L"Type",L"checkbox",settingsRegName);
+				if (SUCCEEDED(hr))
+				{
+					hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowOnDesktop, L"Text",szShowOnDesktopLocalizedName,settingsRegName);
+					if (SUCCEEDED(hr))
+					{
+						hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowOnDesktop, L"HKeyRoot",(DWORD)0x80000001,settingsRegName);
+						if (SUCCEEDED(hr))
+						{
+							hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowOnDesktop, L"RegPath",L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",settingsRegName);
+							if (SUCCEEDED(hr))
+							{
+								hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowOnDesktop, L"ValueName",szShowOnDesktopValueName,settingsRegName);
+								if (SUCCEEDED(hr))
+								{
+									hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowOnDesktop, L"CheckedValue",(DWORD)0x1,settingsRegName);
+									if (SUCCEEDED(hr))
+									{
+										hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowOnDesktop, L"UncheckedValue",(DWORD)0x0,settingsRegName);
+										if (SUCCEEDED(hr))
+										{
+											hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowOnDesktop, L"DefaultValue",showOnDesktopValue ? (DWORD)0x1D : (DWORD)0x0,settingsRegName);
+											if (SUCCEEDED(hr))
+											{
+												hr = RegSetKeyValuePrintf(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+													szShowOnDesktopValueName,showOnDesktopValue ? (DWORD)0x1 : (DWORD)0x0);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				// show in MyComputer
+				LPCWSTR path_ShowInMyComputer = L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\%s\\ShowInMyComputer";
+				hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowInMyComputer , L"Type",L"checkbox",settingsRegName);
+				if (SUCCEEDED(hr))
+				{
+					hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowInMyComputer, L"Text",szShowInMyComputerLocalizedName,settingsRegName);
+					if (SUCCEEDED(hr))
+					{
+						hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowInMyComputer, L"HKeyRoot",(DWORD)0x80000001,settingsRegName);
+						if (SUCCEEDED(hr))
+						{
+							hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowInMyComputer, L"RegPath",L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",settingsRegName);
+							if (SUCCEEDED(hr))
+							{
+								hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowInMyComputer, L"ValueName",szShowInMyComputerValueName,settingsRegName);
+								if (SUCCEEDED(hr))
+								{
+									hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowInMyComputer, L"CheckedValue",(DWORD)0x1,settingsRegName);
+									if (SUCCEEDED(hr))
+									{
+										hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowInMyComputer, L"UncheckedValue",(DWORD)0x0,settingsRegName);
+										if (SUCCEEDED(hr))
+										{
+											hr = RegSetKeyValuePrintf(_hkeyRoot,path_ShowInMyComputer, L"DefaultValue",showInMyComputerValue ? (DWORD)0x1D : (DWORD)0x0D,settingsRegName);
+											if (SUCCEEDED(hr))
+											{
+												hr = RegSetKeyValuePrintf(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+													szShowInMyComputerValueName,showInMyComputerValue ? (DWORD)0x1 : (DWORD)0x0);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+			}
+		}
+	}
+	return hr;
+}
+
+
 HRESULT CRegisterExtension::UnRegisterContextMenu(PCWSTR extension) const
 {
 	return RegDeleteKeyPrintf(_hkeyRoot, L"SOFTWARE\\Classes\\%s\\shellex\\ContextMenuHandlers\\TaggableShellEx", extension);
@@ -925,5 +1029,17 @@ HRESULT CRegisterExtension::UnRegisterShellFolderNameSpace(PCWSTR parent) const
 {
 	return RegDeleteKeyPrintf(_hkeyRoot, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\%s\\NameSpace\\%s", parent, _szCLSID);
 }
-
+HRESULT CRegisterExtension::UnRegisterSettings(PCWSTR settingsRegName
+											   ,PCWSTR szShowOnDesktopValueName
+											   , PCWSTR szShowInMyComputerValueName
+											   ) const
+{
+	HRESULT	hr = RegDeleteKeyPrintf(_hkeyRoot, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\%s", settingsRegName);
+	if (SUCCEEDED(hr))
+	{
+		hr = RegDeleteKeyValuePrintf(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",szShowOnDesktopValueName);
+		hr = RegDeleteKeyValuePrintf(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",szShowInMyComputerValueName);
+	}
+	return hr;
+}
 #pragma endregion

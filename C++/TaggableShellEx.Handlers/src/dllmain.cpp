@@ -37,6 +37,16 @@ WCHAR g_LogDirectory[MAX_PATH] = {0};
 #ifdef LOG4CPP
 WCHAR g_LogFullName[MAX_PATH];
 #endif
+
+const BOOL DEFAULT_SETTINGS_SHOW_DESKTOP = FALSE;	//there is a bug that the tags will be listed multi-times in the Folder when showing on desktop
+const BOOL DEFAULT_SETTINGS_SHOW_MYCOMPUTER = TRUE;
+
+#ifdef SUPPORT_SETTINGS_IN_REG
+#define REG_SETTINGS_NAME						L"TaggableShellSettings"
+#define REG_SETTINGS_VALUENAME_SHOW_DESKTOP		L"TaggableShellSettings.ShowOnDesktop"
+#define REG_SETTINGS_VALUENAME_SHOW_MYCOMPUTER	L"TaggableShellSettings.ShowInMyComputer"
+#endif
+
 ///////////////////////////////////////////////////////////////////////////
 
 // Standard DLL functions
@@ -89,7 +99,6 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 			::PrintLog(L"	g_LogDirectory:			%s",g_LogDirectory);
 			::PrintLog(L"	g_LogFullName:			%s",g_LogFullName);
 #endif
-
 			g_hInst = hInstance;
 			DisableThreadLibraryCalls(hInstance);			
 		}
@@ -101,18 +110,15 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 	}
 	else if( dwReason == DLL_THREAD_ATTACH)
 	{
-		::PrintLog(L"DllMain Exit, DLL_THREAD_ATTACH.\r\n\r\n\r\n");
-		DllAddRef();
+		::PrintLog(L"DllMain, DLL_THREAD_ATTACH.\r\n\r\n\r\n");
 	}
 	else if( dwReason == DLL_THREAD_DETACH)
 	{
-		::PrintLog(L"DllMain Exit, DLL_THREAD_DETACH.\r\n\r\n\r\n");
-		DllRelease();
+		::PrintLog(L"DllMain, DLL_THREAD_DETACH.\r\n\r\n\r\n");
 	}
 	else if( dwReason == DLL_PROCESS_DETACH)
 	{
-		::PrintLog(L"DllMain Exit, DLL_PROCESS_DETACH.\r\n\r\n\r\n");
-		DllRelease();
+		::PrintLog(L"DllMain, DLL_PROCESS_DETACH.\r\n\r\n\r\n");
 	}
 	else
 	{
@@ -231,7 +237,6 @@ STDAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void **ppv)
 	return CClassFactory::CreateInstance(clsid, c_rgClassObjectInit, ARRAYSIZE(c_rgClassObjectInit), riid, ppv);
 }
 
-
 STDAPI DllRegisterServer()
 {	
 	HRESULT hr = S_FALSE;
@@ -283,20 +288,30 @@ STDAPI DllRegisterServer()
 
 			if (SUCCEEDED(hr))
 			{
-				//http://msdn.microsoft.com/en-us/library/cc144096(v=vs.85).aspx
-				//[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\<clsid>]
-				hr = reFolder.RegisterShellFolderNameSpace(folderFriendlyName,L"MyComputer");
-
+				// register the shell view with the system
+				CRegisterExtension reView(__uuidof(CShellViewImpl), HKEY_LOCAL_MACHINE);
+				hr = reView.RegisterCLSID(folderFriendlyName, L"Apartment",TRUE, c_szInfoTip,c_szIntroText,c_szLocalizedString);
 				if (SUCCEEDED(hr))
 				{
-					// register the shell view with the system
-					CRegisterExtension reView(__uuidof(CShellViewImpl), HKEY_LOCAL_MACHINE);
-					hr = reView.RegisterCLSID(folderFriendlyName, L"Apartment",TRUE, c_szInfoTip,c_szIntroText,c_szLocalizedString);
+					//http://msdn.microsoft.com/en-us/library/cc144096(v=vs.85).aspx
+					//[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Explorer\<parent>\NameSpace\<clsid>]
+					if ( DEFAULT_SETTINGS_SHOW_DESKTOP )
+					{
+						hr = reFolder.RegisterShellFolderNameSpace(folderFriendlyName,L"Desktop");
+					}
+
+					if ( DEFAULT_SETTINGS_SHOW_MYCOMPUTER )
+					{
+						hr = reFolder.RegisterShellFolderNameSpace(folderFriendlyName,L"MyComputer");
+					}
 				}
 			}
 		}
 	}
 #pragma endregion
+
+	if (FAILED(hr))
+		return hr;
 
 #pragma region register handler
 	// register the context menu handler with the system
@@ -328,6 +343,33 @@ STDAPI DllRegisterServer()
 	}
 #pragma endregion
 
+	if (FAILED(hr))
+		return hr;
+
+#ifdef SUPPORT_SETTINGS_IN_REG
+#pragma region register settings
+	WCHAR settingsLocalizedName[LOADSTRING_BUFFERSIZE] = {0}
+	,szShowOnDesktop[LOADSTRING_BUFFERSIZE] = {0}
+	,szShowInMyComputer[LOADSTRING_BUFFERSIZE] = {0};
+
+	_regStrBufferTmp = ::MyLoadString(IDS_ProductName);
+	StrCpy(settingsLocalizedName,_regStrBufferTmp);
+
+	_regStrBufferTmp = ::MyLoadString(IDS_REG_SETTINGS_SHOW_DESKTOP);
+	StrCpy(szShowOnDesktop,_regStrBufferTmp);
+
+	_regStrBufferTmp = ::MyLoadString(IDS_REG_SETTINGS_SHOW_MYCOMPUTER);
+	StrCpy(szShowInMyComputer,_regStrBufferTmp);
+
+	CRegisterExtension reSettings(__uuidof(CHandler), HKEY_LOCAL_MACHINE);
+	hr = reSettings.RegisterSettings(
+		REG_SETTINGS_NAME,settingsLocalizedName,
+		szShowOnDesktop,REG_SETTINGS_VALUENAME_SHOW_DESKTOP,DEFAULT_SETTINGS_SHOW_DESKTOP,
+		szShowInMyComputer,REG_SETTINGS_VALUENAME_SHOW_MYCOMPUTER,DEFAULT_SETTINGS_SHOW_MYCOMPUTER
+		);
+#pragma endregion
+#endif
+
 	return hr;
 }
 
@@ -346,6 +388,7 @@ STDAPI DllUnregisterServer()
 		hr = reView.UnRegisterObject();
 		if (SUCCEEDED(hr))
 		{
+			hr = reFolder.UnRegisterShellFolderNameSpace(L"Desktop");
 			hr = reFolder.UnRegisterShellFolderNameSpace(L"MyComputer");
 		}
 	}
@@ -365,6 +408,11 @@ STDAPI DllUnregisterServer()
 		reHandler.UnRegisterPropertyPage(L"Folder");
 	}
 #pragma endregion
+
+#ifdef SUPPORT_SETTINGS_IN_REG
+	CRegisterExtension reSettings(__uuidof(CHandler), HKEY_LOCAL_MACHINE);
+	hr = reSettings.UnRegisterSettings(REG_SETTINGS_NAME,REG_SETTINGS_VALUENAME_SHOW_DESKTOP,REG_SETTINGS_VALUENAME_SHOW_MYCOMPUTER);
+#endif
 
 	return hr;
 }

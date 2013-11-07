@@ -109,10 +109,23 @@ public:
 	HRESULT CRegisterExtension::RegisterShellFolderNameSpace(PCWSTR pszFriendlyName,PCWSTR parent) const;
 	HRESULT CRegisterExtension::RegisterContextMenu(PCWSTR extension) const;
 	HRESULT CRegisterExtension::RegisterPropertyPage(PCWSTR extension) const;
+	HRESULT CRegisterExtension::RegisterSettings(
+		PCWSTR settingsRegName,
+		PCWSTR settingsLocalizedName,
+		PCWSTR szShowOnDesktopLocalizedName,
+		PCWSTR szShowOnDesktopValueName,
+		BOOL showOnDesktopValue,
+		PCWSTR szShowInMyComputerLocalizedName,
+		PCWSTR szShowInMyComputerValueName,
+		BOOL showInMyComputerValue
+		) const;
 
 	HRESULT CRegisterExtension::UnRegisterContextMenu(PCWSTR extension) const;
 	HRESULT CRegisterExtension::UnRegisterPropertyPage(PCWSTR extension) const;
 	HRESULT CRegisterExtension::UnRegisterShellFolderNameSpace(PCWSTR parent) const;
+	HRESULT CRegisterExtension::UnRegisterSettings(PCWSTR settingsRegName
+		, PCWSTR szShowOnDesktopValueName
+		, PCWSTR szShowInMyComputerValueName) const;
 #pragma endregion
 
 private:

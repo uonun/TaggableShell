@@ -16,7 +16,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 
 	// Init member variables.
 	m_spShellBrowser = psb;
-	m_spShellBrowser->AddRef();
+	m_spShellBrowser->AddRef(); // release in ~ctor
 	m_spShellBrowser->GetWindow(&m_hwndParent);
 	m_spShellBrowser->SetStatusTextSB(::MyLoadString(IDS_ProductIntro));
 	m_spShellBrowser->EnableModelessSB(TRUE);
