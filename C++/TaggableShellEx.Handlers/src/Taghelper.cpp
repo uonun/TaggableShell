@@ -18,8 +18,11 @@ CTaghelper::CTaghelper(void):
 	_cached(false)
 	,TagCount(0),FileCount(0)
 	,_db(NULL)
+	,m_mutex(NULL)
 {
 	::PrintLog(L"CTaghelper.ctor");
+
+	m_mutex = ::CreateMutex(NULL, FALSE, NULL);
 
 	for each (LPWSTR var in TargetFileNames) { var = NULL; }
 	for each (LPSTR var in _targetFileNamesInSQL) { var = NULL; }
@@ -66,6 +69,8 @@ CTaghelper::~CTaghelper(void)
 
 	sqlite3_close(_db);  
 	_db = NULL;
+
+	::CloseHandle(m_mutex);
 }
 
 BOOL CTaghelper::OpenDb()
@@ -142,6 +147,8 @@ void CTaghelper::LoadTags(bool ignoreCache)
 {
 	if(ignoreCache || !_cached || TagCount == 0){
 
+		WaitForSingleObject(m_mutex, INFINITE);
+
 		TagCount = 0;
 
 		char * sSQLFormater = NULL;
@@ -183,6 +190,8 @@ void CTaghelper::LoadTags(bool ignoreCache)
 		}
 
 		_cached = true;
+
+		ReleaseMutex(m_mutex);
 	}
 }
 

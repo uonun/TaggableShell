@@ -71,7 +71,6 @@ HRESULT CEnumIDListImpl::Next(
 	USHORT         uSize = sizeof(MYPIDLDATA);
 	ULONG n = 0;
 
-
 	if ( _currentIdx >= _items.size())
 	{
 		*pceltFetched = 0;
@@ -88,25 +87,17 @@ HRESULT CEnumIDListImpl::Next(
 
 		while ( _currentIdx < _items.size())
 		{
-			auto next = _items[_currentIdx++];
+			auto next = _items[_currentIdx];
 
 			auto pidl = m_PidlMgr.Create((LPCMYPIDLDATA)&next);
 			UINT cbSrc = m_PidlMgr.GetSize(pidl);
 			CopyMemory ( pidlOut, pidl, cbSrc );
 			m_PidlMgr.Delete(pidl);
 
-			////Assign values to the members of the MYPIDLDATA structure
-			////that is the PIDL's first SHITEMID structure
-			//pidlOut->cb = uSize;
-			//pidlOut->Type = next.Type;
-			//pidlOut->TagID = next.TagID;
-			//pidlOut->TagIdx = next.TagIdx;
-			//pidlOut->UseCount = next.UseCount;
-			//StringCbCopyW(pidlOut->wszDisplayName,sizeof(pidlOut->wszDisplayName), next.wszDisplayName);
-			//StringCbCopyW(pidlOut->wszRemark,sizeof(pidlOut->wszRemark), next.wszRemark);
-
 			//Advance the pointer to the start of the next SHITEMID structure.
 			pidlOut = (LPMYPIDLDATA)((LPBYTE)pidlOut + pidlOut->cb);
+
+			InterlockedIncrement(&_currentIdx);
 
 			if ( ++n == celt )
 			{
@@ -117,10 +108,6 @@ HRESULT CEnumIDListImpl::Next(
 		}
 
 	}
-
-	// try to return absolute pidl.
-	//auto d = m_PidlMgr.Copy(_parent);
-	//*rgelt = ILAppendID(d,(SHITEMID*)pidlOut,true);
 
 	*pceltFetched = n;
 

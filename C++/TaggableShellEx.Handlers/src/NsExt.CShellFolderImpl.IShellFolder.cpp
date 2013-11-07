@@ -179,6 +179,11 @@ HRESULT CShellFolderImpl::EnumObjects(
 		|| 0 == (grfFlags & SHCONTF_NAVIGATION_ENUM	)							// list the details when opening from IExplorerBrowser
 		)
 	{
+
+		WaitForSingleObject(m_mutex, INFINITE);
+
+		items.clear();
+
 		if ( this->pTagHelper->OpenDb() )
 		{
 			this->pTagHelper->LoadTags();
@@ -216,6 +221,8 @@ HRESULT CShellFolderImpl::EnumObjects(
 				items.push_back(d);
 			}
 		}
+
+		ReleaseMutex(m_mutex);
 	}
 
 	pEnum->Init(m_pIDFolder,items);

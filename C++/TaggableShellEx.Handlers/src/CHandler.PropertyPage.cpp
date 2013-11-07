@@ -27,7 +27,7 @@ INT_PTR CALLBACK PageDlgProc(
 			{
 			case PSN_APPLY:
 				//bRet = OnApply ( hwnd, (PSHNOTIFY*) phdr );
-				MessageBox(hwnd,L"Apply",L"Caption",MB_OK);
+				//MessageBox(hwnd,L"Apply",L"Caption",MB_OK);
 				break;
 
 			case DTN_DATETIMECHANGE:
@@ -76,7 +76,7 @@ STDMETHODIMP CHandler::AddPages(LPFNADDPROPSHEETPAGE lpfnAddPage, LPARAM lParam)
 	psp.dwSize      = sizeof(PROPSHEETPAGE);
 	psp.dwFlags     = PSP_USEREFPARENT | PSP_USETITLE | PSP_DEFAULT | PSP_USECALLBACK;
 	psp.hInstance   = ::g_hInst;
-	psp.pszTemplate = MAKEINTRESOURCE(IDD_PROPERTYPAGE);
+	psp.pszTemplate = MAKEINTRESOURCE(_contextMenuSupposed ? IDD_PROPERTYPAGE_FILE : IDD_PROPERTYPAGE_FOLDER);
 	psp.pszIcon     = 0;
 	psp.pszTitle    = MAKEINTRESOURCE(IDS_DLG_PROPERTYPAGE_CAPTION);
 	psp.pfnDlgProc  = PageDlgProc;

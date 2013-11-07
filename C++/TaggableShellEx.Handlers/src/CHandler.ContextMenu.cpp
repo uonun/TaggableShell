@@ -39,7 +39,7 @@ HRESULT CHandler::QueryContextMenu (
 	// MF_BYCOMMAND  MF_BYPOSITION
 	InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION | MF_SEPARATOR, _firstSpecialCmdID , L"MF_SEPARATOR" );
 	InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION, _firstSpecialCmdID + CMD_NEWTAG,::MyLoadString(IDS_CONTEXTMENU_SUB_NEWTAG));
-	InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION, _firstSpecialCmdID + CMD_SETTINGS,::MyLoadString(IDS_CONTEXTMENU_SUB_SETTINGS));
+	//InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION, _firstSpecialCmdID + CMD_SETTINGS,::MyLoadString(IDS_CONTEXTMENU_SUB_SETTINGS));
 	InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION, _firstSpecialCmdID + CMD_ABOUT,::MyLoadString(IDS_CONTEXTMENU_SUB_ABOUT));
 
 	// http://msdn.microsoft.com/en-us/library/windows/desktop/ms647578(v=vs.85).aspx
@@ -149,7 +149,7 @@ HRESULT CHandler::InvokeCommand (
 			}
 			break;
 		case CMD_SETTINGS:
-			_hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_PROPERTYPAGE),pCmdInfo->hwnd,NULL);
+			_hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE( _contextMenuSupposed ? IDD_PROPERTYPAGE_FILE : IDD_PROPERTYPAGE_FOLDER),pCmdInfo->hwnd,NULL);
 			break;
 		case CMD_ABOUT:
 			_hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_ABOUT),pCmdInfo->hwnd,DlgProc_About);

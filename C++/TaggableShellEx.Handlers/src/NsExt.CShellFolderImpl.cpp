@@ -7,8 +7,11 @@ CShellFolderImpl::CShellFolderImpl(void):
 	,_hSubmenu(NULL)
 	,CurrentShellItemData(NULL)
 	,pTagHelper(NULL)
+	,m_mutex(NULL)
 {
 	::PrintLog(L"CShellFolderImpl.ctor");
+
+	m_mutex = ::CreateMutex(NULL, FALSE, NULL);
 
 	pTagHelper = CTaghelper::instance();
 
@@ -25,6 +28,8 @@ CShellFolderImpl::~CShellFolderImpl(void)
 		DestroyMenu ( _hSubmenu );
 		_hSubmenu = NULL;
 	}
+
+	::CloseHandle(m_mutex);
 
 	DllRelease();
 }

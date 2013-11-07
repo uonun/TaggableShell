@@ -138,4 +138,8 @@ private:
 	HMENU _hSubmenu;	
 	CPidlMgr m_PidlMgr;
 	PIDLIST_RELATIVE  m_PIDLCurrent;		 // relevant location to the folder
+
+	// mutex lock
+	HANDLE m_mutex;
+
 };

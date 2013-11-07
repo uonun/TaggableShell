@@ -65,6 +65,9 @@ private :
 
 	// use instance() instead!
 	static CTaghelper *p_instance_; 
+	
+	// mutex lock
+	HANDLE m_mutex;
 
 #pragma endregion
 
