@@ -1,1 +1,2 @@
-..\..\DotNet\Tool.CloseAllExplorer\bin\Debug\Tool.CloseAllExplorer.exe
+taskkill /f /im Explorer.exe
+Explorer.exe

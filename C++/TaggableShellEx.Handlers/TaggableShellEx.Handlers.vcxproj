@@ -142,7 +142,7 @@
     <TargetName>TaggableShellEx.Handlers.$(PlatformTarget)</TargetName>
     <LibraryPath>..\_lib\log4cpp\bin\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformTarget)\</OutDir>
+    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformTarget)\bin</OutDir>
     <IntDir>$(Configuration)\$(PlatformTarget)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -154,9 +154,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>TaggableShellEx.Handlers.$(PlatformTarget)</TargetName>
-    <LinkIncremental>false</LinkIncremental>
     <IntDir>$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformTarget)\</OutDir>
+    <OutDir>$(SolutionDir)C++\_$(Configuration)\$(PlatformTarget)\bin\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -229,21 +228,19 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <ModuleDefinitionFile>Export.def</ModuleDefinitionFile>
-      <AdditionalDependencies>shlwapi.lib;Comctl32.lib;log4cpp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>./src/Export.def</ModuleDefinitionFile>
+      <AdditionalDependencies>shlwapi.lib;Comctl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
       <Command>onbuild.bat $(Configuration) $(PlatformTarget) $(TargetPath)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>building.bat</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

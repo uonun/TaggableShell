@@ -28,6 +28,7 @@ long g_cRefModule = 0;
 
 // Handle the the DLL's module
 HINSTANCE g_hInst = NULL;
+WCHAR g_AppRoot[MAX_PATH] = {0};
 WCHAR g_DllFullName[MAX_PATH] = {0};
 WCHAR g_DllDirectory[MAX_PATH] = {0};
 WCHAR g_ProfileDirectory[MAX_PATH] = {0};
@@ -60,8 +61,11 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 	wpath dir = p.parent_path();
 	StrCpy(g_DllDirectory,dir.string().c_str() );
 
+	wpath rootDir = dir.parent_path();
+	StrCpy(g_AppRoot,rootDir.string().c_str());
+
 	WCHAR tmp_g_LogDirectory[MAX_PATH] = {0};
-	wsprintf ( tmp_g_LogDirectory, L"%s/%s\0", g_DllDirectory,FOLDER_LOG );
+	wsprintf ( tmp_g_LogDirectory, L"%s/%s\0", g_AppRoot,FOLDER_LOG );
 	std::tr2::sys::wpath p_g_LogDirectory(tmp_g_LogDirectory); 
 	StrCpy(g_LogDirectory,p_g_LogDirectory.directory_string().c_str()); // change the "/" to "\"
 
@@ -75,7 +79,7 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 
 	if (dwReason == DLL_PROCESS_ATTACH)
 	{
-		wsprintf ( g_ProfileDirectory, L"%s/%s\0", g_DllDirectory,FOLDER_PROFILE );
+		wsprintf ( g_ProfileDirectory, L"%s/%s\0", g_AppRoot,FOLDER_PROFILE );
 
 		std::tr2::sys::wpath p_g_ProfileDirectory(g_ProfileDirectory); 
 		auto directory_string_ProfileDirectory = p_g_ProfileDirectory.directory_string(); // change the "/" to "\"
@@ -91,6 +95,7 @@ STDAPI_(BOOL) DllMain(HINSTANCE hInstance, DWORD dwReason, void *)
 			::PrintLog(L"===================================================================================================");
 			::PrintLog(L"DllMain, DLL_PROCESS_ATTACH");
 			::PrintLog(L"OS Version: %s", GetOSVersionStr());
+			::PrintLog(L"	g_AppRoot:				%s",g_AppRoot);
 			::PrintLog(L"	g_DllDirectory:			%s",g_DllDirectory);
 			::PrintLog(L"	g_DllFullName:			%s",g_DllFullName);
 			::PrintLog(L"	g_ProfileDirectory:		%s",g_ProfileDirectory);

@@ -99,6 +99,7 @@ for the CLSIDs: ASCII(C2DEBAE9C1D6) = Author
 extern HINSTANCE g_hInst;
 extern WCHAR __loadStringBuffer[LOADSTRING_BUFFERSIZE];
 
+extern WCHAR g_AppRoot[MAX_PATH];
 extern WCHAR g_DllDirectory[MAX_PATH];
 extern WCHAR g_DllFullName[MAX_PATH];
 extern WCHAR g_ProfileDirectory[MAX_PATH];
