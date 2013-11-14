@@ -19,10 +19,10 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	m_spShellBrowser->AddRef(); // release in ~ctor
 	m_spShellBrowser->GetWindow(&m_hwndParent);
 	m_spShellBrowser->SetStatusTextSB(::MyLoadString(IDS_ProductIntro));
-	m_spShellBrowser->EnableModelessSB(TRUE);
+	//m_spShellBrowser->EnableModelessSB(TRUE);
 	m_spShellBrowser->GetViewStateStream(STGM_READ,&m_pViewState);
 	m_FolderSettings = *lpfs;
-	m_FolderSettings.ViewMode = FVM_DETAILS;
+	//m_FolderSettings.ViewMode = FVM_DETAILS;
 
 #pragma region prepare window handler
 	DWORD dwListStyles = WS_CHILDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
@@ -221,7 +221,7 @@ STDMETHODIMP CShellViewImpl::AddPropertySheetPages(DWORD dwReserved, LPFNADDPROP
 
 STDMETHODIMP 	CShellViewImpl::EnableModeless(BOOL fEnable)
 { 
-	return E_NOTIMPL;
+	return m_spShellBrowser->EnableModelessSB(fEnable);
 }
 STDMETHODIMP 	CShellViewImpl::GetItemObject(UINT uItem, REFIID riid, void** ppv)
 {
@@ -260,6 +260,6 @@ STDMETHODIMP 	CShellViewImpl::SelectItem(LPCITEMIDLIST pidlItem, UINT uFlags)
 	return E_NOTIMPL; 
 }
 STDMETHODIMP 	CShellViewImpl::TranslateAccelerator(LPMSG lpmsg)
-{ 
+{ 	
 	return E_NOTIMPL; 
 }

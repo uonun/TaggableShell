@@ -5,7 +5,8 @@ HRESULT CShellViewImpl::GetCurrentViewMode(
 	UINT *pViewMode)
 { 
 	*pViewMode = m_FolderSettings.ViewMode;
-	return S_OK; }
+	return S_OK;
+}
 
 HRESULT CShellViewImpl::SetCurrentViewMode( 
 	UINT ViewMode)

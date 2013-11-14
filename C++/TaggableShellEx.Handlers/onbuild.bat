@@ -10,3 +10,5 @@ copy "..\_lib\winsdk\msvcp110.dll" "..\_%1\%2\bin\msvcp110.dll"
 copy "..\_lib\winsdk\msvcr110.dll" "..\_%1\%2\bin\msvcr110.dll"
 copy "..\_lib\winsdk\sysntfy.dll" "..\_%1\%2\bin\sysntfy.dll"
 
+echo %SystemRoot%\Explorer.exe
+
