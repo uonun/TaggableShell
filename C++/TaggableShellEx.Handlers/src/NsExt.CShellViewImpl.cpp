@@ -67,6 +67,7 @@ IFACEMETHODIMP CShellViewImpl::QueryInterface(REFIID riid, void ** ppv)
 		QITABENT(CShellViewImpl, ICommDlgBrowser),
 		QITABENT(CShellViewImpl, IOleWindow),
 		QITABENT(CShellViewImpl, IFolderView),		
+		QITABENT(CShellViewImpl, IBrowserFrameOptions),		
 		{0},
 	};
 	return QISearch(this, qit, riid, ppv);
@@ -91,43 +92,56 @@ IFACEMETHODIMP_(ULONG) CShellViewImpl::Release()
 STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void **ppv)
 {
 	/*
-	{CLSID_Desktop}
-	{IID_ILayoutModifier}
-	{IID_IBrowserSettings}
-	{IID_ICommDlgBrowser}
-	{IID_IFolderTypeModifier}
-	{IID_IBrowserWithActivationNotification}
-	{IID_IFileDialogPrivate}
-	{IID_IWebBrowserApp}
-	{IID_IFolderView}
-	{4C96BE40-915C-11CF-99D3-00AA004AE837}
-	{3934E4C2-8143-4E4C-A1DC-718F8563F337}
-	{4C96BE40-915C-11CF-99D3-00AA004AE837}
-	{6CCB7BE0-6807-11D0-B810-00C04FD706EC}
-	{E38FE0F3-3DB0-47EE-A314-25CF7F4BF521}
-	{FAD451C2-AF58-4161-B9FF-57AFBBED0AD2}
-	{E07010EC-BC17-44C0-97B0-46C7C95B9EDC}
+	guidService										riid
+	---------------------------------------------------------------------------
+	{CLSID_Desktop}									{IID_IUnknown}
+	{IID_ILayoutModifier}							{IID_ILayoutModifier}
+	{IID_IBrowserSettings}							{IID_IBrowserSettings}
+	{IID_ICommDlgBrowser}							{IID_ICommDlgBrowser},{IID_ICommDlgBrowser2}
+	{IID_IFolderTypeModifier}						{IID_IFolderTypeModifier}
+	{IID_IBrowserWithActivationNotification}		{IID_IBrowserWithActivationNotification}
+	{IID_IWebBrowserApp}							{IID_IConnectionPointContainer}
+	{IID_IFolderView}								{IID_IShellSearchTarget}
+	{IID_IFileDialogPrivate}						{IID_IFileDialog},{IID_IFileDialogPrivate}
+	{SID_STopLevelBrowser}							{IID_ICommDlgBrowser2},{IID_IShellBrowserService},{IID_IShellBrowser},{IID_IShellItemBrowser},{IID_IConnectionPointContainer},{IID_IProfferService},{D3B1CAF5-EC4F-4B2E-BCB0-60D715C93CB2}
+	{3934E4C2-8143-4E4C-A1DC-718F8563F337}			{3934E4C2-8143-4E4C-A1DC-718F8563F337}
+	{6CCB7BE0-6807-11D0-B810-00C04FD706EC}			{6CCB7BE0-6807-11D0-B810-00C04FD706EC},{3E24A11C-15B2-4F71-B81E-008F77998E9F}
+	{E38FE0F3-3DB0-47EE-A314-25CF7F4BF521}			{E38FE0F3-3DB0-47EE-A314-25CF7F4BF521}
+	{FAD451C2-AF58-4161-B9FF-57AFBBED0AD2}			{IID_IUnknown}
+	{E07010EC-BC17-44C0-97B0-46C7C95B9EDC}			{E07010EC-BC17-44C0-97B0-46C7C95B9EDC}
+	{SID_DefView}									{IID_IUnknown}
+	{D7F81F62-491F-49BC-891D-5665085DF969}			{IID_IDelayedVisibility}
 	*/
 
 	HRESULT hr = E_NOINTERFACE;
 	*ppv = NULL;
 
+#ifdef _DEBUG
+	LPOLESTR str,str2;
+	StringFromIID(guidService,&str);
+	StringFromIID(riid,&str2);
+	::PrintLog(L"CShellViewImpl::QueryService: guidService = %s, riid = %s",str,str2);
+	CoTaskMemFree(str);
+	CoTaskMemFree(str2);
+#endif
 
-	if (SID_SExplorerBrowserFrame == guidService
-		|| IID_IFolderView == guidService
+	if (SID_SExplorerBrowserFrame == guidService	// SID_SExplorerBrowserFrame == IID_ICommDlgBrowser
 		|| IID_ICommDlgBrowser == guidService )
 	{
-		hr = QueryInterface(riid, ppv);
+		hr = QueryInterface(riid, ppv);		
 	}
-#ifdef _DEBUG
-	else
+	else if ( SID_STopLevelBrowser == guidService )
 	{
-		LPOLESTR str;
-		StringFromIID(guidService,&str);
-		::PrintLog(L"CShellViewImpl::QueryService: guidService =%s",str);
-		CoTaskMemFree(str);
+		hr = m_spShellBrowser->QueryInterface(riid,ppv);
 	}
-#endif
+	else if ( IID_IFolderView== guidService )
+	{
+		hr = m_spShellBrowser->QueryInterface(riid,ppv);
+	}
+	else if ( SID_DefView == guidService )
+	{
+
+	}
 	return hr;
 }
 
@@ -136,6 +150,16 @@ STDMETHODIMP CShellViewImpl::GetWindow ( HWND* phwnd )
 {
 	// Return our container window's handle to the browser.
 	*phwnd = m_hWnd;
+	return S_OK;
+}
+
+// IBrowserFrameOptions
+HRESULT CShellViewImpl::GetFrameOptions(
+		BROWSERFRAMEOPTIONS dwMask,
+		BROWSERFRAMEOPTIONS *pdwOptions
+		)
+{
+	*pdwOptions = BFO_QUERY_ALL & dwMask;
 	return S_OK;
 }
 
@@ -178,10 +202,13 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 			BOOL isShowTag = pthX->IsShowTag();
 			if ( isShowTag )
 			{
+				pthX->m_FolderSettings.ViewMode = FVM_ICON;
 				infoLoaded = ::MyLoadString(IDS_MSG_NO_TAG_WITH_DETAIL);
 			}
 			else
 			{
+				pthX->m_FolderSettings.ViewMode = FVM_DETAILS;
+
 				LPWSTR currentTag = L"";
 				auto &data = pthX->m_psfContainingFolder->CurrentShellItemData;
 				if ( NULL != data )
@@ -309,79 +336,55 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 	HRESULT hr = pfv2->QueryInterface(&pcm);
 	if (SUCCEEDED(hr))
 	{
-		if ( m_FolderSettings.ViewMode == FVM_DETAILS )
+		if( IsShowTag() )
 		{
-			if( IsShowTag() )
+			m_FolderSettings.ViewMode = FVM_ICON;
+			_peb->SetFolderSettings(&m_FolderSettings);
+
+			// do not show the columns.
+			PROPERTYKEY rgkeys[] = {0};
+			pcm->SetColumns(rgkeys,ARRAYSIZE(rgkeys));
+		}
+		else
+		{
+			m_FolderSettings.ViewMode = FVM_DETAILS;
+			_peb->SetFolderSettings(&m_FolderSettings);
+
+			PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay,PKEY_DateModified,PKEY_ItemTypeText,PKEY_Size,PKEY_ItemFolderPathDisplay};
+			hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
+			if (SUCCEEDED(hr))
 			{
-				PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay, PKEY_FileCount};
-				hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
+				CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+				hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
 				if (SUCCEEDED(hr))
 				{
-					// tag name
-					CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-					hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
-					if (SUCCEEDED(hr))
-					{
-						ci.dwState = CM_STATE_ALWAYSVISIBLE;
-						ci.uWidth = 250;
-						ci.uDefaultWidth = 250;
-						ci.uIdealWidth = 250;
-						StringCbPrintf(ci.wszName,sizeof(ci.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME) );
-						pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
-					}
-
-					// use count
-					CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-					hr = pcm->GetColumnInfo(PKEY_FileCount, &ci2);
-					if (SUCCEEDED(hr))
-					{
-						ci2.dwState = CM_STATE_ALWAYSVISIBLE;
-						ci2.uWidth = 100;
-						ci2.uDefaultWidth = 100;
-						ci2.uIdealWidth = 100;
-						StringCbPrintf(ci2.wszName,sizeof(ci2.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT) );
-						pcm->SetColumnInfo(PKEY_FileCount, &ci2);
-					}
+					ci.dwState = CM_STATE_ALWAYSVISIBLE;
+					ci.uWidth = 250;
+					ci.uDefaultWidth = 250;
+					ci.uIdealWidth = 250;
+					pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
 				}
-			}
-			else
-			{
-				PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay,PKEY_DateModified,PKEY_ItemTypeText,PKEY_Size,PKEY_ItemFolderPathDisplay};
-				hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
+
+				CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+				hr = pcm->GetColumnInfo(PKEY_DateModified, &ci2);
 				if (SUCCEEDED(hr))
 				{
-					CM_COLUMNINFO ci = {sizeof(ci), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-					hr = pcm->GetColumnInfo(PKEY_ItemNameDisplay, &ci);
-					if (SUCCEEDED(hr))
-					{
-						ci.dwState = CM_STATE_ALWAYSVISIBLE;
-						ci.uWidth = 250;
-						ci.uDefaultWidth = 250;
-						ci.uIdealWidth = 250;
-						pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
-					}
+					ci2.dwState = CM_STATE_VISIBLE;
+					ci2.uWidth = 180;
+					ci2.uDefaultWidth = 180;
+					ci2.uIdealWidth = 180;
+					pcm->SetColumnInfo(PKEY_DateModified, &ci2);
+				}
 
-					CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-					hr = pcm->GetColumnInfo(PKEY_DateModified, &ci2);
-					if (SUCCEEDED(hr))
-					{
-						ci2.dwState = CM_STATE_VISIBLE;
-						ci2.uWidth = 180;
-						ci2.uDefaultWidth = 180;
-						ci2.uIdealWidth = 180;
-						pcm->SetColumnInfo(PKEY_DateModified, &ci2);
-					}
-
-					CM_COLUMNINFO ci3 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-					hr = pcm->GetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
-					if (SUCCEEDED(hr))
-					{
-						ci2.dwState = CM_STATE_VISIBLE;
-						ci2.uWidth = 350;
-						ci2.uDefaultWidth = 350;
-						ci2.uIdealWidth = 350;
-						pcm->SetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
-					}
+				CM_COLUMNINFO ci3 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+				hr = pcm->GetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
+				if (SUCCEEDED(hr))
+				{
+					ci2.dwState = CM_STATE_VISIBLE;
+					ci2.uWidth = 350;
+					ci2.uDefaultWidth = 350;
+					ci2.uIdealWidth = 350;
+					pcm->SetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
 				}
 			}
 		}

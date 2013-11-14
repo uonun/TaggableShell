@@ -10,7 +10,8 @@ class CShellViewImpl:
 	public IOleCommandTarget,
 	public IServiceProvider,
 	public ICommDlgBrowser,
-	public IFolderView
+	public IFolderView,
+	public IBrowserFrameOptions
 {
 public:
 	CShellViewImpl(void);
@@ -100,6 +101,12 @@ public:
 		PCUITEMID_CHILD_ARRAY apidl,
 		POINT *apt,
 		DWORD dwFlags);
+
+	// IBrowserFrameOptions
+	HRESULT GetFrameOptions(
+		BROWSERFRAMEOPTIONS dwMask,
+		BROWSERFRAMEOPTIONS *pdwOptions
+		);
 
 	// Other stuff
 	HRESULT Init ( CShellFolderImpl* pContainingFolder );

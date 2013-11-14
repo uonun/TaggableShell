@@ -1,2 +1,2 @@
-taskkill /f /im Explorer.exe
-Explorer.exe
+taskkill /f /im explorer.exe
+::explorer.exe

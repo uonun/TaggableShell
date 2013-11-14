@@ -323,6 +323,16 @@ HRESULT CShellFolderImpl::GetDisplayNameOf(
 			if ( SHGDN_INFOLDER & uFlags )
 			{
 				StringCbCopy(pName->pOleStr,MAX_PATH,data->wszDisplayName);
+
+				// show usecount in IExplorerBrowser
+				if( !(uFlags & SHGDN_FOREDITING) && !(uFlags & SHGDN_FORADDRESSBAR) && !(uFlags & SHGDN_FORPARSING) )
+				{
+					StrCat(pName->pOleStr,L"(");
+					wchar_t szUseCount[8]; // max 99999999 files for each tag.
+					_itow_s(data->UseCount,szUseCount,10);
+					StrCat(pName->pOleStr,szUseCount);
+					StrCat(pName->pOleStr,L")");
+				}
 			}
 			else
 			{
