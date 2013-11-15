@@ -131,12 +131,13 @@ STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void
 	}
 	else if ( SID_STopLevelBrowser == guidService )
 	{
-		hr = _peb->QueryInterface(riid,ppv);
+		if( NULL != _peb )
+			hr = _peb->QueryInterface(riid,ppv);
 	}
 	else if ( SID_SFolderView == guidService ||  IID_IFolderView== guidService )
 	{
-		//hr = m_spShellBrowser->QueryInterface(riid,ppv);
-		hr = _peb->QueryInterface(riid,ppv);
+		if( NULL != _peb )
+			hr = _peb->QueryInterface(riid,ppv);
 	}
 	else if ( SID_DefView == guidService )
 	{
@@ -200,6 +201,7 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 			pthX->AddRef();
 			pthX->_isRefreshing = TRUE;
 
+#pragma region do work
 			LPWSTR infoLoaded = 0;
 			BOOL isShowTag = pthX->IsShowTag();
 			if ( isShowTag )
@@ -295,36 +297,24 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 				pthX->m_spShellBrowser->SetStatusTextSB(tmp4);
 				UpdateWindow(pthX->m_hWnd);
 			}
-
-
-			UpdateWindow( pthX->m_hWnd );
-			SendMessage( pthX->m_hWnd,WM_SETREDRAW,TRUE,0);	// Restart redrawing to avoid flickering
-
-			// the calling application must free the returned IEnumIDList object by calling its Release method.
-			if ( NULL != pEnum )
-				pEnum->Release();
-
-			//pthX->HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
-
-			pthX->_isRefreshing = FALSE;
-			pthX->Release();
+#pragma endregion
 
 		}
 		catch(...)
 		{
-
-			UpdateWindow( pthX->m_hWnd );
-			SendMessage( pthX->m_hWnd,WM_SETREDRAW,TRUE,0);	// Restart redrawing to avoid flickering
-
-			// the calling application must free the returned IEnumIDList object by calling its Release method.
-			if ( NULL != pEnum )
-				pEnum->Release();
-
-			//pthX->HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
-
-			pthX->_isRefreshing = FALSE;
-			pthX->Release();
 		}
+
+		UpdateWindow( pthX->m_hWnd );
+		SendMessage( pthX->m_hWnd,WM_SETREDRAW,TRUE,0);	// Restart redrawing to avoid flickering
+
+		// the calling application must free the returned IEnumIDList object by calling its Release method.
+		if ( NULL != pEnum )
+			pEnum->Release();
+
+		//pthX->HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
+
+		pthX->_isRefreshing = FALSE;
+		pthX->Release();
 
 		CoUninitialize();
 	}

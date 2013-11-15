@@ -2,6 +2,8 @@
 #include "..\include\NsExt.CShellViewImpl.h"
 #include <Winuser.h> // GWLP_WNDPROC, GWLP_USERDATA
 
+#define USE_ExplorerBrowser
+
 
 // CreateViewWindow() creates the container window.  Once that window is
 // created, it will create the list control.
@@ -10,7 +12,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 											   LPSHELLBROWSER psb, 
 											   LPRECT prcView, HWND* phWnd )
 {
-	HRESULT hr;
+	HRESULT hr = S_FALSE;
 
 	*phWnd = NULL;
 
@@ -20,7 +22,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	m_spShellBrowser->GetWindow(&m_hwndParent);
 	m_spShellBrowser->SetStatusTextSB(::MyLoadString(IDS_ProductIntro));
 	//m_spShellBrowser->EnableModelessSB(TRUE);
-	m_spShellBrowser->GetViewStateStream(STGM_READ,&m_pViewState);
+	//m_spShellBrowser->GetViewStateStream(STGM_READ,&m_pViewState);
 	m_FolderSettings = *lpfs;
 	//m_FolderSettings.ViewMode = FVM_DETAILS;
 
@@ -37,10 +39,11 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 		return -1;
 #pragma endregion
 
+#ifdef USE_ExplorerBrowser
 	hr = CoCreateInstance(CLSID_ExplorerBrowser, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_peb));
 	if (SUCCEEDED(hr))
 	{
-		IUnknown_SetSite(_peb, static_cast<IServiceProvider *>(this));
+		hr =IUnknown_SetSite(_peb, static_cast<IServiceProvider *>(this));
 
 		hr = _peb->Initialize(m_hWnd,prcView,&m_FolderSettings);
 		if (SUCCEEDED(hr))
@@ -59,6 +62,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 				IShellView* spSV;
 				_peb->GetCurrentView(IID_PPV_ARGS(&spSV));
 				spSV->GetWindow(phWnd);
+				spSV->Release();
 
 				IFolderView2 *pfv2;
 				hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
@@ -77,7 +81,9 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 			}
 		}
 	}
-
+#else
+	*phWnd = m_hWnd;
+#endif
 	return hr;
 }
 
