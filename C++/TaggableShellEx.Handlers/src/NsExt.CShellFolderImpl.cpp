@@ -29,7 +29,10 @@ CShellFolderImpl::~CShellFolderImpl(void)
 		_hSubmenu = NULL;
 	}
 
-	::CloseHandle(m_mutex);
+	if( NULL != m_mutex){
+		::CloseHandle(m_mutex);
+		m_mutex = NULL;
+	}
 
 	DllRelease();
 }

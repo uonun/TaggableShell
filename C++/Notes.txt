@@ -38,6 +38,10 @@ TBD:
 
 	- 允许在 Folder 内直接新增、删除、编辑Tag
 
+TIPS:
+	- 如果要在修改注册表后立即生效，需注意注册表中的缓存：
+		- HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Cached
+
 
 OTHER NOTES:
 // http://mikolajapp.appspot.com/uuid/query?q=%7B6CCB7BE0-6807-11D0-B810-00C04FD706EC%7D

@@ -36,7 +36,7 @@ CShellViewImpl::~CShellViewImpl(void)
 
 	if ( NULL != _peb )
 	{
-		_peb->Destroy();
+		_peb->Release();
 		_peb = NULL;
 	}
 

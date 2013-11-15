@@ -17,7 +17,10 @@ HRESULT CShellFolderImpl::BindToObject(
 		hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
 		if( hr == S_OK )
 		{
-			hr = ((CShellFolderImpl*)pShellFolder)->Init ( m_pIDFolder,(PIDLIST_RELATIVE) pidl );
+			auto pidlFolder = ILClone(m_pIDFolder);
+			auto pidlCurrent = ILClone(pidl);
+			this->AddRef();
+			hr = ((CShellFolderImpl*)pShellFolder)->Init ( pidlFolder,(PIDLIST_RELATIVE)pidlCurrent );
 
 			auto data = m_PidlMgr.GetData(pidl);
 			::PrintLog(L"ShellFolder::BindToObject: Got object: %s, FolderPath = %s",data->wszDisplayName,FolderPath);
@@ -27,9 +30,11 @@ HRESULT CShellFolderImpl::BindToObject(
 				pShellFolder->Release();
 				return hr;
 			}
-
-			hr = pShellFolder->QueryInterface(riid,ppvOut);
-			pShellFolder->Release();
+			else
+			{
+				hr = pShellFolder->QueryInterface(riid,ppvOut);
+				pShellFolder->Release();
+			}
 		}
 	}
 #ifdef _DEBUG

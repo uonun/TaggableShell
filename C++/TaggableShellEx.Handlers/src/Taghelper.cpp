@@ -36,7 +36,7 @@ CTaghelper::CTaghelper(void):
 
 	LPSTR tmp;
 	::WStr2Str(g_UserDb,tmp);
-	StrCatA(_dbFile,tmp);
+	StrCpyA(_dbFile,tmp);
 	_DELETE( tmp );
 }
 
@@ -53,8 +53,7 @@ CTaghelper::~CTaghelper(void)
 				_DELETE(TargetFileNames[i]);
 			}
 		}
-	}catch(...)
-	{}
+	}catch(...){}
 
 	try{
 		for (UINT i = 0; i < FileCount; i++)
@@ -64,13 +63,15 @@ CTaghelper::~CTaghelper(void)
 				_DELETE(_targetFileNamesInSQL[i]);
 			}
 		}
-	}catch(...)
-	{}
+	}catch(...){}
 
 	sqlite3_close(_db);  
 	_db = NULL;
 
-	::CloseHandle(m_mutex);
+	if( NULL != m_mutex){
+		::CloseHandle(m_mutex);
+		m_mutex = NULL;
+	}
 }
 
 BOOL CTaghelper::OpenDb()
