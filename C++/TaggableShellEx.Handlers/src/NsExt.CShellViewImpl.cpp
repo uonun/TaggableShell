@@ -295,7 +295,6 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 				WCHAR tmp4[MAX_PATH];
 				wsprintf ( tmp4,::MyLoadString(IDS_MSG_N_FILES_LOADED_FOR_TAG_WITH_NOT_FOUND),nLoaded,nNotAvailable);
 				pthX->m_spShellBrowser->SetStatusTextSB(tmp4);
-				UpdateWindow(pthX->m_hWnd);
 			}
 #pragma endregion
 

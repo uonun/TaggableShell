@@ -21,16 +21,14 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	m_spShellBrowser->AddRef(); // release in ~ctor
 	m_spShellBrowser->GetWindow(&m_hwndParent);
 	m_spShellBrowser->SetStatusTextSB(::MyLoadString(IDS_ProductIntro));
-	//m_spShellBrowser->EnableModelessSB(TRUE);
+	m_spShellBrowser->EnableModelessSB(TRUE);
 	//m_spShellBrowser->GetViewStateStream(STGM_READ,&m_pViewState);
 	m_FolderSettings = *lpfs;
-	//m_FolderSettings.ViewMode = FVM_DETAILS;
 
 #pragma region prepare window handler
 	DWORD dwListStyles = WS_CHILDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	DWORD dwListExStyles = WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RIGHTSCROLLBAR | WS_EX_CONTROLPARENT;
 
-	*phWnd = NULL;
 	m_hWnd = CreateWindowEx ( dwListExStyles,WC_STATIC, NULL, dwListStyles,0, 0,
 		prcView->right - prcView->left,prcView->bottom - prcView->top,
 		m_hwndParent, NULL, g_hInst, 0 );
@@ -40,18 +38,19 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 #pragma endregion
 
 #ifdef USE_ExplorerBrowser
+	//hr = SHCoCreateInstance(NULL, &CLSID_ExplorerBrowser, NULL, IID_PPV_ARGS(&_peb));
 	hr = CoCreateInstance(CLSID_ExplorerBrowser, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_peb));
 	if (SUCCEEDED(hr))
 	{
-		hr =IUnknown_SetSite(_peb, static_cast<IServiceProvider *>(this));
+		hr = IUnknown_SetSite(_peb, static_cast<IServiceProvider *>(this));
+
+		// initialized
+		_peb->SetOptions( EBO_SHOWFRAMES | EBO_ALWAYSNAVIGATE);	// EBO_SHOWFRAMES
+		_peb->SetEmptyText(::MyLoadString(IDS_MSG_LOADING_TAGS));
 
 		hr = _peb->Initialize(m_hWnd,prcView,&m_FolderSettings);
 		if (SUCCEEDED(hr))
 		{
-			// initialized
-			_peb->SetOptions(EBO_ALWAYSNAVIGATE | EBO_SHOWFRAMES);
-			_peb->SetEmptyText(::MyLoadString(IDS_MSG_LOADING_TAGS));
-
 			// Initialize the exporer browser so that we can use the results folder
 			// as the data source. This enables us to program the contents of
 			// the view via IResultsFolder
@@ -93,6 +92,11 @@ STDMETHODIMP CShellViewImpl::DestroyViewWindow()
 {
 	// Clean up the UI.
 	UIActivate ( SVUIA_DEACTIVATE );
+
+	if( NULL != _peb )
+	{
+		_peb->Destroy();
+	}
 
 	return S_OK;
 }
