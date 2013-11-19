@@ -54,13 +54,43 @@ HRESULT CShellFolderImpl::BindToStorage(
 	IBindCtx *pbc,
 	REFIID riid,
 	void **ppvOut
-	){	return S_OK;	};
+	)
+{
+	return S_OK;	
+}
 
 HRESULT CShellFolderImpl::CompareIDs(
 	LPARAM lParam,
 	PCUIDLIST_RELATIVE pidl1,
 	PCUIDLIST_RELATIVE pidl2
-	){	return S_OK;	};
+	)
+{
+	short sResult;
+	unsigned uSeverity = 0x000000000;	// Leave uSeverity = 0 if the order is successfully determined.
+
+	auto data1 = m_PidlMgr.GetData(pidl1);
+	auto data2 = m_PidlMgr.GetData(pidl2);
+	if( data1 != NULL && data2 != NULL )
+	{
+		// Set sResult = -1 if pidl1 precedes pidl2 (pidl1 < pidl2).
+		// Set sResult =  1 if pidl1 follows pidl2. (pidl1 > pidl2).
+		// Set sResult =  0 if pidl1 and pidl2 are equivalent in terms of ordering. (pidl1 = pidl2).
+
+		if ( data1->TagID == data2->TagID || data1->UseCount == data2->UseCount)
+			sResult =  0 ;
+		else if( data1->UseCount > data2->UseCount )
+			sResult = -1;
+		else
+			sResult =  1;
+	}
+	else
+	{
+		// Set uSeverity = 0x00000001 if there is an error.
+		uSeverity = 0x00000001;
+	}
+
+	return MAKE_HRESULT(uSeverity, 0, (unsigned short)sResult);
+}
 
 HRESULT CShellFolderImpl::CreateViewObject(
 	HWND hwndOwner,
@@ -77,6 +107,9 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	{IID_ITopViewAwareItem}
 	{IID_IFrameLayoutDefinitionFactory}
 	{IID_IFrameLayoutDefinition}
+	{IID_IIdentityName}
+	{IID_IShellLinkW}
+	{IID_IExplorerCommandProvider} not called ?
 	*/
 	if ( NULL == ppv )
 		return E_POINTER;
@@ -85,7 +118,7 @@ HRESULT CShellFolderImpl::CreateViewObject(
 
 	// Create a new ShellViewImpl COM object.
 	// A new view object must be created each time this method is called.
-	if ( IID_IShellView == riid )
+	if ( IsEqualIID(IID_IShellView,riid) )
 	{
 		::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IShellView");
 
@@ -109,11 +142,15 @@ HRESULT CShellFolderImpl::CreateViewObject(
 		v->Release();
 
 	}
-#ifdef _DEBUG
-	else if ( IID_IDropTarget == riid)
+	else if ( IsEqualIID(IID_IExplorerCommandProvider, riid))
 	{
-		::PrintLog(L"ShellFolder::CreateViewObject: Not implemented riid = IID_IDropTarget");
+		DebugBreak();
 	}
+#ifdef _DEBUG
+	//else if ( IsEqualIID(IID_IDropTarget, riid))
+	//{
+	//	::PrintLog(L"ShellFolder::CreateViewObject: Not implemented riid = IID_IDropTarget");
+	//}
 	//else if ( IID_IConnectionFactory == riid)
 	//{
 	//	::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IConnectionFactory");
@@ -396,13 +433,35 @@ HRESULT CShellFolderImpl::GetUIObjectOf(
 	HRESULT hr = E_NOINTERFACE;
 	*ppv = NULL;
 
-	if ( IID_IContextMenu == riid )
+	if ( IsEqualIID(IID_IContextMenu,riid) )
+	{
+		hr = this->QueryInterface(riid,ppv);		
+
+
+		IShellFolder* psfParent;
+		hr = SHBindToParent(m_pIDFolder,IID_PPV_ARGS(&psfParent),&apidl[0]);
+		if( SUCCEEDED(hr) )
+		{
+			hr = psfParent->GetUIObjectOf(hwndOwner,cidl,apidl,riid,rgfReserved,ppv);
+			psfParent->Release();
+		}
+
+
+		//IShellFolder *pShellFolder = NULL;
+		//hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
+		//if( hr == S_OK )
+		//{
+		//	hr = pShellFolder->QueryInterface(riid,ppv);
+		//	pShellFolder->Release();
+		//}
+	}
+	else if ( IsEqualIID(IID_IExtractIcon,riid) )
 	{
 		hr = this->QueryInterface(riid,ppv);
 	}
-	else if ( IID_IExtractIcon == riid )
+	else if ( IsEqualIID(IID_IQueryAssociations,riid) )
 	{
-		hr = this->QueryInterface(riid,ppv);
+		// not implement
 	}
 #ifdef _DEBUG
 	else

@@ -200,6 +200,7 @@ UINT CALLBACK PageCallbackProc_ShellViewImpl(
 	return 1;   // use nonzero let the page be created
 }
 
+// add pages to the Options property sheet from the View menu.
 STDMETHODIMP CShellViewImpl::AddPropertySheetPages(DWORD dwReserved, LPFNADDPROPSHEETPAGE lpfn, LPARAM lparam)
 { 
 	::PrintLog(L"CShellViewImpl::AddPropertySheetPages");
@@ -260,7 +261,7 @@ STDMETHODIMP 	CShellViewImpl::GetItemObject(UINT uItem, REFIID riid, void** ppv)
 	HRESULT hr = E_NOTIMPL;
 	//IID_IContextMenu
 
-	if ( IID_IDispatch == riid )
+	if ( IsEqualIID(IID_IDispatch, riid) )
 	{
 		// 
 	}

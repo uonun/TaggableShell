@@ -9,8 +9,8 @@ class CShellViewImpl:
 	public IShellView,
 	public IOleCommandTarget,
 	public IServiceProvider,
-	public ICommDlgBrowser2,
-	public IFolderView,
+	public ICommDlgBrowser3,
+	public IFolderView2,
 	public IBrowserFrameOptions
 {
 public:
@@ -34,6 +34,11 @@ public:
 	HRESULT STDMETHODCALLTYPE GetDefaultMenuText(IShellView *ppshv,LPWSTR pszText,int cchMax);
 	HRESULT STDMETHODCALLTYPE GetViewFlags(DWORD *pdwFlags);
 
+	// ICommDlgBrowser3
+	HRESULT STDMETHODCALLTYPE OnColumnClicked(IShellView *ppshv,int iColumn);
+	HRESULT STDMETHODCALLTYPE GetCurrentFilter(LPWSTR pszFileSpec,int cchFileSpec);
+	HRESULT STDMETHODCALLTYPE OnPreViewCreated(IShellView *ppshv);
+
 	// IOleWindow
 	STDMETHOD(GetWindow)(HWND* phwnd);
 	STDMETHOD(ContextSensitiveHelp)(BOOL){ return E_NOTIMPL; }
@@ -56,56 +61,47 @@ public:
 	STDMETHOD(Exec)(const GUID*, DWORD, DWORD, VARIANTARG*, VARIANTARG*);
 
 	// IFolderView
-	HRESULT STDMETHODCALLTYPE GetCurrentViewMode( 
-		UINT *pViewMode);
-
-	HRESULT STDMETHODCALLTYPE SetCurrentViewMode( 
-		UINT ViewMode);
-
-	HRESULT STDMETHODCALLTYPE GetFolder( 
-		REFIID riid,
-		void **ppv);
-
-	HRESULT STDMETHODCALLTYPE Item( 
-		int iItemIndex,
-		PITEMID_CHILD *ppidl);
-
-	HRESULT STDMETHODCALLTYPE ItemCount( 
-		UINT uFlags,
-		int *pcItems);
-
-	HRESULT STDMETHODCALLTYPE Items( 
-		UINT uFlags,
-		REFIID riid,
-		void **ppv);
-
-	HRESULT STDMETHODCALLTYPE GetSelectionMarkedItem( 
-		int *piItem);
-
-	HRESULT STDMETHODCALLTYPE GetFocusedItem( 
-		int *piItem);
-
-	HRESULT STDMETHODCALLTYPE GetItemPosition( 
-		PCUITEMID_CHILD pidl,
-		POINT *ppt);
-
-	HRESULT STDMETHODCALLTYPE GetSpacing( 
-		POINT *ppt);
-
-	HRESULT STDMETHODCALLTYPE GetDefaultSpacing( 
-		POINT *ppt);
-
+	HRESULT STDMETHODCALLTYPE GetCurrentViewMode( UINT *pViewMode);
+	HRESULT STDMETHODCALLTYPE SetCurrentViewMode( UINT ViewMode);
+	HRESULT STDMETHODCALLTYPE GetFolder( REFIID riid,void **ppv);
+	HRESULT STDMETHODCALLTYPE Item( int iItemIndex,PITEMID_CHILD *ppidl);
+	HRESULT STDMETHODCALLTYPE ItemCount( UINT uFlags,int *pcItems);
+	HRESULT STDMETHODCALLTYPE Items( UINT uFlags,REFIID riid,void **ppv);
+	HRESULT STDMETHODCALLTYPE GetSelectionMarkedItem( int *piItem);
+	HRESULT STDMETHODCALLTYPE GetFocusedItem( int *piItem);
+	HRESULT STDMETHODCALLTYPE GetItemPosition( PCUITEMID_CHILD pidl,POINT *ppt);
+	HRESULT STDMETHODCALLTYPE GetSpacing(POINT *ppt);
+	HRESULT STDMETHODCALLTYPE GetDefaultSpacing(POINT *ppt);
 	HRESULT STDMETHODCALLTYPE GetAutoArrange( void);
+	HRESULT STDMETHODCALLTYPE SelectItem(int iItem,DWORD dwFlags);
+	HRESULT STDMETHODCALLTYPE SelectAndPositionItems(UINT cidl,PCUITEMID_CHILD_ARRAY apidl,POINT *apt,	DWORD dwFlags);
 
-	HRESULT STDMETHODCALLTYPE SelectItem( 
-		int iItem,
-		DWORD dwFlags);
-
-	HRESULT STDMETHODCALLTYPE SelectAndPositionItems( 
-		UINT cidl,
-		PCUITEMID_CHILD_ARRAY apidl,
-		POINT *apt,
-		DWORD dwFlags);
+	// IFolderView2
+	HRESULT STDMETHODCALLTYPE SetGroupBy(REFPROPERTYKEY key,BOOL fAscending);
+	HRESULT STDMETHODCALLTYPE GetGroupBy( PROPERTYKEY *pkey,BOOL *pfAscending);
+	DEPRECATED_HRESULT STDMETHODCALLTYPE SetViewProperty( PCUITEMID_CHILD pidl,REFPROPERTYKEY propkey,REFPROPVARIANT propvar){ return E_NOTIMPL; }
+	DEPRECATED_HRESULT STDMETHODCALLTYPE GetViewProperty( PCUITEMID_CHILD pidl,REFPROPERTYKEY propkey,PROPVARIANT *ppropvar){ return E_NOTIMPL; }
+	DEPRECATED_HRESULT STDMETHODCALLTYPE SetTileViewProperties( PCUITEMID_CHILD pidl,LPCWSTR pszPropList){ return E_NOTIMPL; }
+	DEPRECATED_HRESULT STDMETHODCALLTYPE SetExtendedTileViewProperties( PCUITEMID_CHILD pidl,LPCWSTR pszPropList){ return E_NOTIMPL; }
+	HRESULT STDMETHODCALLTYPE SetText( FVTEXTTYPE iType,LPCWSTR pwszText);
+	HRESULT STDMETHODCALLTYPE SetCurrentFolderFlags(DWORD dwMask,DWORD dwFlags);
+	HRESULT STDMETHODCALLTYPE GetCurrentFolderFlags(DWORD *pdwFlags);
+	HRESULT STDMETHODCALLTYPE GetSortColumnCount(int *pcColumns);
+	HRESULT STDMETHODCALLTYPE SetSortColumns(const SORTCOLUMN *rgSortColumns,int cColumns);
+	HRESULT STDMETHODCALLTYPE GetSortColumns(SORTCOLUMN *rgSortColumns,int cColumns);
+	HRESULT STDMETHODCALLTYPE GetItem(int iItem,REFIID riid,void **ppv);
+	HRESULT STDMETHODCALLTYPE GetVisibleItem(int iStart,BOOL fPrevious,int *piItem);
+	HRESULT STDMETHODCALLTYPE GetSelectedItem(int iStart,int *piItem);
+	HRESULT STDMETHODCALLTYPE GetSelection(BOOL fNoneImpliesFolder,IShellItemArray **ppsia);
+	HRESULT STDMETHODCALLTYPE GetSelectionState(PCUITEMID_CHILD pidl,DWORD *pdwFlags);
+	HRESULT STDMETHODCALLTYPE InvokeVerbOnSelection(LPCSTR pszVerb);
+	HRESULT STDMETHODCALLTYPE SetViewModeAndIconSize(FOLDERVIEWMODE uViewMode,int iImageSize);
+	HRESULT STDMETHODCALLTYPE GetViewModeAndIconSize(FOLDERVIEWMODE *puViewMode,int *piImageSize);
+	HRESULT STDMETHODCALLTYPE SetGroupSubsetCount(UINT cVisibleRows);
+	HRESULT STDMETHODCALLTYPE GetGroupSubsetCount(UINT *pcVisibleRows);
+	HRESULT STDMETHODCALLTYPE SetRedraw(BOOL fRedrawOn);
+	HRESULT STDMETHODCALLTYPE IsMoveInSameFolder( void);
+	HRESULT STDMETHODCALLTYPE DoRename( void);
 
 	// IBrowserFrameOptions
 	HRESULT GetFrameOptions(

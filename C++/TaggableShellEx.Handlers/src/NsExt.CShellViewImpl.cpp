@@ -73,8 +73,10 @@ IFACEMETHODIMP CShellViewImpl::QueryInterface(REFIID riid, void ** ppv)
 		QITABENT(CShellViewImpl, IServiceProvider),
 		QITABENT(CShellViewImpl, ICommDlgBrowser),
 		QITABENT(CShellViewImpl, ICommDlgBrowser2),
+		QITABENT(CShellViewImpl, ICommDlgBrowser3),
 		QITABENT(CShellViewImpl, IOleWindow),
 		QITABENT(CShellViewImpl, IFolderView),		
+		QITABENT(CShellViewImpl, IFolderView2),		
 		QITABENT(CShellViewImpl, IBrowserFrameOptions),		
 		{0},
 	};
@@ -105,18 +107,36 @@ STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void
 	{CLSID_Desktop}									{IID_IUnknown}
 	{IID_ILayoutModifier}							{IID_ILayoutModifier}
 	{IID_IBrowserSettings}							{IID_IBrowserSettings}
-	{IID_ICommDlgBrowser}							{IID_ICommDlgBrowser},{IID_ICommDlgBrowser2}
+	---------------------------------------------------------------------------
+	{IID_ICommDlgBrowser}							{IID_ICommDlgBrowser}
+	................................................{IID_ICommDlgBrowser2}
+	................................................{IID_ICommDlgBrowser3}
+	---------------------------------------------------------------------------
 	{IID_IFolderTypeModifier}						{IID_IFolderTypeModifier}
 	{IID_IBrowserWithActivationNotification}		{IID_IBrowserWithActivationNotification}
 	{IID_IWebBrowserApp}							{IID_IConnectionPointContainer}
+	---------------------------------------------------------------------------
 	{IID_IFolderView}								{IID_IShellSearchTarget}
-	{IID_IFileDialogPrivate}						{IID_IFileDialog},{IID_IFileDialogPrivate}
-	{SID_STopLevelBrowser}							{IID_ICommDlgBrowser2},{IID_IShellBrowserService},{IID_IShellBrowser},{IID_IShellItemBrowser},{IID_IConnectionPointContainer},{IID_IProfferService},{D3B1CAF5-EC4F-4B2E-BCB0-60D715C93CB2}
+	................................................{9365FF5E-C1F5-499E-B81F-586BFC067E48}
+	---------------------------------------------------------------------------
+	{IID_IFileDialogPrivate}						{IID_IFileDialog}
+	................................................{IID_IFileDialogPrivate}
+	---------------------------------------------------------------------------
+	{SID_STopLevelBrowser}							{IID_ICommDlgBrowser2}
+	................................................{IID_IShellBrowserService}
+	................................................{IID_IShellBrowser}
+	................................................{IID_IShellItemBrowser}
+	................................................{IID_IConnectionPointContainer}
+	................................................{IID_IProfferService}
+	................................................{D3B1CAF5-EC4F-4B2E-BCB0-60D715C93CB2}
+	---------------------------------------------------------------------------
+	{IID_IShellTaskScheduler}						{IID_IShellTaskScheduler}
+	................................................{3E24A11C-15B2-4F71-B81E-008F77998E9F}
+	---------------------------------------------------------------------------
 	{3934E4C2-8143-4E4C-A1DC-718F8563F337}			{3934E4C2-8143-4E4C-A1DC-718F8563F337}
-	{6CCB7BE0-6807-11D0-B810-00C04FD706EC}			{6CCB7BE0-6807-11D0-B810-00C04FD706EC},{3E24A11C-15B2-4F71-B81E-008F77998E9F}
 	{E38FE0F3-3DB0-47EE-A314-25CF7F4BF521}			{E38FE0F3-3DB0-47EE-A314-25CF7F4BF521}
 	{FAD451C2-AF58-4161-B9FF-57AFBBED0AD2}			{IID_IUnknown}
-	{E07010EC-BC17-44C0-97B0-46C7C95B9EDC}			{E07010EC-BC17-44C0-97B0-46C7C95B9EDC}
+	{SID_ExplorerPaneVisibility}					{IID_IExplorerPaneVisibility}
 	{SID_DefView}									{IID_IUnknown}
 	{D7F81F62-491F-49BC-891D-5665085DF969}			{IID_IDelayedVisibility}
 	{DD1E21CC-E2C7-402C-BF05-10328D3F6BAD}			{DD1E21CC-E2C7-402C-BF05-10328D3F6BAD}
@@ -134,23 +154,35 @@ STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void
 	CoTaskMemFree(str2);
 #endif
 
-	if (SID_SExplorerBrowserFrame == guidService || IID_ICommDlgBrowser == guidService )
+	if ( IsEqualIID(SID_SExplorerBrowserFrame, guidService) )
 	{
 		hr = QueryInterface(riid, ppv);		
 	}
-	else if ( SID_STopLevelBrowser == guidService )
+	else if ( IsEqualIID(SID_STopLevelBrowser, guidService) )
+	{
+		if ( IsEqualIID(IID_ICommDlgBrowser2, riid) )
+		{
+			hr = QueryInterface(riid, ppv);		
+		}
+		else
+		{
+			if( NULL != _peb )
+				hr = _peb->QueryInterface(riid,ppv);
+		}
+	}
+	else if ( IsEqualIID(SID_SFolderView, guidService) ||  IsEqualIID(IID_IFolderView, guidService) )
+	{
+		hr = QueryInterface(riid, ppv);		
+	}
+	else if ( IsEqualIID(SID_DefView, guidService) )
 	{
 		if( NULL != _peb )
 			hr = _peb->QueryInterface(riid,ppv);
 	}
-	else if ( SID_SFolderView == guidService ||  IID_IFolderView== guidService )
+	else if ( IsEqualIID(SID_ExplorerPaneVisibility, guidService) )
 	{
 		if( NULL != _peb )
 			hr = _peb->QueryInterface(riid,ppv);
-	}
-	else if ( SID_DefView == guidService )
-	{
-
 	}
 	return hr;
 }
@@ -170,8 +202,8 @@ HRESULT CShellViewImpl::GetFrameOptions(
 	)
 {
 	HRESULT hr = E_NOTIMPL;
-	//*pdwOptions = BFO_QUERY_ALL & dwMask;
-	//hr = S_OK;
+	*pdwOptions = BFO_QUERY_ALL;
+	hr = S_OK;
 	return hr;
 }
 
@@ -283,7 +315,10 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 
 					if (SUCCEEDED(hr))
 					{
+						_ASSERT_EXPR( NULL != pthX->_prf , L"_prf could not be NULL!");
+
 						hr = pthX->_prf->AddItem(psi);
+						Sleep(0);
 						psi->Release();
 					}
 					else

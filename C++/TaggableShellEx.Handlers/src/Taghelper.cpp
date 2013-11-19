@@ -355,9 +355,9 @@ UINT CTaghelper::GetFileID(LPSTR* pFileNameInSQL)
 			int id = atoi(pazResult[1]);
 			if( id > 0 ) 
 				FID = id;
-			::PrintLog("Got file id: %d",FID);
+			::PrintLog("[Find file id exists] Got file id: %d",FID);
 		}else{
-			::PrintLog("Fail to get file id.");
+			::PrintLog("[Find file id exists] Fail to get file id.");
 		}
 
 		sqlite3_free_table(pazResult);
@@ -474,9 +474,9 @@ UINT CTaghelper::InsertFile(LPWSTR & targetFile)
 			int idTmp = atoi(pazResult[1]);
 			if( idTmp > 0 ) 
 				id = idTmp;
-			::PrintLog("[InsertFile] Got file id: %d",idTmp);
+			::PrintLog("[Insert file & get the new id] Got file id: %d",idTmp);
 		}else{
-			::PrintLog("[InsertFile] Fail to get file id.");
+			::PrintLog("[Insert file & get the new id] Fail to get file id.");
 		}
 
 		sqlite3_free_table(pazResult);

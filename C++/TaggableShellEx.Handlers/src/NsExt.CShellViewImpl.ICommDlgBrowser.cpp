@@ -87,3 +87,17 @@ HRESULT CShellViewImpl::GetViewFlags(DWORD *pdwFlags)
 	*pdwFlags = CDB2GVF_SHOWALLFILES | CDB2GVF_ISFOLDERPICKER;
 	return S_OK;
 }
+
+// ICommDlgBrowser3
+HRESULT CShellViewImpl::OnColumnClicked(IShellView *ppshv,int iColumn)
+{
+	return E_NOTIMPL;
+}
+HRESULT CShellViewImpl::GetCurrentFilter(LPWSTR pszFileSpec,int cchFileSpec)
+{
+	return E_NOTIMPL;
+}
+HRESULT CShellViewImpl::OnPreViewCreated(IShellView *ppshv)
+{
+	return E_NOTIMPL;
+}

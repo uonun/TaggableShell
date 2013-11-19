@@ -1,7 +1,7 @@
 #pragma once
 #include "../include/NsExt.CShellFolderImpl.h"
 
-
+// IContextMenu
 HRESULT CShellFolderImpl::QueryContextMenu (
 	HMENU hmenu, UINT uMenuIndex, UINT uidFirstCmd,
 	UINT uidLastCmd, UINT uFlags )

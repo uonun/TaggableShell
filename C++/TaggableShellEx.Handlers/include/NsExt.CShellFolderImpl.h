@@ -8,6 +8,7 @@
 class CShellFolderImpl:
 	public IExtractIcon,
 	public IContextMenu,
+	public IExplorerPaneVisibility,
 	public IQueryInfo,
 	public IShellFolder,	
 	public IPersistFolder	
@@ -114,6 +115,8 @@ public:
 	STDMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pCmdInfo);
 	STDMETHODIMP QueryContextMenu(HMENU hmenu, UINT uMenuIndex, UINT uidFirstCmd, UINT uidLastCmd, UINT uFlags);
 
+	// IExplorerPaneVisibility
+	HRESULT STDMETHODCALLTYPE GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps);
 
 	// Init function - call right after constructing a CShellFolderImpl object.
 	HRESULT Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current );
