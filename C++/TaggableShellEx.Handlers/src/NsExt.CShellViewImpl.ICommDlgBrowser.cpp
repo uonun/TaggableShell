@@ -68,3 +68,22 @@ STDMETHODIMP CShellViewImpl::IncludeObject(IShellView * psv, PCUITEMID_CHILD pid
 	::PrintLog(L"CShellViewImpl::IncludeObject");
 	return S_OK;
 }
+
+
+
+// ICommDlgBrowser2
+HRESULT CShellViewImpl::Notify(IShellView *ppshv,DWORD dwNotifyType)
+{
+	//CDB2N_CONTEXTMENU_START
+	//CDB2N_CONTEXTMENU_DONE
+	return E_NOTIMPL;
+}
+HRESULT CShellViewImpl::GetDefaultMenuText(IShellView *ppshv,LPWSTR pszText,int cchMax)
+{
+	return E_NOTIMPL;
+}
+HRESULT CShellViewImpl::GetViewFlags(DWORD *pdwFlags)
+{
+	*pdwFlags = CDB2GVF_SHOWALLFILES | CDB2GVF_ISFOLDERPICKER;
+	return S_OK;
+}

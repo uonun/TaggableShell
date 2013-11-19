@@ -9,7 +9,7 @@ class CShellViewImpl:
 	public IShellView,
 	public IOleCommandTarget,
 	public IServiceProvider,
-	public ICommDlgBrowser,
+	public ICommDlgBrowser2,
 	public IFolderView,
 	public IBrowserFrameOptions
 {
@@ -28,6 +28,11 @@ public:
 	STDMETHODIMP OnDefaultCommand(IShellView * /* psv */);
 	STDMETHODIMP OnStateChange(IShellView * /* psv */, ULONG uChange);
 	STDMETHODIMP IncludeObject(IShellView * /* psv */, PCUITEMID_CHILD /* pidl */);
+
+	// ICommDlgBrowser2
+	HRESULT STDMETHODCALLTYPE Notify(IShellView *ppshv,DWORD dwNotifyType);
+	HRESULT STDMETHODCALLTYPE GetDefaultMenuText(IShellView *ppshv,LPWSTR pszText,int cchMax);
+	HRESULT STDMETHODCALLTYPE GetViewFlags(DWORD *pdwFlags);
 
 	// IOleWindow
 	STDMETHOD(GetWindow)(HWND* phwnd);
@@ -143,4 +148,8 @@ private:
 	static unsigned __stdcall FillList_Asyn(void * pThis);
 	void HandleActivate(UINT uState);
 	void HandleDeactivate();
+
+	// mutex lock
+	static HANDLE m_mutex;
+
 };

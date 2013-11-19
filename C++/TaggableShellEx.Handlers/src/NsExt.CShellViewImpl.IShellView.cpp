@@ -99,9 +99,17 @@ STDMETHODIMP CShellViewImpl::DestroyViewWindow()
 	// Clean up the UI.
 	UIActivate ( SVUIA_DEACTIVATE );
 
+	if ( NULL != _prf )
+	{
+		_prf->RemoveAll();
+		_prf->Release();
+		_prf = NULL;
+	}
+
 	if( NULL != _peb )
 	{
 		_peb->Destroy();
+		_peb = NULL;
 	}
 
 	return S_OK;

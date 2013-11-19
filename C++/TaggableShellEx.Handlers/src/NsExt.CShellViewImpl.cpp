@@ -2,6 +2,8 @@
 #include "..\include\NsExt.CShellViewImpl.h"
 #include <propkey.h>
 
+HANDLE CShellViewImpl::m_mutex = ::CreateMutex(NULL, FALSE, NULL);
+
 CShellViewImpl::CShellViewImpl(void): 
 	_cRef(1) // IUnknown
 	,m_hwndParent(NULL)
@@ -40,6 +42,11 @@ CShellViewImpl::~CShellViewImpl(void)
 		_peb = NULL;
 	}
 
+	if( NULL != m_mutex){
+		::CloseHandle(m_mutex);
+		m_mutex = NULL;
+	}
+
 	DllRelease();
 }
 
@@ -65,6 +72,7 @@ IFACEMETHODIMP CShellViewImpl::QueryInterface(REFIID riid, void ** ppv)
 		QITABENT(CShellViewImpl, IOleCommandTarget),
 		QITABENT(CShellViewImpl, IServiceProvider),
 		QITABENT(CShellViewImpl, ICommDlgBrowser),
+		QITABENT(CShellViewImpl, ICommDlgBrowser2),
 		QITABENT(CShellViewImpl, IOleWindow),
 		QITABENT(CShellViewImpl, IFolderView),		
 		QITABENT(CShellViewImpl, IBrowserFrameOptions),		
@@ -191,6 +199,8 @@ HRESULT CShellViewImpl::GetItemFromView(IFolderView2 *pfv, int iItem, REFIID rii
 
 unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 {
+	WaitForSingleObject(m_mutex, INFINITE);
+
 	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 	if (SUCCEEDED(hr))
 	{
@@ -225,7 +235,6 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 			}
 
 			pthX->_peb->SetEmptyText(infoLoaded);
-			pthX->_peb->RemoveAll();
 
 			// Stop redrawing to avoid flickering
 			SendMessage( pthX->m_hWnd,WM_SETREDRAW,FALSE,0);
@@ -239,6 +248,8 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 			hr = sf->EnumObjects ( pthX->m_hWnd, flag,&pEnum );
 			if ( SUCCEEDED(hr) )
 			{
+				pthX->_prf->RemoveAll();
+
 				// Add items.
 				DWORD dwFetched;
 				int nLoaded = 0;		// total of loaded items, including nNotAvailable.
@@ -319,7 +330,10 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 		CoUninitialize();
 	}
 
-	return 1;          // the thread exit code, If the function succeeds, the return value is nonzero.
+	ReleaseMutex(m_mutex);
+
+	_endthreadex( 0 );
+	return 0;          // the thread exit code, If the function succeeds, the return value is nonzero.
 }
 
 void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
@@ -423,6 +437,7 @@ void CShellViewImpl::FillList()
 	if( !_isRefreshing )
 	{
 		_isRefreshing = TRUE;
+		HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
 		_beginthreadex(0,0,FillList_Asyn,this,0,0);
 	}
 }
