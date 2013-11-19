@@ -318,8 +318,8 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 						_ASSERT_EXPR( NULL != pthX->_prf , L"_prf could not be NULL!");
 
 						hr = pthX->_prf->AddItem(psi);
-						Sleep(0);
 						psi->Release();
+						Sleep(0);
 					}
 					else
 					{

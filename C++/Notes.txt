@@ -25,6 +25,7 @@ Known bugs:
 	- 应当允许通过点击按钮“更改您的视图”来切换视图显示。
 	- 应当保存ExplorerBrowser的状态。
 		- 点击ExplorerBrowser的列头进行排序，切换到其他文件夹，再返回，ExplorerBrowser的排序已被重置。
+	- 选择多个Folder，然后点击右键->打开，在打开的Shell上，地址栏显示的路径错误
 
 TBD:
 	- 在桌面、我的电脑上显示Folder。

@@ -13,8 +13,7 @@ HRESULT CShellFolderImpl::GetInfoTip(DWORD dwFlags, PWSTR *ppwszTip)
 HRESULT CShellFolderImpl::GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps)
 {
 	*peps = EPS_DONTCARE;
-	if ( IsEqualIID( EP_PreviewPane, ep) 
-		|| IsEqualIID( EP_Commands_Organize, ep) 
+	if (IsEqualIID( EP_Commands_Organize, ep) 
 		|| IsEqualIID( EP_AdvQueryPane, ep)
 		)
 	{
