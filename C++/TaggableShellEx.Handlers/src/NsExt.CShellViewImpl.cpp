@@ -111,6 +111,7 @@ STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void
 	{E07010EC-BC17-44C0-97B0-46C7C95B9EDC}			{E07010EC-BC17-44C0-97B0-46C7C95B9EDC}
 	{SID_DefView}									{IID_IUnknown}
 	{D7F81F62-491F-49BC-891D-5665085DF969}			{IID_IDelayedVisibility}
+	{DD1E21CC-E2C7-402C-BF05-10328D3F6BAD}			{DD1E21CC-E2C7-402C-BF05-10328D3F6BAD}
 	*/
 
 	HRESULT hr = E_NOINTERFACE;
@@ -195,11 +196,9 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 	{
 		IEnumIDList *pEnum = NULL;
 		CShellViewImpl * pthX = (CShellViewImpl*)pThis;
+		pthX->AddRef();
 
 		try{
-
-			pthX->AddRef();
-			pthX->_isRefreshing = TRUE;
 
 #pragma region do work
 			LPWSTR infoLoaded = 0;
@@ -295,6 +294,8 @@ unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
 				WCHAR tmp4[MAX_PATH];
 				wsprintf ( tmp4,::MyLoadString(IDS_MSG_N_FILES_LOADED_FOR_TAG_WITH_NOT_FOUND),nLoaded,nNotAvailable);
 				pthX->m_spShellBrowser->SetStatusTextSB(tmp4);
+			}else{
+				pthX->m_spShellBrowser->SetStatusTextSB(L"No item.");
 			}
 #pragma endregion
 
@@ -421,6 +422,7 @@ void CShellViewImpl::FillList()
 {
 	if( !_isRefreshing )
 	{
+		_isRefreshing = TRUE;
 		_beginthreadex(0,0,FillList_Asyn,this,0,0);
 	}
 }
