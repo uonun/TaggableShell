@@ -1,8 +1,8 @@
 #pragma once
-#include "../include/dllmain.h"
-#include "../include/CHandler.h"
-#include "../include/Form.TagManager.h"
-
+#include "..\include\dllmain.h"
+#include "..\include\CHandler.h"
+#include "..\include\Form.TagManager.h"
+#include "..\include\CBackgroundThread.h"
 
 HRESULT CHandler::QueryContextMenu (
 	HMENU hmenu, UINT uMenuIndex, UINT uidFirstCmd,
@@ -115,11 +115,14 @@ HRESULT CHandler::InvokeCommand (
 	if ( 0 != HIWORD( pCmdInfo->lpVerb ) )
 		return E_INVALIDARG;
 
+	_cmdHwnd = pCmdInfo->hwnd;
+
 	// Get the command index.
 	auto cmd =LOWORD( pCmdInfo->lpVerb );
 	if( cmd < this->pTagHelper->TagCount)
 	{
 		UINT cmd_tagIdx = cmd;
+
 		this->pTagHelper->SetTagByIdx(cmd_tagIdx);
 	}
 	else
@@ -152,7 +155,18 @@ HRESULT CHandler::InvokeCommand (
 			_hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE( _contextMenuSupposed ? IDD_PROPERTYPAGE_FILE : IDD_PROPERTYPAGE_FOLDER),pCmdInfo->hwnd,NULL);
 			break;
 		case CMD_ABOUT:
-			_hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_ABOUT),pCmdInfo->hwnd,DlgProc_About);
+			{
+				//_hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_ABOUT),pCmdInfo->hwnd,DlgProc_About);
+
+				IOperationsProgressDialog *_pOPD = NULL;
+				pTagHelper->ShowProgressDlg(this->_cmdHwnd,_pOPD);
+				CBackgroundThread<CHandler,IOperationsProgressDialog> *pfrobt = new (std::nothrow) CBackgroundThread<CHandler,IOperationsProgressDialog>(this);
+				if (pfrobt)
+				{
+					pfrobt->StartThread(_pOPD);
+					pfrobt->Release();
+				}
+			}
 			break;
 		default:
 			{
@@ -180,6 +194,17 @@ HRESULT CHandler::InvokeCommand (
 
 	return S_OK;
 }
+
+void CHandler::DoWorkAsyn(IOperationsProgressDialog *_pOPD)
+{
+	ULONGLONG current = 0;
+	while (current <= 100)
+	{
+		pTagHelper->UpdateProgress(_pOPD,current++,100);
+		Sleep(500);
+	}
+}
+
 
 LRESULT CALLBACK DlgProc_TagManager(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
 	FormTagManager *pebhd = reinterpret_cast<FormTagManager *>(GetWindowLongPtr(hwnd, DWLP_USER));
@@ -237,3 +262,4 @@ LRESULT CALLBACK DlgProc_About(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wPar
 
 	return (INT_PTR)FALSE;
 }
+

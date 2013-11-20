@@ -2,7 +2,7 @@
 #include "dllmain.h"
 #include "NsExt.CShellFolderImpl.h"
 #include "NsExt.CEnumIDListImpl.h"
-//#include "NsExt.CShellItemImpl_Tag.h"
+#include "CBackgroundThread.h"
 #include "PidlMgr.h"
 
 class CShellViewImpl:
@@ -112,6 +112,9 @@ public:
 	// Other stuff
 	HRESULT Init ( CShellFolderImpl* pContainingFolder );
 
+	// Fill list in background thread. used in CBackgroundThread.h
+	HRESULT DoWorkAsyn(IResultsFolder *prf);
+
 private:
 	~CShellViewImpl(void);
 
@@ -121,27 +124,22 @@ private:
 	HWND				m_hwndParent;
 	HWND				m_hWnd;
 	CShellFolderImpl*   m_psfContainingFolder;
-	FOLDERSETTINGS		m_FolderSettings;
+	FOLDERSETTINGS		m_folderSettings;
 	IShellBrowser*		m_spShellBrowser;	// the container of IExplorerBrowser, witch is in the Shell window.
 	IStream*			m_pViewState;		
 	IExplorerBrowser*	_peb;
 	IResultsFolder*		_prf;
 	CPidlMgr			m_PidlMgr;
-	BOOL				_isRefreshing;
+	BOOL				m_isRefreshing;
 	UINT				m_uUIState;	// current state
 	HMENU				m_hMenu;
 
-	void FillList();
 	void InitExplorerBrowserColumns(IFolderView2* pfv2);
 	BOOL IsShowTag();
 	HRESULT GetItemFromView(IFolderView2 *pfv, int iItem, REFIID riid, void **ppv);
 
-	// In C++ you must employ a free (C) function or a static
-	// class member function as the thread entry-point-function.
-	// Furthermore, _beginthreadex() demands that the thread
-	// entry function signature take a single (void*) and returned
-	// an unsigned.
-	static unsigned __stdcall FillList_Asyn(void * pThis);
+	void FillList();
+
 	void HandleActivate(UINT uState);
 	void HandleDeactivate();
 

@@ -47,6 +47,9 @@ public:
 
 	HRESULT GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagIdInDb);
 
+	HRESULT ShowProgressDlg(HWND hwnd,IOperationsProgressDialog * & _pOPD);
+	HRESULT UpdateProgress(IOperationsProgressDialog *_pOPD,ULONGLONG current,ULONGLONG total);
+
 #pragma region singleton
 public:
 	static CTaghelper *instance () 
@@ -65,7 +68,7 @@ private :
 
 	// use instance() instead!
 	static CTaghelper *p_instance_; 
-	
+
 	// mutex lock
 	HANDLE m_mutex;
 

@@ -48,6 +48,7 @@
   <ItemGroup>
     <ClInclude Include="include\dllmain.h" />
     <ClInclude Include="include\Log.h" />
+    <ClInclude Include="include\CBackgroundThread.h" />
     <ClInclude Include="include\PidlMgr.h" />
     <ClInclude Include="include\NsExt.CEnumIDListImpl.h" />
     <ClInclude Include="include\NsExt.CShellViewImpl.h" />

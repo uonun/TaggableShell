@@ -274,6 +274,11 @@ HRESULT CTaghelper::SetTagByRecordId(UINT & tagIdInDb)
 		}
 		else if( FileCount > 1)
 		{
+
+
+
+
+
 			UINT FID = DB_RECORD_NOT_EXIST;
 			for (UINT i = 0; i < FileCount; i++)
 			{
@@ -661,3 +666,85 @@ HRESULT CTaghelper::GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagI
 	return S_OK;
 }
 
+HRESULT CTaghelper::ShowProgressDlg(HWND hwnd,IOperationsProgressDialog * & _pOPD)
+{
+	//
+	// Initialize COM as STA.
+	//
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE); 
+	if (SUCCEEDED(hr))
+	{
+		IFileOperation *pfo;
+
+		//
+		// Create the IFileOperation interface 
+		//
+		hr = CoCreateInstance(CLSID_FileOperation, 
+			NULL, 
+			CLSCTX_ALL, 
+			IID_PPV_ARGS(&pfo));
+		if (SUCCEEDED(hr))
+		{
+			//
+			// Set the operation flags. Turn off all UI from being shown to the
+			// user during the operation. This includes error, confirmation,
+			// and progress dialogs.
+			//
+			hr = pfo->SetOperationFlags(FOF_SIMPLEPROGRESS);
+			if (SUCCEEDED(hr))
+			{
+				if (SUCCEEDED(hr))
+				{
+					hr = CoCreateInstance(CLSID_ProgressDialog, 
+						NULL, 
+						CLSCTX_ALL, 
+						IID_PPV_ARGS(&_pOPD));
+
+					if (SUCCEEDED(hr))
+					{
+						_pOPD->SetMode(PDOPS_RUNNING);
+						_pOPD->SetOperation(SPACTION_APPLYINGATTRIBS);
+						_pOPD->StartProgressDialog(hwnd, OPPROGDLG_DONTDISPLAYLOCATIONS | OPPROGDLG_DONTDISPLAYDESTPATH | PROGDLG_NOCANCEL);
+						pfo->SetProgressDialog(_pOPD);
+					}
+				}
+
+				if (SUCCEEDED(hr))
+				{
+					//
+					// Perform the operation.
+					//
+					hr = pfo->PerformOperations();
+				}        
+			}
+
+			//
+			// Release the IFileOperation interface.
+			//
+			pfo->Release();
+		}
+
+		CoUninitialize();
+	}
+	return hr;
+}
+
+HRESULT CTaghelper::UpdateProgress(IOperationsProgressDialog *_pOPD,ULONGLONG current,ULONGLONG total)
+{
+	HRESULT hr = S_FALSE;
+
+	if( NULL != _pOPD )
+	{
+		PDOPSTATUS state;
+		_pOPD->GetOperationStatus(&state);
+
+		if ( current >= total || state == PDOPS_CANCELLED || state == PDOPS_STOPPED)
+		{
+			hr = _pOPD->StopProgressDialog();
+			_pOPD->Release();
+		}else{
+			hr = _pOPD->UpdateProgress(current,total,12000,18000,4,5);
+		}
+	}
+	return hr;
+}

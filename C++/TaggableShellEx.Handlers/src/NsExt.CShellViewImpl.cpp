@@ -11,7 +11,7 @@ CShellViewImpl::CShellViewImpl(void):
 	,m_spShellBrowser(NULL)
 	,m_psfContainingFolder(NULL)
 	, _peb(NULL),_prf(NULL)
-	,_isRefreshing(FALSE)
+	,m_isRefreshing(FALSE)
 	,m_uUIState(SVUIA_DEACTIVATE)
 {
 	::PrintLog(L"CShellViewImpl.ctor");
@@ -229,148 +229,6 @@ HRESULT CShellViewImpl::GetItemFromView(IFolderView2 *pfv, int iItem, REFIID rii
 	return hr;
 }
 
-unsigned __stdcall CShellViewImpl::FillList_Asyn(void * pThis)
-{
-	WaitForSingleObject(m_mutex, INFINITE);
-
-	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-	if (SUCCEEDED(hr))
-	{
-		IEnumIDList *pEnum = NULL;
-		CShellViewImpl * pthX = (CShellViewImpl*)pThis;
-		pthX->AddRef();
-
-		try{
-
-#pragma region do work
-			LPWSTR infoLoaded = 0;
-			BOOL isShowTag = pthX->IsShowTag();
-			if ( isShowTag )
-			{
-				pthX->m_FolderSettings.ViewMode = FVM_ICON;
-				infoLoaded = ::MyLoadString(IDS_MSG_NO_TAG_WITH_DETAIL);
-			}
-			else
-			{
-				pthX->m_FolderSettings.ViewMode = FVM_DETAILS;
-
-				LPWSTR currentTag = L"";
-				auto &data = pthX->m_psfContainingFolder->CurrentShellItemData;
-				if ( NULL != data )
-				{
-					currentTag = data->wszDisplayName;
-				}
-
-				WCHAR tmp2[MAX_PATH];
-				wsprintf ( tmp2,::MyLoadString(IDS_MSG_NO_FILE_IN_TAG_WITH_DETAIL),currentTag);
-				infoLoaded = tmp2;
-			}
-
-			pthX->_peb->SetEmptyText(infoLoaded);
-
-			// Stop redrawing to avoid flickering
-			SendMessage( pthX->m_hWnd,WM_SETREDRAW,FALSE,0);
-
-			LPITEMIDLIST pidl = NULL;
-			HRESULT hr;
-
-			DWORD flag = isShowTag ? SHCONTF_FOLDERS : SHCONTF_NONFOLDERS;
-			CShellFolderImpl *sf = pthX->m_psfContainingFolder;
-
-			hr = sf->EnumObjects ( pthX->m_hWnd, flag,&pEnum );
-			if ( SUCCEEDED(hr) )
-			{
-				pthX->_prf->RemoveAll();
-
-				// Add items.
-				DWORD dwFetched;
-				int nLoaded = 0;		// total of loaded items, including nNotAvailable.
-				int nNotAvailable = 0;	// total of loaded items which is FILE_NOT_FOUND or else..
-				while ( pEnum->Next(1, &pidl, &dwFetched) == S_OK )	// the pidl is relative.
-				{
-					IShellItem *psi;
-					auto data = pthX->m_PidlMgr.GetData(pidl);
-					if ( data != NULL )
-					{
-						WCHAR tmp3[MAX_PATH];
-
-						if ( data->Type == MYSHITEMTYPE_FILE )
-						{
-							hr = SHCreateItemFromParsingName(data->wszDisplayName,NULL,IID_PPV_ARGS(&psi));
-							wsprintf ( tmp3,::MyLoadString(IDS_MSG_LOADING_FILE),data->wszDisplayName);
-						}
-						else
-						{
-							// TODO: there may be a bug(0x000000C5) that "sf" is not available.
-							hr = SHCreateItemWithParent(sf->m_pIDFolder,NULL,pidl,IID_PPV_ARGS(&psi));
-							wsprintf ( tmp3,::MyLoadString(IDS_MSG_LOADING_TAG),data->wszDisplayName);
-						}
-
-						pthX->m_spShellBrowser->SetStatusTextSB(tmp3);
-					}
-					else
-					{
-						hr = S_FALSE;
-					}
-
-					if (SUCCEEDED(hr))
-					{
-						_ASSERT_EXPR( NULL != pthX->_prf , L"_prf could not be NULL!");
-
-						hr = pthX->_prf->AddItem(psi);
-						psi->Release();
-						Sleep(0);
-					}
-					else
-					{
-						// ERROR_FILE_NOT_FOUND
-						// ERROR_PATH_NOT_FOUND
-						// ERROR_INVALID_DRIVE
-						// ....
-						// HIDDEN
-						nNotAvailable++;
-					}
-
-					nLoaded++;
-
-					// free memory allocated by pEnum->Next
-					CoTaskMemFree(pidl);
-				}
-
-				WCHAR tmp4[MAX_PATH];
-				wsprintf ( tmp4,::MyLoadString(IDS_MSG_N_FILES_LOADED_FOR_TAG_WITH_NOT_FOUND),nLoaded,nNotAvailable);
-				pthX->m_spShellBrowser->SetStatusTextSB(tmp4);
-			}else{
-				pthX->m_spShellBrowser->SetStatusTextSB(L"No item.");
-			}
-#pragma endregion
-
-		}
-		catch(...)
-		{
-		}
-
-		UpdateWindow( pthX->m_hWnd );
-		SendMessage( pthX->m_hWnd,WM_SETREDRAW,TRUE,0);	// Restart redrawing to avoid flickering
-
-		// the calling application must free the returned IEnumIDList object by calling its Release method.
-		if ( NULL != pEnum )
-			pEnum->Release();
-
-		//pthX->HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
-
-		pthX->_isRefreshing = FALSE;
-		pthX->Release();
-
-		CoUninitialize();
-	}
-
-	ReleaseMutex(m_mutex);
-
-	_endthreadex( 0 );
-	return 0;          // the thread exit code, If the function succeeds, the return value is nonzero.
-}
-
 void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 {
 	IColumnManager *pcm;
@@ -379,8 +237,8 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 	{
 		if( IsShowTag() )
 		{
-			m_FolderSettings.ViewMode = FVM_AUTO;
-			_peb->SetFolderSettings(&m_FolderSettings);
+			m_folderSettings.ViewMode = FVM_AUTO;
+			_peb->SetFolderSettings(&m_folderSettings);
 
 			PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay};
 			hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
@@ -402,8 +260,8 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 		}
 		else
 		{
-			m_FolderSettings.ViewMode = FVM_DETAILS;
-			_peb->SetFolderSettings(&m_FolderSettings);
+			m_folderSettings.ViewMode = FVM_DETAILS;
+			_peb->SetFolderSettings(&m_folderSettings);
 
 			PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay,PKEY_DateModified,PKEY_ItemTypeText,PKEY_Size,PKEY_ItemFolderPathDisplay};
 			hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
@@ -469,12 +327,146 @@ BOOL CShellViewImpl::IsShowTag()
 // FillList() populates the list control.
 void CShellViewImpl::FillList()
 {
-	if( !_isRefreshing )
+	if( !m_isRefreshing )
 	{
-		_isRefreshing = TRUE;
-		HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
-		_beginthreadex(0,0,FillList_Asyn,this,0,0);
+		if (SUCCEEDED(_peb->RemoveAll()))
+		{
+			m_isRefreshing = TRUE;
+			CBackgroundThread<CShellViewImpl,IResultsFolder> *pfrobt = new (std::nothrow) CBackgroundThread<CShellViewImpl,IResultsFolder>(this);
+			if (pfrobt)
+			{
+				pfrobt->StartThread(_prf);
+				pfrobt->Release();
+			}
+		}
 	}
+}
+
+HRESULT CShellViewImpl::DoWorkAsyn(IResultsFolder *prf)
+{
+	WaitForSingleObject(m_mutex, INFINITE);
+
+	IEnumIDList *pEnum = NULL;
+
+	try{
+
+#pragma region do work
+		LPWSTR infoLoaded = 0;
+		BOOL isShowTag = this->IsShowTag();
+		if ( isShowTag )
+		{
+			this->m_folderSettings.ViewMode = FVM_ICON;
+			infoLoaded = ::MyLoadString(IDS_MSG_NO_TAG_WITH_DETAIL);
+		}
+		else
+		{
+			this->m_folderSettings.ViewMode = FVM_DETAILS;
+
+			LPWSTR currentTag = L"";
+			auto &data = this->m_psfContainingFolder->CurrentShellItemData;
+			if ( NULL != data )
+			{
+				currentTag = data->wszDisplayName;
+			}
+
+			WCHAR tmp2[MAX_PATH];
+			wsprintf ( tmp2,::MyLoadString(IDS_MSG_NO_FILE_IN_TAG_WITH_DETAIL),currentTag);
+			infoLoaded = tmp2;
+		}
+
+		this->_peb->SetEmptyText(infoLoaded);
+
+		// Stop redrawing to avoid flickering
+		SendMessage( this->m_hWnd,WM_SETREDRAW,FALSE,0);
+
+		LPITEMIDLIST pidl = NULL;
+		HRESULT hr;
+
+		DWORD flag = isShowTag ? SHCONTF_FOLDERS : SHCONTF_NONFOLDERS;
+		hr = this->m_psfContainingFolder->EnumObjects ( this->m_hWnd, flag,&pEnum );
+		if ( SUCCEEDED(hr) )
+		{
+			// Add items.
+			DWORD dwFetched;
+			int nLoaded = 0;		// total of loaded items, including nNotAvailable.
+			int nNotAvailable = 0;	// total of loaded items which is FILE_NOT_FOUND or else..
+			while ( pEnum->Next(1, &pidl, &dwFetched) == S_OK )	// the pidl is relative.
+			{
+				IShellItem *psi;
+				auto data = this->m_PidlMgr.GetData(pidl);
+				if ( data != NULL )
+				{
+					WCHAR tmp3[MAX_PATH];
+
+					if ( data->Type == MYSHITEMTYPE_FILE )
+					{
+						hr = SHCreateItemFromParsingName(data->wszDisplayName,NULL,IID_PPV_ARGS(&psi));
+						wsprintf ( tmp3,::MyLoadString(IDS_MSG_LOADING_FILE),data->wszDisplayName);
+					}
+					else
+					{
+						hr = SHCreateItemWithParent(this->m_psfContainingFolder->m_pIDFolder,NULL,pidl,IID_PPV_ARGS(&psi));
+						wsprintf ( tmp3,::MyLoadString(IDS_MSG_LOADING_TAG),data->wszDisplayName);
+					}
+
+					this->m_spShellBrowser->SetStatusTextSB(tmp3);
+				}
+				else
+				{
+					hr = S_FALSE;
+				}
+
+				if (SUCCEEDED(hr))
+				{
+					_ASSERT_EXPR( NULL != prf , L"prf could not be NULL!");
+
+					hr = prf->AddItem(psi);
+					psi->Release();
+					Sleep(0);
+				}
+				else
+				{
+					// ERROR_FILE_NOT_FOUND
+					// ERROR_PATH_NOT_FOUND
+					// ERROR_INVALID_DRIVE
+					// ....
+					// HIDDEN
+					nNotAvailable++;
+				}
+
+				nLoaded++;
+
+				// free memory allocated by pEnum->Next
+				CoTaskMemFree(pidl);
+			}
+
+			WCHAR tmp4[MAX_PATH];
+			wsprintf ( tmp4,::MyLoadString(IDS_MSG_N_FILES_LOADED_FOR_TAG_WITH_NOT_FOUND),nLoaded,nNotAvailable);
+			this->m_spShellBrowser->SetStatusTextSB(tmp4);
+		}else{
+			this->m_spShellBrowser->SetStatusTextSB(L"No item.");
+		}
+#pragma endregion
+
+	}
+	catch(...)
+	{
+	}
+
+	UpdateWindow( m_hWnd );
+	SendMessage( this->m_hWnd,WM_SETREDRAW,TRUE,0);	// Restart redrawing to avoid flickering
+
+	// the calling application must free the returned IEnumIDList object by calling its Release method.
+	if ( NULL != pEnum )
+		pEnum->Release();
+
+	//pthX->HandleActivate(SVUIA_ACTIVATE_NOFOCUS);
+
+	this->m_isRefreshing = FALSE;
+
+	ReleaseMutex(m_mutex);
+
+	return S_OK;          // the thread exit code, If the function succeeds, the return value is nonzero.
 }
 
 void CShellViewImpl::HandleActivate ( UINT uState )

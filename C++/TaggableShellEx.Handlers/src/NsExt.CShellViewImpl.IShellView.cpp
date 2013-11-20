@@ -23,8 +23,8 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	m_spShellBrowser->SetStatusTextSB(::MyLoadString(IDS_ProductIntro));
 	m_spShellBrowser->EnableModelessSB(TRUE);
 	//m_spShellBrowser->GetViewStateStream(STGM_READ,&m_pViewState);
-	m_FolderSettings = *lpfs;
-	m_FolderSettings.fFlags = FWF_AUTOARRANGE | FWF_NOWEBVIEW | FWF_NOHEADERINALLVIEWS;	// show tags in a folder way while not like the desktop
+	m_folderSettings = *lpfs;
+	m_folderSettings.fFlags = FWF_AUTOARRANGE | FWF_NOWEBVIEW | FWF_NOHEADERINALLVIEWS;	// show tags in a folder way while not like the desktop
 
 #pragma region prepare window handler
 	DWORD dwListStyles = WS_CHILDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
@@ -54,7 +54,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 		_peb->SetOptions( EBO_SHOWFRAMES | EBO_ALWAYSNAVIGATE);	// EBO_SHOWFRAMES
 		_peb->SetEmptyText(::MyLoadString(IDS_MSG_LOADING_TAGS));
 
-		hr = _peb->Initialize(m_hWnd,prcView,&m_FolderSettings);
+		hr = _peb->Initialize(m_hWnd,prcView,&m_folderSettings);
 		if (SUCCEEDED(hr))
 		{
 			// Initialize the exporer browser so that we can use the results folder
@@ -119,7 +119,7 @@ STDMETHODIMP CShellViewImpl::DestroyViewWindow()
 // GetCurrentInfo() returns our FODLERSETTINGS to the browser.
 STDMETHODIMP CShellViewImpl::GetCurrentInfo ( LPFOLDERSETTINGS lpfs )
 {
-	*lpfs = m_FolderSettings;
+	*lpfs = m_folderSettings;
 	return S_OK;
 }
 

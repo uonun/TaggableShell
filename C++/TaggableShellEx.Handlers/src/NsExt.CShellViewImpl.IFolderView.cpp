@@ -4,15 +4,15 @@
 HRESULT CShellViewImpl::GetCurrentViewMode( 
 	UINT *pViewMode)
 { 
-	*pViewMode = m_FolderSettings.ViewMode;
+	*pViewMode = m_folderSettings.ViewMode;
 	return S_OK;
 }
 
 HRESULT CShellViewImpl::SetCurrentViewMode( 
 	UINT ViewMode)
 {
-	m_FolderSettings.ViewMode = ViewMode;
-	_peb->SetFolderSettings(&m_FolderSettings);
+	m_folderSettings.ViewMode = ViewMode;
+	_peb->SetFolderSettings(&m_folderSettings);
 	return S_OK;
 }
 
