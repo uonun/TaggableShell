@@ -22,13 +22,16 @@ class CTaghelper
 public:
 	BOOL OpenDb();
 
+	ULONG AddRef();
+	ULONG Release();
+
 	void SetCurrentFiles(LPWSTR* ppv,const int count);
 	void LoadTags(bool ignoreCache = false);
 
 	// Bind/Unbind tag to files by index of tag in the array of Tags.
-	HRESULT SetTagByIdx(UINT & tagIdx);
+	HRESULT SetTagByIdx(HWND progressBarHwnd,UINT & tagIdx);
 	// Bind/Unbind tag to files by record ID in database.
-	HRESULT SetTagByRecordId(UINT & tagIdInDb);
+	HRESULT SetTagByRecordId(HWND progressBarHwnd,UINT & tagIdInDb);
 
 	LPWSTR TargetFileNames[MAXCOUNT_SELECTED_ITEM];			// the file full path of target item.
 	UINT FileCount;
@@ -48,7 +51,8 @@ public:
 	HRESULT GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagIdInDb);
 
 	HRESULT ShowProgressDlg(HWND hwnd,IOperationsProgressDialog * & _pOPD);
-	HRESULT UpdateProgress(IOperationsProgressDialog *_pOPD,ULONGLONG current,ULONGLONG total);
+
+	HRESULT DoWorkAsyn(IOperationsProgressDialog * & _pOPD);
 
 #pragma region singleton
 public:
@@ -75,10 +79,14 @@ private :
 #pragma endregion
 
 private :
+	long _cRef;
+
 	bool _cached;									// does tags loaded from database cached.
 	LPSTR _targetFileNamesInSQL[MAXCOUNT_SELECTED_ITEM];		// the file full path of target item with "'" replaced to "''" for SQL.
 
 	sqlite3 * _db;
 	CHAR _dbFile[MAX_PATH];
+
+	TAG4FILE * _Asyn_currentTag;	// current tag operated in Aysn thread.
 };
 

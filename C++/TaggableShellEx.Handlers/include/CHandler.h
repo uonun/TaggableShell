@@ -35,8 +35,6 @@ public:
 
 	HWND _hdlg;
 
-	void DoWorkAsyn(IOperationsProgressDialog *_pOPD);
-
 private:
 
 	// IUnknown
@@ -46,7 +44,6 @@ private:
 	LPITEMIDLIST  m_pIDFolder;           //The folder's PIDL
 	TCHAR*        m_szFiles[MAXCOUNT_SELECTED_ITEM];    //The file names
 	IDataObject   *m_pDataObj;            //The IDataObject pointer
-	HWND _cmdHwnd;
 
 	// IShellPropSheetExt
 	UINT _dllRefCount;

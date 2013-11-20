@@ -1,4 +1,5 @@
-#include "../include/Taghelper.h"
+#include "..\include\Taghelper.h"
+#include "..\include\CBackgroundThread.h"
 
 /*
 1. delete records from ASSO_FILE_TAG where file,tag does not exist any more.
@@ -14,11 +15,13 @@ const LPSTR sSQL_CLEARNUP
 
 CTaghelper* CTaghelper::p_instance_ = NULL;
 
-CTaghelper::CTaghelper(void): 
-	_cached(false)
+CTaghelper::CTaghelper(void):
+	_cRef(1)
+	,_cached(false)
 	,TagCount(0),FileCount(0)
 	,_db(NULL)
 	,m_mutex(NULL)
+	,_Asyn_currentTag(NULL)
 {
 	::PrintLog(L"CTaghelper.ctor");
 
@@ -72,6 +75,19 @@ CTaghelper::~CTaghelper(void)
 		::CloseHandle(m_mutex);
 		m_mutex = NULL;
 	}
+}
+
+ULONG CTaghelper::AddRef()
+{
+	return InterlockedIncrement(&_cRef);
+}
+
+ULONG CTaghelper::Release()
+{
+	long cRef = InterlockedDecrement(&_cRef);
+	if (!cRef)
+		delete this;
+	return cRef;
 }
 
 BOOL CTaghelper::OpenDb()
@@ -196,130 +212,39 @@ void CTaghelper::LoadTags(bool ignoreCache)
 	}
 }
 
-HRESULT CTaghelper::SetTagByRecordId(UINT & tagIdInDb)
+HRESULT CTaghelper::SetTagByRecordId(HWND progressBarHwnd,UINT & tagIdInDb)
 {
 	_ASSERT_EXPR( tagIdInDb > 0,L"tagIdInDb must be greater than 0.");
 
-	HRESULT hr = S_FALSE;
-
 	LoadTags(true);
 
-	TAG4FILE * currentTag = NULL;
 	for (UINT i = 0; i < TagCount; i++)
 	{
 		if( Tags[i].TagID == tagIdInDb )
 		{
-			currentTag = &Tags[i];
+			_Asyn_currentTag = &Tags[i];
 			break;
 		}
 	}
 
-	// found the tag
-	if ( currentTag != NULL ){
-
-		char * pErrMsg = 0;
-		int ret = 0;  
-
-		UINT TID = tagIdInDb;
-
-		char sSQLFormater[MAXLENGTH_SQL] = {0};
-		char sSQL[MAXLENGTH_SQL] = {0};
-
-		if( FileCount == 1)
+	if ( NULL != _Asyn_currentTag )
+	{
+		IOperationsProgressDialog *_pOPD = NULL;
+		ShowProgressDlg(progressBarHwnd,_pOPD);
+		CBackgroundThread<CTaghelper,IOperationsProgressDialog> *pfrobt = new (std::nothrow) CBackgroundThread<CTaghelper,IOperationsProgressDialog>(this);
+		if (pfrobt)
 		{
-			BOOL isAsso = currentTag->bAsso;
-			UINT FID = GetFileID(&_targetFileNamesInSQL[0]);
-			if(!isAsso)
-			{
-				strcat(sSQLFormater,"INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%d','%d');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%d;");
-				if( FID == DB_RECORD_NOT_EXIST ){
-					FID = InsertFile(TargetFileNames[0]);
-				}
-
-				_ASSERT_EXPR(FID > 0,L"FID is not available!");
-
-			}else{
-
-				strcat(sSQLFormater,"DELETE FROM [ASSO_FILE_TAG] WHERE FILEID='%d' AND TAGID='%d';UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]-1 WHERE [ID]=%d;");
-
-				// check any other tag associated with current file.
-				BOOL anyAsso = false;
-				for (unsigned int i = 0; i < TagCount; i++)
-				{
-					if( Tags[i].TagID != tagIdInDb && Tags[i].bAsso)
-					{
-						anyAsso = true;
-						break;
-					}
-				}
-
-				// delete the record for current file in the table [FILES]
-				if(!anyAsso){
-					char sSQL_tmp[MAXLENGTH_SQL];
-					sprintf ( sSQL_tmp,"DELETE FROM [FILES] WHERE ID='%d';",FID );
-					strcat(sSQLFormater,sSQL_tmp);
-					::PrintLog("No any tag associated with current file, about to delete from table [FILE]: ID = %d, %s",FID,TargetFileNames[0]);
-				}
-			}
-
-			sprintf ( sSQL,sSQLFormater,FID,TID,TID );
-			ANSIToUTF8(sSQL);
-			::PrintLog("SetTag: %s",sSQL);
-			ret = sqlite3_exec( _db, sSQL, NULL, 0, &pErrMsg );
-			if( ret != SQLITE_OK)
-			{
-				::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
-				sqlite3_free(pErrMsg);  
-			}
+			pfrobt->StartThread(_pOPD);
+			pfrobt->Release();
 		}
-		else if( FileCount > 1)
-		{
-
-
-
-
-
-			UINT FID = DB_RECORD_NOT_EXIST;
-			for (UINT i = 0; i < FileCount; i++)
-			{
-				FID = GetFileID(&_targetFileNamesInSQL[i]);
-				if( FID == DB_RECORD_NOT_EXIST ){
-					FID = InsertFile(TargetFileNames[i]);
-				}
-
-				_ASSERT_EXPR(FID > 0,L"FID is not available!");
-
-				if ( !IsAsso(TargetFileNames[i],currentTag->Tag) )
-				{
-					strcat(sSQLFormater,"INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%d','%d');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%d;");
-					sprintf ( sSQL,sSQLFormater,FID,TID,TID );
-					ANSIToUTF8(sSQL);
-					::PrintLog("SetTag: %s",sSQL);
-					ret = sqlite3_exec( _db, sSQL, NULL, 0, &pErrMsg );
-					if( ret != SQLITE_OK)
-					{
-						::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
-						sqlite3_free(pErrMsg);  
-					}
-				}
-			}
-		}
-
-		_cached = false;	// reload tags.
-		hr = S_OK;
-
-	}else{
-		// can not find the tag
-		hr = S_FALSE;
 	}
-
-	return hr;
+	return S_OK;
 }
 
-HRESULT CTaghelper::SetTagByIdx(UINT & tagIdx)
+HRESULT CTaghelper::SetTagByIdx(HWND progressBarHwnd,UINT & tagIdx)
 {
 	_ASSERT_EXPR( tagIdx < TagCount,L"tagIdx must be less than TagCount.");
-	return SetTagByRecordId(Tags[tagIdx].TagID);
+	return SetTagByRecordId(progressBarHwnd,Tags[tagIdx].TagID);
 }
 
 // get file id in _db, return DB_RECORD_NOT_EXIST if fail.
@@ -690,7 +615,7 @@ HRESULT CTaghelper::ShowProgressDlg(HWND hwnd,IOperationsProgressDialog * & _pOP
 			// user during the operation. This includes error, confirmation,
 			// and progress dialogs.
 			//
-			hr = pfo->SetOperationFlags(FOF_SIMPLEPROGRESS);
+			hr = pfo->SetOperationFlags(FOFX_DONTDISPLAYDESTPATH | FOFX_NOCOPYHOOKS | FOFX_NOSKIPJUNCTIONS);
 			if (SUCCEEDED(hr))
 			{
 				if (SUCCEEDED(hr))
@@ -702,18 +627,16 @@ HRESULT CTaghelper::ShowProgressDlg(HWND hwnd,IOperationsProgressDialog * & _pOP
 
 					if (SUCCEEDED(hr))
 					{
-						_pOPD->SetMode(PDOPS_RUNNING);
-						_pOPD->SetOperation(SPACTION_APPLYINGATTRIBS);
-						_pOPD->StartProgressDialog(hwnd, OPPROGDLG_DONTDISPLAYLOCATIONS | OPPROGDLG_DONTDISPLAYDESTPATH | PROGDLG_NOCANCEL);
-						pfo->SetProgressDialog(_pOPD);
+						hr = _pOPD->StartProgressDialog(hwnd, PROGDLG_MODAL | PROGDLG_NOCANCEL | PROGDLG_AUTOTIME | OPPROGDLG_DONTDISPLAYLOCATIONS | OPPROGDLG_DONTDISPLAYDESTPATH );						
+						hr = _pOPD->SetMode(PDM_RUN);
+						hr = _pOPD->SetOperation(SPACTION_CALCULATING);
+						hr = pfo->SetProgressDialog(_pOPD);
 					}
 				}
 
 				if (SUCCEEDED(hr))
 				{
-					//
 					// Perform the operation.
-					//
 					hr = pfo->PerformOperations();
 				}        
 			}
@@ -729,22 +652,125 @@ HRESULT CTaghelper::ShowProgressDlg(HWND hwnd,IOperationsProgressDialog * & _pOP
 	return hr;
 }
 
-HRESULT CTaghelper::UpdateProgress(IOperationsProgressDialog *_pOPD,ULONGLONG current,ULONGLONG total)
+// Asynchronized SetTagByRecordId
+HRESULT CTaghelper::DoWorkAsyn(IOperationsProgressDialog * & _pOPD)
 {
+	_ASSERT_EXPR( _pOPD != NULL ,L"_pOPD could not be NULL");
+
 	HRESULT hr = S_FALSE;
 
-	if( NULL != _pOPD )
-	{
-		PDOPSTATUS state;
-		_pOPD->GetOperationStatus(&state);
+	// found the tag
+	if ( _Asyn_currentTag != NULL ){
+		_ASSERT_EXPR( _Asyn_currentTag != NULL ,L"_Asyn_currentTag could not be NULL");
 
-		if ( current >= total || state == PDOPS_CANCELLED || state == PDOPS_STOPPED)
+		char * pErrMsg = 0;
+		int ret = 0;  
+
+		UINT TID = _Asyn_currentTag->TagID;
+
+		char sSQLFormater[MAXLENGTH_SQL] = {0};
+		char sSQL[MAXLENGTH_SQL] = {0};
+
+		if( FileCount == 1) // toggle the association state between file and tag.
 		{
-			hr = _pOPD->StopProgressDialog();
-			_pOPD->Release();
-		}else{
-			hr = _pOPD->UpdateProgress(current,total,12000,18000,4,5);
+			BOOL isAsso = _Asyn_currentTag->bAsso;
+			UINT FID = GetFileID(&_targetFileNamesInSQL[0]);
+			if(!isAsso)
+			{
+				strcat(sSQLFormater,"INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%d','%d');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%d;");
+				if( FID == DB_RECORD_NOT_EXIST ){
+					FID = InsertFile(TargetFileNames[0]);
+				}
+
+				_ASSERT_EXPR(FID > 0,L"FID is not available!");
+
+			}else{
+
+				strcat(sSQLFormater,"DELETE FROM [ASSO_FILE_TAG] WHERE FILEID='%d' AND TAGID='%d';UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]-1 WHERE [ID]=%d;");
+
+				// check any other tag associated with current file.
+				BOOL anyAsso = false;
+				for (unsigned int i = 0; i < TagCount; i++)
+				{
+					if( Tags[i].TagID != _Asyn_currentTag->TagID && Tags[i].bAsso)
+					{
+						anyAsso = true;
+						break;
+					}
+				}
+
+				// delete the record for current file in the table [FILES]
+				if(!anyAsso){
+					char sSQL_tmp[MAXLENGTH_SQL];
+					sprintf ( sSQL_tmp,"DELETE FROM [FILES] WHERE ID='%d';",FID );
+					strcat(sSQLFormater,sSQL_tmp);
+					::PrintLog("No any tag associated with current file, about to delete from table [FILE]: ID = %d, %s",FID,TargetFileNames[0]);
+				}
+			}
+
+			sprintf ( sSQL,sSQLFormater,FID,TID,TID );
+			ANSIToUTF8(sSQL);
+			::PrintLog("SetTag: %s",sSQL);
+			ret = sqlite3_exec( _db, sSQL, NULL, 0, &pErrMsg );
+			if( ret != SQLITE_OK)
+			{
+				::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+				sqlite3_free(pErrMsg);  
+			}
+		}		
+		else if( FileCount > 1) // associate the tag with specificed files no matter whether it is associated already or not.
+		{
+			UINT FID = DB_RECORD_NOT_EXIST;
+			PDOPSTATUS state;
+			for (UINT i = 0; i < FileCount; i++)
+			{
+				FID = GetFileID(&_targetFileNamesInSQL[i]);
+				if( FID == DB_RECORD_NOT_EXIST ){
+					FID = InsertFile(TargetFileNames[i]);
+				}
+
+				_ASSERT_EXPR(FID > 0,L"FID is not available!");
+
+				if ( !IsAsso(TargetFileNames[i],_Asyn_currentTag->Tag) )
+				{
+					strcat(sSQLFormater,"INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%d','%d');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%d;");
+					sprintf ( sSQL,sSQLFormater,FID,TID,TID );
+					ANSIToUTF8(sSQL);
+					::PrintLog("SetTag: %s",sSQL);
+					ret = sqlite3_exec( _db, sSQL, NULL, 0, &pErrMsg );
+					if( ret != SQLITE_OK)
+					{
+						::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+						sqlite3_free(pErrMsg);  
+					}
+				}
+
+				// update the progress
+				hr = _pOPD->UpdateProgress(i+1,FileCount,0,0,i+1,FileCount);
+
+				/*
+				IShellItem *psi;
+				hr = SHCreateItemFromParsingName(TargetFileNames[i],NULL,IID_PPV_ARGS(&psi));
+				if( SUCCEEDED(hr) )
+				{
+				hr = _pOPD->UpdateLocations(psi,NULL,NULL);	// TODO: will get a Catastrophic failure. not sure why.
+				psi->Release();
+				}
+				*/
+			}
 		}
+
+		// done. clean up the progress dialog.
+		hr = _pOPD->StopProgressDialog();
+		_pOPD->Release();
+
+		_cached = false;	// reload tags.
+		_Asyn_currentTag = NULL;
+
+	}else{
+		// can not find the tag
+		hr = S_FALSE;
 	}
+
 	return hr;
 }

@@ -10,7 +10,6 @@ CHandler::CHandler() :
 	,FileCount(0)
 	,pTagHelper(NULL)
 	,_contextMenuSupposed(FALSE)
-	,_cmdHwnd(NULL)
 {
 	::PrintLog(L"CHandler.ctor");
 

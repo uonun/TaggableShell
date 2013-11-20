@@ -140,13 +140,13 @@ void FormTagManager::AddTag(void)
 		::PrintLog(L"Got new tag =[ %s ], adding to database.", key);
 		BOOL isAttchWithFilesChecked = Button_GetCheck(_hCheckAttachToFiles) == BST_CHECKED;
 		int count = isAttchWithFilesChecked ? _handler->pTagHelper->FileCount : 0;
-		UINT *pTID = 0;
-		*pTID = _handler->pTagHelper->InsertTag(key,count); // not need to reload tags here, as they will be reloaded after be associated with files.
-		if( *pTID != DB_RECORD_NOT_EXIST )
+		UINT TID = 0;
+		TID = _handler->pTagHelper->InsertTag(key,count); // not need to reload tags here, as they will be reloaded after be associated with files.
+		if( TID != DB_RECORD_NOT_EXIST )
 		{
 			if( isAttchWithFilesChecked )
 			{
-				_handler->pTagHelper->SetTagByRecordId(*pTID);
+				_handler->pTagHelper->SetTagByRecordId(_hwnd,TID);
 			}
 
 			LoadTags();
