@@ -677,7 +677,7 @@ HRESULT CTaghelper::DoWorkAsyn(IOperationsProgressDialog * & _pOPD)
 			UINT FID = GetFileID(&_targetFileNamesInSQL[0]);
 			if(!isAsso)
 			{
-				strcat(sSQLFormater,"INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%d','%d');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%d;");
+				StrCpyA(sSQLFormater,"INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%d','%d');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%d;");
 				if( FID == DB_RECORD_NOT_EXIST ){
 					FID = InsertFile(TargetFileNames[0]);
 				}
@@ -686,7 +686,7 @@ HRESULT CTaghelper::DoWorkAsyn(IOperationsProgressDialog * & _pOPD)
 
 			}else{
 
-				strcat(sSQLFormater,"DELETE FROM [ASSO_FILE_TAG] WHERE FILEID='%d' AND TAGID='%d';UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]-1 WHERE [ID]=%d;");
+				StrCpyA(sSQLFormater,"DELETE FROM [ASSO_FILE_TAG] WHERE FILEID='%d' AND TAGID='%d';UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]-1 WHERE [ID]=%d;");
 
 				// check any other tag associated with current file.
 				BOOL anyAsso = false;
@@ -733,7 +733,7 @@ HRESULT CTaghelper::DoWorkAsyn(IOperationsProgressDialog * & _pOPD)
 
 				if ( !IsAsso(TargetFileNames[i],_Asyn_currentTag->Tag) )
 				{
-					strcat(sSQLFormater,"INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%d','%d');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%d;");
+					StrCpyA(sSQLFormater,"INSERT INTO [ASSO_FILE_TAG] (FILEID,TAGID) VALUES ('%d','%d');UPDATE [TAGS] SET [USECOUNT]=[USECOUNT]+1 WHERE [ID]=%d;");
 					sprintf ( sSQL,sSQLFormater,FID,TID,TID );
 					ANSIToUTF8(sSQL);
 					::PrintLog("SetTag: %s",sSQL);

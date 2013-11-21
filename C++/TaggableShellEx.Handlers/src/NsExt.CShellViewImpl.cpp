@@ -196,10 +196,7 @@ STDMETHODIMP CShellViewImpl::GetWindow ( HWND* phwnd )
 }
 
 // IBrowserFrameOptions
-HRESULT CShellViewImpl::GetFrameOptions(
-	BROWSERFRAMEOPTIONS dwMask,
-	BROWSERFRAMEOPTIONS *pdwOptions
-	)
+HRESULT CShellViewImpl::GetFrameOptions(BROWSERFRAMEOPTIONS dwMask,BROWSERFRAMEOPTIONS *pdwOptions	)
 {
 	HRESULT hr = E_NOTIMPL;
 	*pdwOptions = BFO_QUERY_ALL;
@@ -272,9 +269,9 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 				if (SUCCEEDED(hr))
 				{
 					ci.dwState = CM_STATE_ALWAYSVISIBLE;
-					ci.uWidth = 250;
-					ci.uDefaultWidth = 250;
-					ci.uIdealWidth = 250;
+					ci.uWidth = 460;
+					ci.uDefaultWidth = 460;
+					ci.uIdealWidth = 460;
 					pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
 				}
 
@@ -283,21 +280,10 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 				if (SUCCEEDED(hr))
 				{
 					ci2.dwState = CM_STATE_VISIBLE;
-					ci2.uWidth = 180;
-					ci2.uDefaultWidth = 180;
-					ci2.uIdealWidth = 180;
+					ci2.uWidth = 120;
+					ci2.uDefaultWidth = 120;
+					ci2.uIdealWidth = 120;
 					pcm->SetColumnInfo(PKEY_DateModified, &ci2);
-				}
-
-				CM_COLUMNINFO ci3 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
-				hr = pcm->GetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
-				if (SUCCEEDED(hr))
-				{
-					ci2.dwState = CM_STATE_VISIBLE;
-					ci2.uWidth = 350;
-					ci2.uDefaultWidth = 350;
-					ci2.uIdealWidth = 350;
-					pcm->SetColumnInfo(PKEY_ItemFolderPathDisplay, &ci2);
 				}
 			}
 		}

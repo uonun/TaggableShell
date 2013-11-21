@@ -227,7 +227,7 @@ HRESULT CShellFolderImpl::EnumObjects(
 
 		if ( this->pTagHelper->OpenDb() )
 		{
-			this->pTagHelper->LoadTags();
+			this->pTagHelper->LoadTags(true);
 		}
 
 		if ( isShowFilesInTag )
