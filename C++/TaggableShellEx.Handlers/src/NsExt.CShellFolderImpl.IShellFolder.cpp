@@ -14,25 +14,33 @@ HRESULT CShellFolderImpl::BindToObject(
 		::PrintLog(L"ShellFolder::BindToObject: riid = IID_IShellFolder");
 
 		IShellFolder *pShellFolder = NULL;
-		hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
-		if( hr == S_OK )
-		{
-			auto pidlFolder = ILClone(m_pIDFolder);
-			auto pidlCurrent = ILClone(pidl);
-			hr = ((CShellFolderImpl*)pShellFolder)->Init ( pidlFolder,(PIDLIST_RELATIVE)pidlCurrent );
 
-			auto data = m_PidlMgr.GetData(pidl);
-			::PrintLog(L"ShellFolder::BindToObject: Got object: %s, FolderPath = %s",data->wszDisplayName,FolderPath);
+		// HACK: there may be a bug:
+		//			when an other application which is explorering shell folders from MyComputer, the NSE will be listed as supposed to,
+		//			but when open a physical directory which is in any TAG, the TAGs will be listed in the directory again while not the items in the directory.
+		//			absolutely it is not right.
+		// As a HACK way to avoid this bug, we make sure the FolderPath will not be empty.
+		if ( FolderPath[0] != 0 ){
+			hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
+			if( hr == S_OK )
+			{
+				auto pidlFolder = ILClone(m_pIDFolder);
+				auto pidlCurrent = ILClone(pidl);
+				hr = ((CShellFolderImpl*)pShellFolder)->Init ( pidlFolder,(PIDLIST_RELATIVE)pidlCurrent );
 
-			if ( FAILED(hr) )
-			{
-				pShellFolder->Release();
-				return hr;
-			}
-			else
-			{
-				hr = pShellFolder->QueryInterface(riid,ppvOut);
-				pShellFolder->Release();
+				auto data = m_PidlMgr.GetData(pidl);
+				::PrintLog(L"ShellFolder::BindToObject: Got object: %s, FolderPath = %s",data->wszDisplayName,FolderPath);
+
+				if ( FAILED(hr) )
+				{
+					pShellFolder->Release();
+					return hr;
+				}
+				else
+				{
+					hr = pShellFolder->QueryInterface(riid,ppvOut);
+					pShellFolder->Release();
+				}
 			}
 		}
 	}

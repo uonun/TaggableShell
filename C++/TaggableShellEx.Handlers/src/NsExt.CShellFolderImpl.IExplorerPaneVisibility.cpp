@@ -10,6 +10,7 @@ HRESULT CShellFolderImpl::GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *pe
 		|| IsEqualIID( EP_Commands_Organize, ep)
 		|| IsEqualIID( EP_Commands_View, ep)
 		|| IsEqualIID( EP_DetailsPane, ep)
+		|| IsEqualIID( EP_StatusBar, ep)
 		)
 	{
 		*peps = EPS_DEFAULT_ON | EPS_FORCE;

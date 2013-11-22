@@ -13,6 +13,8 @@ CShellFolderImpl::CShellFolderImpl(void):
 
 	m_mutex = ::CreateMutex(NULL, FALSE, NULL);
 
+	StrCpy(FolderPath,L"");
+
 	pTagHelper = CTaghelper::instance();
 
 	DllAddRef();
