@@ -54,7 +54,7 @@ HRESULT CEnumIDListImpl::Clone(
 	IEnumIDList **ppenum
 	)
 {
-	return S_OK;
+	return E_NOTIMPL;
 }
 
 
@@ -117,6 +117,7 @@ HRESULT CEnumIDListImpl::Next(
 HRESULT CEnumIDListImpl::Reset()
 { 
 	_currentIdx = 0;
+	_items.clear();
 	return S_OK;
 }
 

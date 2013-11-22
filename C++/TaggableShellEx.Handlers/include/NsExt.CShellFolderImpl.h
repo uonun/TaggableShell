@@ -6,12 +6,13 @@
 #include "PidlMgr.h"
 
 class CShellFolderImpl:
-	public IExtractIcon,
-	public IContextMenu,
-	public IExplorerPaneVisibility,
-	public IQueryInfo,
-	public IShellFolder,	
-	public IPersistFolder	
+	public IExtractIcon
+	,public IContextMenu
+	,public IExplorerPaneVisibility
+	,public IQueryInfo
+	,public IShellFolder	
+	,public IPersistFolder
+	,public IExplorerCommandProvider
 {
 public:
 	CShellFolderImpl(void);
@@ -117,6 +118,10 @@ public:
 
 	// IExplorerPaneVisibility
 	HRESULT STDMETHODCALLTYPE GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps);
+
+	// IExplorerCommandProvider
+	HRESULT STDMETHODCALLTYPE GetCommands(IUnknown *punkSite,REFIID riid,void **ppv);	
+	HRESULT STDMETHODCALLTYPE GetCommand(REFGUID rguidCommandId,REFIID riid,void **ppv);
 
 	// Init function - call right after constructing a CShellFolderImpl object.
 	HRESULT Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current );

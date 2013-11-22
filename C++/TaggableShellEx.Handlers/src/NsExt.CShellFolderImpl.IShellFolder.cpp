@@ -109,7 +109,7 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	{IID_IFrameLayoutDefinition}
 	{IID_IIdentityName}
 	{IID_IShellLinkW}
-	{IID_IExplorerCommandProvider} not called ?
+	{IID_IExplorerCommandProvider}
 	*/
 	if ( NULL == ppv )
 		return E_POINTER;
@@ -140,11 +140,11 @@ HRESULT CShellFolderImpl::CreateViewObject(
 		// Return the requested interface back to the shell.
 		hr = v->QueryInterface ( riid, ppv );
 		v->Release();
-
 	}
 	else if ( IsEqualIID(IID_IExplorerCommandProvider, riid))
 	{
-		DebugBreak();
+		::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IExplorerCommandProvider");
+		hr = this->QueryInterface ( riid, ppv );
 	}
 #ifdef _DEBUG
 	//else if ( IsEqualIID(IID_IDropTarget, riid))
@@ -435,18 +435,19 @@ HRESULT CShellFolderImpl::GetUIObjectOf(
 
 	if ( IsEqualIID(IID_IContextMenu,riid) )
 	{
-		hr = this->QueryInterface(riid,ppv);		
+		// 1
+		//hr = this->QueryInterface(riid,ppv);		
 
+		// 2
+		//IShellFolder* psfParent;
+		//hr = SHBindToParent(m_pIDFolder,IID_PPV_ARGS(&psfParent),&apidl[0]);
+		//if( SUCCEEDED(hr) )
+		//{
+		//	hr = psfParent->GetUIObjectOf(hwndOwner,cidl,apidl,riid,rgfReserved,ppv);
+		//	psfParent->Release();
+		//}
 
-		IShellFolder* psfParent;
-		hr = SHBindToParent(m_pIDFolder,IID_PPV_ARGS(&psfParent),&apidl[0]);
-		if( SUCCEEDED(hr) )
-		{
-			hr = psfParent->GetUIObjectOf(hwndOwner,cidl,apidl,riid,rgfReserved,ppv);
-			psfParent->Release();
-		}
-
-
+		// 3
 		//IShellFolder *pShellFolder = NULL;
 		//hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
 		//if( hr == S_OK )

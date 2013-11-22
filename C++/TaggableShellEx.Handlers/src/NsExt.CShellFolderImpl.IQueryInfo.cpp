@@ -8,17 +8,3 @@ HRESULT CShellFolderImpl::GetInfoTip(DWORD dwFlags, PWSTR *ppwszTip)
 	memcpy(ppwszTip,L"GetInfoTip",7);
 	return S_OK;
 }
-
-// IExplorerPaneVisibility
-HRESULT CShellFolderImpl::GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps)
-{
-	*peps = EPS_DONTCARE;
-	if (IsEqualIID( EP_Commands_Organize, ep) 
-		|| IsEqualIID( EP_AdvQueryPane, ep)
-		)
-	{
-		*peps = EPS_DEFAULT_OFF | EPS_FORCE;
-	}
-
-	return S_OK;
-}

@@ -77,6 +77,25 @@ HRESULT CShellViewImpl::Notify(IShellView *ppshv,DWORD dwNotifyType)
 	//CDB2N_CONTEXTMENU_START
 	//CDB2N_CONTEXTMENU_DONE
 	return E_NOTIMPL;
+
+	//switch (dwNotifyType)
+	//{
+	//case CDB2N_CONTEXTMENU_START:
+	//	{
+	//		m_hMenu = GetContextMenuForItems(1,NULL);
+	//	}
+	//	break;
+	//case CDB2N_CONTEXTMENU_DONE:
+	//	if( NULL != m_hMenu )
+	//	{
+	//		DestroyMenu(m_hMenu);
+	//		m_hMenu = NULL;
+	//	}
+	//	break;
+	//default:
+	//	break;
+	//}
+	//return S_OK;
 }
 HRESULT CShellViewImpl::GetDefaultMenuText(IShellView *ppshv,LPWSTR pszText,int cchMax)
 {
@@ -100,4 +119,49 @@ HRESULT CShellViewImpl::GetCurrentFilter(LPWSTR pszFileSpec,int cchFileSpec)
 HRESULT CShellViewImpl::OnPreViewCreated(IShellView *ppshv)
 {
 	return E_NOTIMPL;
+}
+
+#define MENU_OFFSET  1
+#define MENU_MAX     100
+HMENU CShellViewImpl::GetContextMenuForItems(UINT uItems,LPITEMIDLIST *aItems)
+{
+	LPCONTEXTMENU  pContextMenu = NULL;
+	m_psfContainingFolder->GetUIObjectOf(m_hwndParent,
+		uItems,
+		(LPCITEMIDLIST*)aItems,
+		IID_IContextMenu,
+		NULL,
+		(LPVOID*)&pContextMenu);
+
+	if(pContextMenu)
+	{
+		m_hMenu = CreatePopupMenu();
+
+		/*
+		See if we are in Explore or Open mode. If the browser's tree is
+		present, then we are in Explore mode.
+		*/ 
+		BOOL  fExplore = FALSE;
+		HWND  hwndTree = NULL;
+		if(SUCCEEDED(m_spShellBrowser->GetControlWindow(FCW_TREE,
+			&hwndTree)) && hwndTree)
+		{
+			fExplore = TRUE;
+		}
+
+		if(m_hMenu && SUCCEEDED(pContextMenu->QueryContextMenu( m_hMenu,
+			0,
+			MENU_OFFSET,
+			MENU_MAX,
+			CMF_NORMAL | (fExplore ? CMF_EXPLORE : 0))))
+		{
+
+		}
+		else
+		{
+			DestroyMenu(m_hMenu);
+			m_hMenu = NULL;
+		}
+	}
+	return m_hMenu;
 }

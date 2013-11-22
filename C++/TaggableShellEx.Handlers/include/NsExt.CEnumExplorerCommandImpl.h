@@ -1,29 +1,26 @@
 #pragma once
 #include "dllmain.h"
-#include "PidlMgr.h"
 
-class CEnumIDListImpl:
-	public IEnumIDList
+class CEnumExplorerCommandImpl:
+	public IEnumExplorerCommand
 {
 public:
-	CEnumIDListImpl(void);
-
+	CEnumExplorerCommandImpl(void);
+	
 	// IUnknown
 	IFACEMETHODIMP QueryInterface(REFIID riid, void ** ppv);
 	IFACEMETHODIMP_(ULONG) AddRef();
 	IFACEMETHODIMP_(ULONG) Release();
-
-	void Init(PIDLIST_ABSOLUTE parent,vector<MYPIDLDATA>);
-
-	// IEnumIDList
-#pragma region IEnumIDList
+	
+	// IEnumExplorerCommand
+#pragma region IEnumExplorerCommand
 	HRESULT Clone(
-		IEnumIDList **ppenum
+		IEnumExplorerCommand **ppenum
 		);
 
 	HRESULT Next(
 		ULONG celt,
-		LPITEMIDLIST *rgelt,
+		IExplorerCommand **pUICommand,
 		ULONG *pceltFetched
 		);
 
@@ -35,15 +32,11 @@ public:
 #pragma endregion
 
 private:
-	~CEnumIDListImpl(void);
+	~CEnumExplorerCommandImpl(void);
 
 	// IUnknown
 	long _cRef;
 
 	UINT _currentIdx;
-	vector<MYPIDLDATA> _items;
-	PIDLIST_ABSOLUTE _parent;
-		CPidlMgr     m_PidlMgr;
-
 };
 

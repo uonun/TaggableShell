@@ -6,12 +6,13 @@
 #include "PidlMgr.h"
 
 class CShellViewImpl:
-	public IShellView,
-	public IOleCommandTarget,
-	public IServiceProvider,
-	public ICommDlgBrowser3,
-	public IFolderView2,
-	public IBrowserFrameOptions
+	public IShellView
+	,public IOleCommandTarget
+	,public IServiceProvider
+	,public ICommDlgBrowser3
+	,public IFolderView2
+	,public IBrowserFrameOptions
+	//,public IPersistIDList
 {
 public:
 	CShellViewImpl(void);
@@ -115,6 +116,7 @@ public:
 	// Fill list in background thread. used in CBackgroundThread.h
 	HRESULT DoWorkAsyn(IResultsFolder *prf);
 
+	HMENU GetContextMenuForItems(UINT uItems,LPITEMIDLIST *aItems);
 private:
 	~CShellViewImpl(void);
 

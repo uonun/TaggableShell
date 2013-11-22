@@ -93,6 +93,15 @@
     <ClCompile Include="src\Log.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\NsExt.CShellFolderImpl.IExplorerPaneVisibility.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CShellFolderImpl.IExplorerCommandProviderImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NsExt.CEnumExplorerCommandImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite-201310070036\src\sqlite3.h">
@@ -144,6 +153,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\CBackgroundThread.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\NsExt.CEnumExplorerCommandImpl.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

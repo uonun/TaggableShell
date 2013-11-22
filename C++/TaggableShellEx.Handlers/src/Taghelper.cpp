@@ -547,11 +547,11 @@ HRESULT CTaghelper::GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagI
 	char * sSQLFormater = NULL;
 	char sSQL[MAXLENGTH_SQL];
 
-	// get tag ID
 	sSQLFormater = "SELECT [FULLPATH] FROM FILES f \
 				   INNER JOIN [ASSO_FILE_TAG] a on f.[ID] = a.[FILEID]\
 				   INNER JOIN [TAGS] t on t.[ID] = a.[TAGID]\
-				   WHERE t.[ID] = '%d'";
+				   WHERE t.[ID] = '%d'\
+				   ORDER BY f.[ID] DESC";
 
 	sprintf ( sSQL,sSQLFormater,tagIdInDb );
 

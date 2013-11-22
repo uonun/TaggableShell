@@ -2,6 +2,8 @@
 #include "..\include\NsExt.CShellViewImpl.h"
 #include <propkey.h>
 
+DEFINE_GUID(IID_IBrowserSettings,     0xDD1E21CC, 0xE2C7, 0x402C, 0xBF,0x05, 0x10,0x32,0x8D,0x3F,0x6B,0xAD);
+
 HANDLE CShellViewImpl::m_mutex = ::CreateMutex(NULL, FALSE, NULL);
 
 CShellViewImpl::CShellViewImpl(void): 
@@ -13,6 +15,7 @@ CShellViewImpl::CShellViewImpl(void):
 	, _peb(NULL),_prf(NULL)
 	,m_isRefreshing(FALSE)
 	,m_uUIState(SVUIA_DEACTIVATE)
+	,m_hMenu(NULL)
 {
 	::PrintLog(L"CShellViewImpl.ctor");
 
@@ -76,7 +79,7 @@ IFACEMETHODIMP CShellViewImpl::QueryInterface(REFIID riid, void ** ppv)
 		QITABENT(CShellViewImpl, ICommDlgBrowser3),
 		QITABENT(CShellViewImpl, IOleWindow),
 		QITABENT(CShellViewImpl, IFolderView),		
-		QITABENT(CShellViewImpl, IFolderView2),		
+		QITABENT(CShellViewImpl, IFolderView2),
 		QITABENT(CShellViewImpl, IBrowserFrameOptions),		
 		{0},
 	};
@@ -154,36 +157,14 @@ STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void
 	CoTaskMemFree(str2);
 #endif
 
-	if ( IsEqualIID(SID_SExplorerBrowserFrame, guidService) )
-	{
-		hr = QueryInterface(riid, ppv);		
-	}
-	else if ( IsEqualIID(SID_STopLevelBrowser, guidService) )
-	{
-		if ( IsEqualIID(IID_ICommDlgBrowser2, riid) )
-		{
-			hr = QueryInterface(riid, ppv);		
-		}
-		else
-		{
-			if( NULL != _peb )
-				hr = _peb->QueryInterface(riid,ppv);
-		}
-	}
-	else if ( IsEqualIID(SID_SFolderView, guidService) ||  IsEqualIID(IID_IFolderView, guidService) )
-	{
-		hr = QueryInterface(riid, ppv);		
-	}
-	else if ( IsEqualIID(SID_DefView, guidService) )
-	{
-		if( NULL != _peb )
-			hr = _peb->QueryInterface(riid,ppv);
-	}
-	else if ( IsEqualIID(SID_ExplorerPaneVisibility, guidService) )
-	{
-		if( NULL != _peb )
-			hr = _peb->QueryInterface(riid,ppv);
-	}
+	hr = QueryInterface(riid, ppv);		
+
+	if( FAILED(hr) && NULL != _peb )
+		hr = _peb->QueryInterface(riid,ppv);
+
+	if( FAILED(hr) && NULL != m_spShellBrowser )
+		hr = m_spShellBrowser->QueryInterface(riid,ppv);
+
 	return hr;
 }
 

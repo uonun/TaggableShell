@@ -1,6 +1,7 @@
 #pragma once
 #include "..\include\NsExt.CShellViewImpl.h"
 
+// IFolderView
 HRESULT CShellViewImpl::GetCurrentViewMode( 
 	UINT *pViewMode)
 { 

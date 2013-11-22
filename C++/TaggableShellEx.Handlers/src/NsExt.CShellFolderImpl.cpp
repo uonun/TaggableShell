@@ -60,6 +60,7 @@ IFACEMETHODIMP CShellFolderImpl::QueryInterface(REFIID riid, void ** ppv)
 		QITABENT(CShellFolderImpl, IContextMenu),
 		QITABENT(CShellFolderImpl, IQueryInfo),
 		QITABENT(CShellFolderImpl, IExplorerPaneVisibility),
+		QITABENT(CShellFolderImpl, IExplorerCommandProvider),
 		QITABENT(CShellFolderImpl, IShellFolder),
 		QITABENT(CShellFolderImpl, IPersistFolder),
 		{0},

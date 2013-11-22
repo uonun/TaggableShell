@@ -27,6 +27,7 @@ Known bugs:
 	- 应当保存ExplorerBrowser的状态。
 		- 点击ExplorerBrowser的列头进行排序，切换到其他文件夹，再返回，ExplorerBrowser的排序已被重置。
 	- 选择多个Folder，然后点击右键->打开，在打开的Shell上，地址栏显示的路径错误
+	- 添加标签到多个文件时，弹出的IFileOperation进度对话框中，无法正常显示“从”、“到”的文件路径。
 
 TBD:
 	- 在桌面、我的电脑上显示Folder。
