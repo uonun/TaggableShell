@@ -125,6 +125,7 @@ public:
 
 	// Init function - call right after constructing a CShellFolderImpl object.
 	HRESULT Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current );
+	BOOL IsShowTag();
 
 	CTaghelper* pTagHelper;
 

@@ -93,3 +93,14 @@ HRESULT CShellFolderImpl::Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE 
 
 	return S_OK;
 }
+
+BOOL CShellFolderImpl::IsShowTag()
+{
+	if ( NULL != CurrentShellItemData )
+	{
+		//auto data = m_PidlMgr.GetData(m_psfContainingFolder->m_PIDLCurrent);
+		//return data != NULL && data->Type == MYSHITEMTYPE_TAG ? TRUE : FALSE;
+		return TRUE;
+	}
+	return FALSE;
+}

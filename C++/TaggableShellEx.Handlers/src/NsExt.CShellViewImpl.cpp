@@ -16,6 +16,8 @@ CShellViewImpl::CShellViewImpl(void):
 	,m_isRefreshing(FALSE)
 	,m_uUIState(SVUIA_DEACTIVATE)
 	,m_hMenu(NULL)
+	,_dwCookie(0)
+	,_currentIconSize(48)
 {
 	::PrintLog(L"CShellViewImpl.ctor");
 
@@ -215,10 +217,10 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 	{
 		if( IsShowTag() )
 		{
-			m_folderSettings.ViewMode = FVM_AUTO;
+			m_folderSettings.ViewMode = FVM_TILE;
 			_peb->SetFolderSettings(&m_folderSettings);
 
-			PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay};
+			PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay};	// PKEY_ParsingName
 			hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
 			if (SUCCEEDED(hr))
 			{
@@ -238,7 +240,7 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 		}
 		else
 		{
-			m_folderSettings.ViewMode = FVM_DETAILS;
+			m_folderSettings.ViewMode = FVM_DETAILS; //FVM_AUTO
 			_peb->SetFolderSettings(&m_folderSettings);
 
 			PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay,PKEY_DateModified,PKEY_ItemTypeText,PKEY_Size,PKEY_ItemFolderPathDisplay};
@@ -282,7 +284,7 @@ HRESULT CShellViewImpl::Init ( CShellFolderImpl* pContainingFolder )
 
 BOOL CShellViewImpl::IsShowTag()
 {
-	if ( NULL != m_psfContainingFolder && NULL != m_psfContainingFolder->CurrentShellItemData )
+	if ( NULL != m_psfContainingFolder && m_psfContainingFolder->IsShowTag() )
 	{
 		//auto data = m_PidlMgr.GetData(m_psfContainingFolder->m_PIDLCurrent);
 		//return data != NULL && data->Type == MYSHITEMTYPE_TAG ? TRUE : FALSE;

@@ -54,6 +54,16 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 		_peb->SetOptions( EBO_SHOWFRAMES | EBO_ALWAYSNAVIGATE);	// EBO_SHOWFRAMES
 		_peb->SetEmptyText(::MyLoadString(IDS_MSG_LOADING_TAGS));
 
+		// In Win7, the command bar will not request commands from a shell folder (via 
+		// IShellFolder::CreateViewObject) unless the shell view proffers itself to the 
+		// browser that hosts it. This is a change from Vista.
+		IProfferService *pps;
+		if (SUCCEEDED(m_spShellBrowser->QueryInterface(IID_PPV_ARGS(&pps))))
+		{
+			hr = pps->ProfferService(SID_SFolderView, static_cast<IServiceProvider *>(this),&_dwCookie);
+			pps->Release();
+		}
+
 		hr = _peb->Initialize(m_hWnd,prcView,&m_folderSettings);
 		if (SUCCEEDED(hr))
 		{
@@ -110,6 +120,16 @@ STDMETHODIMP CShellViewImpl::DestroyViewWindow()
 	{
 		_peb->Destroy();
 		_peb = NULL;
+	}
+
+	if ( NULL != m_spShellBrowser )
+	{
+		IProfferService *pps;
+		if (SUCCEEDED(m_spShellBrowser->QueryInterface(IID_PPV_ARGS(&pps))))
+		{
+			auto hr = pps->RevokeService(_dwCookie);
+			pps->Release();
+		}
 	}
 
 	return S_OK;

@@ -61,6 +61,7 @@ public:
 	STDMETHOD(QueryStatus)(const GUID*, ULONG, OLECMD prgCmds[], OLECMDTEXT*);
 	STDMETHOD(Exec)(const GUID*, DWORD, DWORD, VARIANTARG*, VARIANTARG*);
 
+#pragma region IFolderView
 	// IFolderView
 	HRESULT STDMETHODCALLTYPE GetCurrentViewMode( UINT *pViewMode);
 	HRESULT STDMETHODCALLTYPE SetCurrentViewMode( UINT ViewMode);
@@ -103,6 +104,7 @@ public:
 	HRESULT STDMETHODCALLTYPE SetRedraw(BOOL fRedrawOn);
 	HRESULT STDMETHODCALLTYPE IsMoveInSameFolder( void);
 	HRESULT STDMETHODCALLTYPE DoRename( void);
+#pragma endregion
 
 	// IBrowserFrameOptions
 	HRESULT GetFrameOptions(
@@ -135,6 +137,8 @@ private:
 	BOOL				m_isRefreshing;
 	UINT				m_uUIState;	// current state
 	HMENU				m_hMenu;
+	DWORD				_dwCookie;	// A pointer to a DWORD that receives an implementation-defined value used for identification purposes. The calling application must keep track of this value for possible use in IProfferService::RevokeService.
+	int					_currentIconSize;
 
 	void InitExplorerBrowserColumns(IFolderView2* pfv2);
 	BOOL IsShowTag();

@@ -1,20 +1,30 @@
 #pragma once
 #include "..\include\NsExt.CShellViewImpl.h"
+/*
+ Most of these functions are redirected to _peb, in other words, why not just return IFolderView/IFolderView2 from _peb directly like this:
+
+ See: CShellViewImpl::QueryService
+		if( IsEqualIID(riid, IID_IFolderView ) || IsEqualIID(riid, IID_IFolderView2 ) )
+		{
+			hr = _peb->QueryInterface(riid,ppv);
+		}
+
+ The reason is, there still are some work to do in the other of functions which is not redirected to _peb.
+ so we have to implement IFolderView/IFolderView2 by ourselves.
+*/
 
 // IFolderView
-HRESULT CShellViewImpl::GetCurrentViewMode( 
-	UINT *pViewMode)
+HRESULT CShellViewImpl::GetCurrentViewMode(UINT *pViewMode)
 { 
 	*pViewMode = m_folderSettings.ViewMode;
 	return S_OK;
 }
 
-HRESULT CShellViewImpl::SetCurrentViewMode( 
-	UINT ViewMode)
+HRESULT CShellViewImpl::SetCurrentViewMode(UINT ViewMode)
 {
 	m_folderSettings.ViewMode = ViewMode;
-	_peb->SetFolderSettings(&m_folderSettings);
-	return S_OK;
+	HRESULT hr = _peb->SetFolderSettings(&m_folderSettings);
+	return hr;
 }
 
 HRESULT CShellViewImpl::GetFolder( 
@@ -214,13 +224,14 @@ HRESULT CShellViewImpl::SetText( FVTEXTTYPE iType,LPCWSTR pwszText)
 }
 HRESULT CShellViewImpl::SetCurrentFolderFlags(DWORD dwMask,DWORD dwFlags)
 {
-	HRESULT hr = E_NOTIMPL;
+	m_folderSettings.fFlags = dwMask & dwFlags;
+	HRESULT hr = _peb->SetFolderSettings(&m_folderSettings);
 	return hr;
 }
 HRESULT CShellViewImpl::GetCurrentFolderFlags(DWORD *pdwFlags)
 {
-	HRESULT hr = E_NOTIMPL;
-	return hr;
+	*pdwFlags = m_folderSettings.fFlags;
+	return S_OK;
 }
 HRESULT CShellViewImpl::GetSortColumnCount(int *pcColumns)
 {
@@ -269,12 +280,26 @@ HRESULT CShellViewImpl::InvokeVerbOnSelection(LPCSTR pszVerb)
 }
 HRESULT CShellViewImpl::SetViewModeAndIconSize(FOLDERVIEWMODE uViewMode,int iImageSize)
 {
-	HRESULT hr = E_NOTIMPL;
+	HRESULT hr;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->SetViewModeAndIconSize(uViewMode,iImageSize);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::GetViewModeAndIconSize(FOLDERVIEWMODE *puViewMode,int *piImageSize)
 {
-	HRESULT hr = E_NOTIMPL;
+	HRESULT hr;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->GetViewModeAndIconSize(puViewMode,piImageSize);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::SetGroupSubsetCount(UINT cVisibleRows)
