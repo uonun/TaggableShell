@@ -61,6 +61,7 @@ STDMETHODIMP CShellViewImpl::Exec ( const GUID* pguidCmdGroup, DWORD nCmdID,
 * pguidCmdGroup							 GUID				nCmdID	CmdName
 * -------------------------------------------------------------------------
 * NULL														23		OLECMDID_STOP
+* NULL														22		OLECMDID_REFRESH
 * {000214D0-0000-0000-C000-000000000046} CGID_Explorer		39		OLECMDID_PREREFRESH
 * {000214D0-0000-0000-C000-000000000046} CGID_Explorer		41		OLECMDID_SHOWMESSAGE
 * {4AF07F10-D231-11D0-B942-00A0C90312E1} CGID_DefView		2		OLECMDID_NEW

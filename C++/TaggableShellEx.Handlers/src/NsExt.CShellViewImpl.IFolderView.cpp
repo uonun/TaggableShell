@@ -1,16 +1,16 @@
 #pragma once
 #include "..\include\NsExt.CShellViewImpl.h"
 /*
- Most of these functions are redirected to _peb, in other words, why not just return IFolderView/IFolderView2 from _peb directly like this:
+Most of these functions are redirected to _peb, in other words, why not just return IFolderView/IFolderView2 from _peb directly like this:
 
- See: CShellViewImpl::QueryService
-		if( IsEqualIID(riid, IID_IFolderView ) || IsEqualIID(riid, IID_IFolderView2 ) )
-		{
-			hr = _peb->QueryInterface(riid,ppv);
-		}
+See: CShellViewImpl::QueryService
+if( IsEqualIID(riid, IID_IFolderView ) || IsEqualIID(riid, IID_IFolderView2 ) )
+{
+hr = _peb->QueryInterface(riid,ppv);
+}
 
- The reason is, there still are some work to do in the other of functions which is not redirected to _peb.
- so we have to implement IFolderView/IFolderView2 by ourselves.
+The reason is, there still are some work to do in the other of functions which is not redirected to _peb.
+so we have to implement IFolderView/IFolderView2 by ourselves.
 */
 
 // IFolderView
@@ -209,17 +209,38 @@ HRESULT CShellViewImpl::SelectAndPositionItems(
 // IFolderView2
 HRESULT CShellViewImpl::SetGroupBy(REFPROPERTYKEY key,BOOL fAscending)
 {
-	HRESULT hr = E_NOTIMPL;
+	HRESULT hr;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->SetGroupBy(key,fAscending);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::GetGroupBy( PROPERTYKEY *pkey,BOOL *pfAscending)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->GetGroupBy(pkey,pfAscending);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::SetText( FVTEXTTYPE iType,LPCWSTR pwszText)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->SetText(iType,pwszText);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::SetCurrentFolderFlags(DWORD dwMask,DWORD dwFlags)
@@ -236,46 +257,109 @@ HRESULT CShellViewImpl::GetCurrentFolderFlags(DWORD *pdwFlags)
 HRESULT CShellViewImpl::GetSortColumnCount(int *pcColumns)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->GetSortColumnCount(pcColumns);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::SetSortColumns(const SORTCOLUMN *rgSortColumns,int cColumns)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->SetSortColumns(rgSortColumns,cColumns);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::GetSortColumns(SORTCOLUMN *rgSortColumns,int cColumns)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->GetSortColumns(rgSortColumns,cColumns);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::GetItem(int iItem,REFIID riid,void **ppv)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->GetItem(iItem,riid,ppv);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::GetVisibleItem(int iStart,BOOL fPrevious,int *piItem)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->GetVisibleItem(iStart,fPrevious,piItem);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::GetSelectedItem(int iStart,int *piItem)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->GetSelectedItem(iStart,piItem);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::GetSelection(BOOL fNoneImpliesFolder,IShellItemArray **ppsia)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->GetSelection(fNoneImpliesFolder,ppsia);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::GetSelectionState(PCUITEMID_CHILD pidl,DWORD *pdwFlags)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->GetSelectionState(pidl,pdwFlags);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::InvokeVerbOnSelection(LPCSTR pszVerb)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->InvokeVerbOnSelection(pszVerb);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::SetViewModeAndIconSize(FOLDERVIEWMODE uViewMode,int iImageSize)
@@ -305,25 +389,60 @@ HRESULT CShellViewImpl::GetViewModeAndIconSize(FOLDERVIEWMODE *puViewMode,int *p
 HRESULT CShellViewImpl::SetGroupSubsetCount(UINT cVisibleRows)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->SetGroupSubsetCount(cVisibleRows);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::GetGroupSubsetCount(UINT *pcVisibleRows)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->GetGroupSubsetCount(pcVisibleRows);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::SetRedraw(BOOL fRedrawOn)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->SetRedraw(fRedrawOn);
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::IsMoveInSameFolder( void)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->IsMoveInSameFolder();
+		pfv2->Release();
+	}
 	return hr;
 }
 HRESULT CShellViewImpl::DoRename( void)
 {
 	HRESULT hr = E_NOTIMPL;
+	IFolderView2 *pfv2;
+	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
+	if( SUCCEEDED(hr) )
+	{
+		hr = pfv2->DoRename();
+		pfv2->Release();
+	}
 	return hr;
 }

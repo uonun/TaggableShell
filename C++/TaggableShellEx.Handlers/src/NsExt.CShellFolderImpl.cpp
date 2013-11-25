@@ -64,6 +64,8 @@ IFACEMETHODIMP CShellFolderImpl::QueryInterface(REFIID riid, void ** ppv)
 		QITABENT(CShellFolderImpl, IExplorerPaneVisibility),
 		QITABENT(CShellFolderImpl, IExplorerCommandProvider),
 		QITABENT(CShellFolderImpl, IShellFolder),
+		QITABENT(CShellFolderImpl, IShellFolder2),
+		//QITABENT(CShellFolderImpl, IPropertyStore),
 		QITABENT(CShellFolderImpl, IPersistFolder),
 		{0},
 	};
@@ -89,6 +91,12 @@ IFACEMETHODIMP_(ULONG) CShellFolderImpl::Release()
 // Init function - call right after constructing a CShellFolderImpl object.
 HRESULT CShellFolderImpl::Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current )
 {
+	if( m_pIDFolder != NULL )
+		ILFree(m_pIDFolder);
+
+	if( m_PIDLCurrent != NULL )
+		ILFree(m_PIDLCurrent);
+	
 	m_pIDFolder = pidl_perent;
 	m_PIDLCurrent = pidl_current;
 	CurrentShellItemData = m_PidlMgr.GetData(m_PIDLCurrent);

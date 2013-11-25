@@ -1,5 +1,6 @@
 #pragma once
 #include "..\include\NsExt.CShellViewImpl.h"
+#include <propkeydef.h>
 #include <propkey.h>
 
 DEFINE_GUID(IID_IBrowserSettings,     0xDD1E21CC, 0xE2C7, 0x402C, 0xBF,0x05, 0x10,0x32,0x8D,0x3F,0x6B,0xAD);
@@ -220,7 +221,9 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 			m_folderSettings.ViewMode = FVM_TILE;
 			_peb->SetFolderSettings(&m_folderSettings);
 
-			PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay};	// PKEY_ParsingName
+			// columns for TAGs, PKEY_ItemNameDisplay is the Text of IShellItem, for columns, see: CShellFolderImpl::GetDetailsEx
+			// PKEY_Comment for USECOUNT
+			PROPERTYKEY rgkeys[] = {PKEY_ItemNameDisplay, PKEY_Comment};
 			hr = pcm->SetColumns(rgkeys, ARRAYSIZE(rgkeys));
 			if (SUCCEEDED(hr))
 			{
@@ -235,6 +238,19 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 					ci.uIdealWidth = 250;
 					StringCbPrintf(ci.wszName,sizeof(ci.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME) );
 					pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
+				}
+
+				// use count
+				CM_COLUMNINFO ci2 = {sizeof(ci2), CM_MASK_NAME | CM_MASK_STATE | CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH | CM_MASK_IDEALWIDTH};
+				hr = pcm->GetColumnInfo(PKEY_Comment, &ci2);
+				if (SUCCEEDED(hr))
+				{
+					ci2.dwState = CM_STATE_VISIBLE;
+					ci2.uWidth = 50;
+					ci2.uDefaultWidth = 50;
+					ci2.uIdealWidth = 50;
+					StringCbPrintf(ci2.wszName,sizeof(ci2.wszName),L"%s",::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT) );
+					pcm->SetColumnInfo(PKEY_Comment, &ci2);
 				}
 			}
 		}
@@ -343,6 +359,9 @@ HRESULT CShellViewImpl::DoWorkAsyn(IResultsFolder *prf)
 			infoLoaded = tmp2;
 		}
 
+		if( NULL == this->_peb )
+			return S_FALSE;
+
 		this->_peb->SetEmptyText(infoLoaded);
 
 		// Stop redrawing to avoid flickering
@@ -377,6 +396,9 @@ HRESULT CShellViewImpl::DoWorkAsyn(IResultsFolder *prf)
 						hr = SHCreateItemWithParent(this->m_psfContainingFolder->m_pIDFolder,NULL,pidl,IID_PPV_ARGS(&psi));
 						wsprintf ( tmp3,::MyLoadString(IDS_MSG_LOADING_TAG),data->wszDisplayName);
 					}
+
+
+					_ASSERT_EXPR(NULL != this->m_spShellBrowser,L"CShellViewImpl::DoWorkAsyn: m_spShellBrowser could not be NULL.");
 
 					this->m_spShellBrowser->SetStatusTextSB(tmp3);
 				}

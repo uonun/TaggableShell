@@ -114,7 +114,7 @@ MYPIDLDATA* CPidlMgr::GetData ( LPCITEMIDLIST pidl )
 	pData = (MYPIDLDATA*)pLast;
 
 	// to make sure current SHITEMID is MYPIDLDATA
-	if ( pData->cb == pLast->mkid.cb )
+	if ( pData->cb == pLast->mkid.cb && (pData->Type == MYSHITEMTYPE_TAG || pData->Type == MYSHITEMTYPE_FILE))
 		return pData;
 	else
 		return NULL;

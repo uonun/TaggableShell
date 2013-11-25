@@ -30,6 +30,7 @@ HRESULT CShellFolderImpl::Initialize(LPCITEMIDLIST pIDFolder)
 			si->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING,&_path);
 			StrCpy(FolderPath,_path);
 			CoTaskMemFree(_path);
+			si->Release();
 
 			::PrintLog(L"Get in path: %s",FolderPath);
 		}

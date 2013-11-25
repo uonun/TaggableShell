@@ -721,7 +721,6 @@ HRESULT CTaghelper::DoWorkAsyn(IOperationsProgressDialog * & _pOPD)
 		else if( FileCount > 1) // associate the tag with specificed files no matter whether it is associated already or not.
 		{
 			UINT FID = DB_RECORD_NOT_EXIST;
-			PDOPSTATUS state;
 			for (UINT i = 0; i < FileCount; i++)
 			{
 				FID = GetFileID(&_targetFileNamesInSQL[i]);

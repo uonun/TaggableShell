@@ -1,6 +1,7 @@
 #pragma once
 #include "../include/NsExt.CShellFolderImpl.h"
 
+#pragma region IShellFolder
 HRESULT CShellFolderImpl::BindToObject(
 	PCUIDLIST_RELATIVE pidl,
 	IBindCtx *pbc,
@@ -11,48 +12,47 @@ HRESULT CShellFolderImpl::BindToObject(
 	HRESULT hr = E_NOINTERFACE;
 	if ( riid == IID_IShellFolder )
 	{
-		::PrintLog(L"ShellFolder::BindToObject: riid = IID_IShellFolder");
+		::PrintLog(L"ShellFolder::BindToObject: riid = IID_IShellFolder, FolderPath = %s", FolderPath);
 
-		IShellFolder *pShellFolder = NULL;
-
-		// HACK: there may be a bug:
-		//			when an other application which is explorering shell folders from MyComputer, the NSE will be listed as supposed to,
-		//			but when open a physical directory which is in any TAG, the TAGs will be listed in the directory again while not the items in the directory.
-		//			absolutely it is not right.
-		// As a HACK way to avoid this bug, we make sure the FolderPath will not be empty.
-		if ( FolderPath[0] != 0 ){
-			hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
-			if( hr == S_OK )
+		auto data = m_PidlMgr.GetData(pidl);
+		if( NULL != data )
+		{
+			// HACK: there may be a bug:
+			//			when an other application which is explorering shell folders from MyComputer, the NSE will be listed as supposed to,
+			//			but when open a physical directory which is in any TAG, the TAGs will be listed in the directory again while not the items in the directory.
+			//			absolutely it is not right.
+			// As a HACK way to avoid this bug, we make sure the FolderPath will not be empty.
+			if ( FolderPath[0] != 0 )
 			{
 				auto pidlFolder = ILClone(m_pIDFolder);
 				auto pidlCurrent = ILClone(pidl);
-				hr = ((CShellFolderImpl*)pShellFolder)->Init ( pidlFolder,(PIDLIST_RELATIVE)pidlCurrent );
+				hr = this->Init( pidlFolder,(PIDLIST_RELATIVE)pidlCurrent );
 
-				auto data = m_PidlMgr.GetData(pidl);
-				::PrintLog(L"ShellFolder::BindToObject: Got object: %s, FolderPath = %s",data->wszDisplayName,FolderPath);
+				::PrintLog(L"ShellFolder::BindToObject: Got object: %s",data->wszDisplayName);
 
-				if ( FAILED(hr) )
-				{
-					pShellFolder->Release();
-					return hr;
-				}
-				else
-				{
-					hr = pShellFolder->QueryInterface(riid,ppvOut);
-					pShellFolder->Release();
-				}
+				hr = this->QueryInterface(riid,ppvOut);
+
+			}else{
+				// TODO:
+				// 1. get pidl of the specified physical directory.	( not able to finish this step right now.)
+				// 2. get shell folder of Desktop by SHGetDesktopFolder
+				// 3. pShellFolder->BindToObject(specified pidl,pbc,riid,ppvOut);
 			}
+		}else{
+			// if the pidl is not a TAG(MYPIDLDATA), leave the hr = E_NOINTERFACE to allow the shell explorer as normal.
 		}
 	}
-#ifdef _DEBUG
 	else
 	{
+		hr = this->QueryInterface(riid,ppvOut);
+
+#ifdef _DEBUG
 		LPOLESTR str;
 		StringFromIID(riid,&str);
 		::PrintLog(L"ShellFolder::BindToObject: riid =%s",str);
 		CoTaskMemFree(str);
-	}
 #endif
+	}
 
 	return hr;
 }
@@ -372,16 +372,6 @@ HRESULT CShellFolderImpl::GetDisplayNameOf(
 			if ( SHGDN_INFOLDER & uFlags )
 			{
 				StringCbCopy(pName->pOleStr,MAX_PATH,data->wszDisplayName);
-
-				// show usecount in IExplorerBrowser
-				if( !(uFlags & SHGDN_FOREDITING) && !(uFlags & SHGDN_FORADDRESSBAR) && !(uFlags & SHGDN_FORPARSING) )
-				{
-					StrCat(pName->pOleStr,L"(");
-					wchar_t szUseCount[8]; // max 99999999 files for each tag.
-					_itow_s(data->UseCount,szUseCount,10);
-					StrCat(pName->pOleStr,szUseCount);
-					StrCat(pName->pOleStr,L")");
-				}
 			}
 			else
 			{
@@ -463,6 +453,9 @@ HRESULT CShellFolderImpl::GetUIObjectOf(
 		//	hr = pShellFolder->QueryInterface(riid,ppv);
 		//	pShellFolder->Release();
 		//}
+
+		//DEFCONTEXTMENU dcm = { hwndOwner, static_cast<IContextMenu *>(this), NULL, static_cast<IShellFolder2 *>(this), cidl, apidl, NULL, 0, NULL };
+		//hr = SHCreateDefaultContextMenu(&dcm, riid, ppv);
 	}
 	else if ( IsEqualIID(IID_IExtractIcon,riid) )
 	{
@@ -500,7 +493,7 @@ HRESULT CShellFolderImpl::ParseDisplayName(
 	hr = SHILCreateFromPath(pszDisplayName,ppidl,pdwAttributes);
 	if ( SUCCEEDED(hr) )
 	{
-		ULONG n = sizeof(pszDisplayName) / sizeof(pszDisplayName[0]);
+		ULONG n = wcsnlen_s(pszDisplayName,MAX_PATH);
 		pchEaten = &n;
 	}
 	return hr;
@@ -516,4 +509,193 @@ HRESULT CShellFolderImpl::SetNameOf(
 {	
 	return S_OK;	
 };
+#pragma endregion
 
+
+#pragma region IShellFolder2
+STDMETHODIMP CShellFolderImpl::GetDefaultSearchGUID(__out GUID *pguid)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CShellFolderImpl::EnumSearches(__deref_out IEnumExtraSearch **ppenum)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CShellFolderImpl::GetDefaultColumn(DWORD dwRes, __out ULONG *plSort, __out ULONG *plDisplay)
+{
+	*plSort = 0;
+	*plDisplay = 0;
+	return S_OK;
+}
+
+STDMETHODIMP CShellFolderImpl::GetDefaultColumnState(UINT iColumn, __out SHCOLSTATEF *pcsFlags)
+{
+	HRESULT hr = E_NOTIMPL;
+	return hr;
+}
+
+// to display details for TAGs. some of them will be listed as column in detail view.
+const CShellFolderImpl::COLUMNINFO CShellFolderImpl::c_rgColumnInfo[] =
+{
+	{ PKEY_ItemNameDisplay, SHCOLSTATE_ONBYDEFAULT, &CShellFolderImpl::_GetDisplayName },
+	{ PKEY_ItemTypeText, SHCOLSTATE_VIEWONLY, &CShellFolderImpl::_GetContainedItems },		// for USECOUNT in TILE view.
+	{ PKEY_Comment, SHCOLSTATE_VIEWONLY, &CShellFolderImpl::_GetContainedItems },			// for USECOUNT in DETAIL view.
+};
+
+// Gets detailed information, identified by a property set identifier (FMTID) and a property identifier (PID), on an item in a Shell folder.
+STDMETHODIMP CShellFolderImpl::GetDetailsEx(PCUITEMID_CHILD pidl, const PROPERTYKEY *pkey, __out VARIANT *pvar)
+{
+	PROPVARIANT spropvar;
+	HRESULT hr = _GetPropertyForItem(pidl, *pkey, &spropvar);
+	if (SUCCEEDED(hr))
+	{
+		hr = PropVariantToVariant(&spropvar, pvar);
+	}
+	return hr;
+}
+
+HRESULT CShellFolderImpl::_GetDisplayName(PCUITEMID_CHILD pidl,REFPROPERTYKEY key, __out PROPVARIANT *ppropvar)
+{
+	HRESULT hr = E_FAIL;
+	STRRET name;
+	hr = GetDisplayNameOf(pidl,SHGDN_INFOLDER,&name);
+	ppropvar->vt = VT_LPWSTR;
+	LPWSTR pPre = L"±êÇ©£º";	// HACK: not sure where to display this information so far.
+	ppropvar->pwszVal = new wchar_t[MAXLENGTH_EACHTAG + wstring(pPre).length()];
+	StrCat(ppropvar->pwszVal,pPre);
+	StrCat(ppropvar->pwszVal,name.pOleStr);
+	CoTaskMemFree(name.pOleStr);
+	return hr;
+}
+
+HRESULT CShellFolderImpl::_GetContainedItems(PCUITEMID_CHILD pidl,REFPROPERTYKEY key, __out PROPVARIANT *ppropvar)
+{
+	HRESULT hr = E_FAIL;
+	auto data = m_PidlMgr.GetData(pidl);
+	if( data != NULL && data->Type == MYSHITEMTYPE_TAG )
+	{
+		ppropvar->vt = VT_LPWSTR;
+		ppropvar->pwszVal = new wchar_t[20];	// 20 for ¡°%d Items¡±
+		wsprintf(ppropvar->pwszVal,::MyLoadString(IDS_MSG_N_FILES_LOADED_FOR_TAG_SHORT),data->UseCount);
+		//_itow(data->UseCount,ppropvar->pwszVal,10); //PKEY_Comment
+		hr = S_OK;
+	}
+	return hr;
+}
+
+HRESULT CShellFolderImpl::_GetPropertyForItem(PCUITEMID_CHILD pidl, REFPROPERTYKEY key, __out PROPVARIANT *ppropvar)
+{
+	HRESULT hr = E_FAIL;
+	for (int i = 0; i < ARRAYSIZE(c_rgColumnInfo); i++)
+	{
+		if (IsEqualPropertyKey(key, c_rgColumnInfo[i].key))
+		{
+			hr = (this->*c_rgColumnInfo[i].pfnGetProperty)(pidl,key, ppropvar);
+			break;
+		}
+	}
+	return hr;
+}
+
+// The IShellFolder2::GetDetailsOf method provides access to the information that is displayed in the Windows Explorer Details view of a Shell folder.
+STDMETHODIMP CShellFolderImpl::GetDetailsOf(__in_opt PCUITEMID_CHILD pidl, UINT iColumn, __out SHELLDETAILS *psd)
+{
+	HRESULT hr = E_INVALIDARG;
+	if (iColumn < ARRAYSIZE(c_rgColumnInfo))
+	{
+		if (pidl)
+		{
+			PROPVARIANT spropvar;
+			hr = _GetPropertyForItem(pidl, c_rgColumnInfo[iColumn].key, &spropvar);
+			if (SUCCEEDED(hr))
+			{
+				psd->str.uType = STRRET_WSTR;
+				psd->str.pOleStr = spropvar.pwszVal;
+				spropvar.vt = VT_EMPTY;
+			}
+		}
+		else
+		{
+			IPropertyDescription* sppropdesc;
+			hr = PSGetPropertyDescription(c_rgColumnInfo[iColumn].key, IID_PPV_ARGS(&sppropdesc));
+			if (SUCCEEDED(hr))
+			{
+				int fmt = LVCFMT_LEFT;          // default
+				PROPDESC_VIEW_FLAGS dvf;
+				HRESULT hr = sppropdesc->GetViewFlags(&dvf);
+				if (SUCCEEDED(hr))
+				{
+					// Handle the mutually exclusive part
+					if (dvf & PDVF_RIGHTALIGN)
+					{
+						fmt = LVCFMT_RIGHT;
+					}
+					else if (dvf & PDVF_CENTERALIGN)
+					{
+						fmt = LVCFMT_CENTER;
+					}
+				}
+
+				psd->fmt = fmt;
+
+				hr = sppropdesc->GetDefaultColumnWidth((UINT *)&psd->cxChar);
+				if (SUCCEEDED(hr))
+				{
+					PROPDESC_TYPE_FLAGS dtf;
+					hr = sppropdesc->GetTypeFlags(PDTF_ISVIEWABLE, &dtf);
+					if (SUCCEEDED(hr))
+					{
+						WCHAR spszDisplayName[MAX_PATH] = {0};
+						LPWSTR	pName = spszDisplayName;
+						hr = sppropdesc->GetDisplayName(&pName);
+						if (FAILED(hr) && !(dtf & PDTF_ISVIEWABLE))
+						{
+							// Hidden columns don't have to have a display name in the schema
+							hr = SHStrDup(L"", &pName);
+						}
+
+						if (SUCCEEDED(hr))
+						{
+							psd->str.uType = STRRET_WSTR;
+							psd->str.pOleStr = spszDisplayName;
+						}
+					}
+				}
+
+			}
+		}
+	}
+	return hr;
+}
+
+STDMETHODIMP CShellFolderImpl::MapColumnToSCID(UINT iColumn, __out PROPERTYKEY *pkey)
+{
+	HRESULT hr = E_INVALIDARG;
+	if (iColumn < ARRAYSIZE(c_rgColumnInfo))
+	{
+		*pkey = c_rgColumnInfo[iColumn].key;
+		hr = S_OK;
+	}
+	return hr;
+}
+#pragma endregion
+
+//// IPropertyStore
+//HRESULT CShellFolderImpl::GetCount(DWORD *cProps){
+//	*cProps = 3;
+//	return S_OK;
+//}
+//HRESULT CShellFolderImpl::GetAt(DWORD iProp,PROPERTYKEY *pkey){
+//	if (iProp < ARRAYSIZE(c_rgColumnInfo))
+//	{
+//		*pkey = c_rgColumnInfo[iProp].key;
+//		return S_OK;
+//	}
+//	return S_FALSE;
+//}	
+//HRESULT CShellFolderImpl::GetValue(REFPROPERTYKEY key,PROPVARIANT *pv){
+//	pv->vt = VT_EMPTY;
+//	return S_OK;
+//}
