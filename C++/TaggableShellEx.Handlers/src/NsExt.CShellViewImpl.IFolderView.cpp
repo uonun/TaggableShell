@@ -268,6 +268,7 @@ HRESULT CShellViewImpl::GetSortColumnCount(int *pcColumns)
 }
 HRESULT CShellViewImpl::SetSortColumns(const SORTCOLUMN *rgSortColumns,int cColumns)
 {
+	// HACK: THE SORTING IS SUPPORTED ALTHOUGH NOT IMPLEMENT THIS, NOT SURE WHY OR UNKNOWN WHAT DOES THIS USED FOR.
 	HRESULT hr = E_NOTIMPL;
 	IFolderView2 *pfv2;
 	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));
@@ -280,6 +281,7 @@ HRESULT CShellViewImpl::SetSortColumns(const SORTCOLUMN *rgSortColumns,int cColu
 }
 HRESULT CShellViewImpl::GetSortColumns(SORTCOLUMN *rgSortColumns,int cColumns)
 {
+	// HACK: THE SORTING IS SUPPORTED ALTHOUGH NOT IMPLEMENT THIS, NOT SURE WHY OR UNKNOWN WHAT DOES THIS USED FOR.
 	HRESULT hr = E_NOTIMPL;
 	IFolderView2 *pfv2;
 	hr = _peb->GetCurrentView(IID_PPV_ARGS(&pfv2));

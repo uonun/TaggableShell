@@ -547,18 +547,22 @@ STDMETHODIMP CShellFolderImpl::GetDetailsEx(PCUITEMID_CHILD pidl, const PROPERTY
 	return hr;
 }
 
+// the display name here will not used to be shown on the folder as item name, but will be used when sorting by column.
 HRESULT CShellFolderImpl::_GetDisplayName(PCUITEMID_CHILD pidl,REFPROPERTYKEY key, __out PROPVARIANT *ppropvar)
 {
 	HRESULT hr = E_NOTIMPL;
-	auto data = m_PidlMgr.GetData(pidl);
-	if( data != NULL && data->Type == MYSHITEMTYPE_TAG )
+	auto tmp = ILClone(pidl);
+	if( tmp ) 
 	{
-		ppropvar->vt = VT_LPWSTR;
-		LPWSTR pPre = L"±êÇ©£º";	// HACK: not sure where to display this information so far.
-		ppropvar->pwszVal = new wchar_t[MAXLENGTH_EACHTAG + wstring(pPre).length()];
-		StrCat(ppropvar->pwszVal,pPre);
-		StrCat(ppropvar->pwszVal,data->wszDisplayName);
-		hr = S_OK;
+		auto data = m_PidlMgr.GetData(tmp);
+		if( data != NULL && data->Type == MYSHITEMTYPE_TAG )
+		{
+			ppropvar->vt = VT_LPWSTR;
+			ppropvar->pwszVal = new wchar_t[MAXLENGTH_EACHTAG];
+			StrCpy(ppropvar->pwszVal,data->wszDisplayName);
+			hr = S_OK;
+		}
+		ILFree(tmp);
 	}
 	return hr;
 }
@@ -566,14 +570,19 @@ HRESULT CShellFolderImpl::_GetDisplayName(PCUITEMID_CHILD pidl,REFPROPERTYKEY ke
 HRESULT CShellFolderImpl::_GetContainedItems(PCUITEMID_CHILD pidl,REFPROPERTYKEY key, __out PROPVARIANT *ppropvar)
 {
 	HRESULT hr = E_NOTIMPL;
-	auto data = m_PidlMgr.GetData(pidl);
-	if( data != NULL && data->Type == MYSHITEMTYPE_TAG )
+	auto tmp = ILClone(pidl);
+	if( tmp ) 
 	{
-		ppropvar->vt = VT_LPWSTR;
-		ppropvar->pwszVal = new wchar_t[20];	// 20 for ¡°%d Items¡±
-		wsprintf(ppropvar->pwszVal,::MyLoadString(IDS_MSG_N_FILES_LOADED_FOR_TAG_SHORT),data->UseCount);
-		//_itow(data->UseCount,ppropvar->pwszVal,10); //PKEY_Comment
-		hr = S_OK;
+		auto data = m_PidlMgr.GetData(tmp);
+		if( data != NULL && data->Type == MYSHITEMTYPE_TAG )
+		{
+			ppropvar->vt = VT_LPWSTR;
+			ppropvar->pwszVal = new wchar_t[20];	// 20 for ¡°%d Items¡±
+			wsprintf(ppropvar->pwszVal,::MyLoadString(IDS_MSG_N_FILES_LOADED_FOR_TAG_SHORT),data->UseCount);
+			//_itow(data->UseCount,ppropvar->pwszVal,10); //PKEY_Comment
+			hr = S_OK;
+		}
+		ILFree(tmp);
 	}
 	return hr;
 }
@@ -617,47 +626,47 @@ STDMETHODIMP CShellFolderImpl::GetDetailsOf(__in_opt PCUITEMID_CHILD pidl, UINT 
 			hr = PSGetPropertyDescription(c_rgColumnInfo[iColumn].key, IID_PPV_ARGS(&sppropdesc));
 			if (SUCCEEDED(hr))
 			{
-				int fmt = LVCFMT_LEFT;          // default
-				PROPDESC_VIEW_FLAGS dvf;
-				HRESULT hr = sppropdesc->GetViewFlags(&dvf);
-				if (SUCCEEDED(hr))
-				{
-					// Handle the mutually exclusive part
-					if (dvf & PDVF_RIGHTALIGN)
-					{
-						fmt = LVCFMT_RIGHT;
-					}
-					else if (dvf & PDVF_CENTERALIGN)
-					{
-						fmt = LVCFMT_CENTER;
-					}
-				}
+			int fmt = LVCFMT_LEFT;          // default
+			PROPDESC_VIEW_FLAGS dvf;
+			HRESULT hr = sppropdesc->GetViewFlags(&dvf);
+			if (SUCCEEDED(hr))
+			{
+			// Handle the mutually exclusive part
+			if (dvf & PDVF_RIGHTALIGN)
+			{
+			fmt = LVCFMT_RIGHT;
+			}
+			else if (dvf & PDVF_CENTERALIGN)
+			{
+			fmt = LVCFMT_CENTER;
+			}
+			}
 
-				psd->fmt = fmt;
+			psd->fmt = fmt;
 
-				hr = sppropdesc->GetDefaultColumnWidth((UINT *)&psd->cxChar);
-				if (SUCCEEDED(hr))
-				{
-					PROPDESC_TYPE_FLAGS dtf;
-					hr = sppropdesc->GetTypeFlags(PDTF_ISVIEWABLE, &dtf);
-					if (SUCCEEDED(hr))
-					{
-						WCHAR spszDisplayName[MAX_PATH] = {0};
-						LPWSTR	pName = spszDisplayName;
-						hr = sppropdesc->GetDisplayName(&pName);
-						if (FAILED(hr) && !(dtf & PDTF_ISVIEWABLE))
-						{
-							// Hidden columns don't have to have a display name in the schema
-							hr = SHStrDup(L"", &pName);
-						}
+			hr = sppropdesc->GetDefaultColumnWidth((UINT *)&psd->cxChar);
+			if (SUCCEEDED(hr))
+			{
+			PROPDESC_TYPE_FLAGS dtf;
+			hr = sppropdesc->GetTypeFlags(PDTF_ISVIEWABLE, &dtf);
+			if (SUCCEEDED(hr))
+			{
+			WCHAR spszDisplayName[MAX_PATH] = {0};
+			LPWSTR	pName = spszDisplayName;
+			hr = sppropdesc->GetDisplayName(&pName);
+			if (FAILED(hr) && !(dtf & PDTF_ISVIEWABLE))
+			{
+			// Hidden columns don't have to have a display name in the schema
+			hr = SHStrDup(L"", &pName);
+			}
 
-						if (SUCCEEDED(hr))
-						{
-							psd->str.uType = STRRET_WSTR;
-							psd->str.pOleStr = spszDisplayName;
-						}
-					}
-				}
+			if (SUCCEEDED(hr))
+			{
+			psd->str.uType = STRRET_WSTR;
+			psd->str.pOleStr = spszDisplayName;
+			}
+			}
+			}
 
 			}
 			*/
