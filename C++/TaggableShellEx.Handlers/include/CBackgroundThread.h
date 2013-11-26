@@ -6,7 +6,7 @@ class CBackgroundThread
 public:
 	CBackgroundThread(T1 *pebhd);
 	// there must be a method T1::DoWorkAsyn(TArgs*) to invoke.
-	HRESULT StartThread(TArgs* prf);
+	HRESULT StartThread(TArgs* & prf);
 
 	ULONG AddRef();
 	ULONG Release();
@@ -32,7 +32,7 @@ CBackgroundThread<T1,TArgs>::CBackgroundThread(T1 *pebhd) : _cRef(1), _pebhd(peb
 }
 
 template<class T1,typename TArgs>
-HRESULT CBackgroundThread<T1,TArgs>::StartThread(TArgs* prf)
+HRESULT CBackgroundThread<T1,TArgs>::StartThread(TArgs* & prf)
 {
 	HRESULT hr = CoMarshalInterThreadInterfaceInStream(__uuidof(prf), prf, &_pStream);
 	if (SUCCEEDED(hr))

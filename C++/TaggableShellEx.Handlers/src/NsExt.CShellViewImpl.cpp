@@ -314,7 +314,7 @@ BOOL CShellViewImpl::IsShowTag()
 }
 
 // FillList() populates the list control.
-void CShellViewImpl::FillList(IResultsFolder* prf)
+void CShellViewImpl::FillList(IResultsFolder* & prf)
 {
 	if( !m_isRefreshing )
 	{
@@ -415,7 +415,7 @@ HRESULT CShellViewImpl::DoWorkAsyn(IResultsFolder *prf)
 				{
 					_ASSERT_EXPR( NULL != prf , L"prf could not be NULL!");
 
-					hr = prf->AddItem(psi);
+					hr = prf->AddItem(psi);					
 					psi->Release();
 					Sleep(0);
 				}

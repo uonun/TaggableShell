@@ -55,7 +55,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 		hr = IUnknown_SetSite(_peb, static_cast<IServiceProvider *>(this));
 
 		// initialized
-		_peb->SetOptions( EBO_SHOWFRAMES | EBO_ALWAYSNAVIGATE);	// EBO_SHOWFRAMES
+		_peb->SetOptions( EBO_SHOWFRAMES | EBO_NAVIGATEONCE);	// EBO_SHOWFRAMES
 		_peb->SetEmptyText(::MyLoadString(IDS_MSG_LOADING_TAGS));
 
 		// In Win7, the command bar will not request commands from a shell folder (via 

@@ -148,7 +148,7 @@ private:
 	BOOL IsShowTag();
 	HRESULT GetItemFromView(IFolderView2 *pfv, int iItem, REFIID riid, void **ppv);
 
-	void FillList(IResultsFolder* prf);
+	void FillList(IResultsFolder* & prf);
 
 	void HandleActivate(UINT uState);
 	void HandleDeactivate();
