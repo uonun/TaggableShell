@@ -431,39 +431,30 @@ HRESULT CShellFolderImpl::GetUIObjectOf(
 	HRESULT hr = E_NOINTERFACE;
 	*ppv = NULL;
 
-	if ( IsEqualIID(IID_IContextMenu,riid) )
+	if ( IsEqualIID(IID_IContextMenu,riid) || IsEqualIID(IID_IContextMenuCB,riid))
 	{
-		// 1
-		//hr = this->QueryInterface(riid,ppv);		
+		// 	CDefFolderMenu_Create2(m_pIDFolder,hwndOwner,cidl,apidl,static_cast<IShellFolder *>(this),CallBack,0,NULL,(IContextMenu**)ppv);
 
-		// 2
-		//IShellFolder* psfParent;
-		//hr = SHBindToParent(m_pIDFolder,IID_PPV_ARGS(&psfParent),&apidl[0]);
-		//if( SUCCEEDED(hr) )
-		//{
-		//	hr = psfParent->GetUIObjectOf(hwndOwner,cidl,apidl,riid,rgfReserved,ppv);
-		//	psfParent->Release();
-		//}
-
-		// 3
-		//IShellFolder *pShellFolder = NULL;
-		//hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pShellFolder));
-		//if( hr == S_OK )
-		//{
-		//	hr = pShellFolder->QueryInterface(riid,ppv);
-		//	pShellFolder->Release();
-		//}
-
-		//DEFCONTEXTMENU dcm = { hwndOwner, static_cast<IContextMenu *>(this), NULL, static_cast<IShellFolder2 *>(this), cidl, apidl, NULL, 0, NULL };
-		//hr = SHCreateDefaultContextMenu(&dcm, riid, ppv);
+		DEFCONTEXTMENU dcm = { 0 };
+		dcm.hwnd = hwndOwner;
+		dcm.pcmcb = static_cast<IContextMenuCB *>(this);
+		dcm.pidlFolder = m_pIDFolder;
+		dcm.psf = static_cast<IShellFolder2 *>(this);
+		dcm.cidl = cidl;
+		dcm.apidl = apidl;
+		hr = SHCreateDefaultContextMenu(&dcm, riid, ppv);
 	}
 	else if ( IsEqualIID(IID_IExtractIcon,riid) )
 	{
 		hr = this->QueryInterface(riid,ppv);
 	}
-	else if ( IsEqualIID(IID_IQueryAssociations,riid) )
+	else if ( IsEqualIID(IID_IQueryAssociations,riid) )	// {C46CA590-3C3F-11D2-BEE6-0000F805CA57}
 	{
-		// not implement
+		// not implement, see: AssocCreateForClasses
+	}
+	else if ( IsEqualIID(IID_IDataObject,riid) )	// {0000010E-0000-0000-C000-000000000046}
+	{
+		hr = SHCreateDataObject(m_pIDFolder, cidl, apidl, NULL, riid, ppv);
 	}
 #ifdef _DEBUG
 	else
@@ -558,21 +549,23 @@ STDMETHODIMP CShellFolderImpl::GetDetailsEx(PCUITEMID_CHILD pidl, const PROPERTY
 
 HRESULT CShellFolderImpl::_GetDisplayName(PCUITEMID_CHILD pidl,REFPROPERTYKEY key, __out PROPVARIANT *ppropvar)
 {
-	HRESULT hr = E_FAIL;
-	STRRET name;
-	hr = GetDisplayNameOf(pidl,SHGDN_INFOLDER,&name);
-	ppropvar->vt = VT_LPWSTR;
-	LPWSTR pPre = L"±êÇ©£º";	// HACK: not sure where to display this information so far.
-	ppropvar->pwszVal = new wchar_t[MAXLENGTH_EACHTAG + wstring(pPre).length()];
-	StrCat(ppropvar->pwszVal,pPre);
-	StrCat(ppropvar->pwszVal,name.pOleStr);
-	CoTaskMemFree(name.pOleStr);
+	HRESULT hr = E_NOTIMPL;
+	auto data = m_PidlMgr.GetData(pidl);
+	if( data != NULL && data->Type == MYSHITEMTYPE_TAG )
+	{
+		ppropvar->vt = VT_LPWSTR;
+		LPWSTR pPre = L"±êÇ©£º";	// HACK: not sure where to display this information so far.
+		ppropvar->pwszVal = new wchar_t[MAXLENGTH_EACHTAG + wstring(pPre).length()];
+		StrCat(ppropvar->pwszVal,pPre);
+		StrCat(ppropvar->pwszVal,data->wszDisplayName);
+		hr = S_OK;
+	}
 	return hr;
 }
 
 HRESULT CShellFolderImpl::_GetContainedItems(PCUITEMID_CHILD pidl,REFPROPERTYKEY key, __out PROPVARIANT *ppropvar)
 {
-	HRESULT hr = E_FAIL;
+	HRESULT hr = E_NOTIMPL;
 	auto data = m_PidlMgr.GetData(pidl);
 	if( data != NULL && data->Type == MYSHITEMTYPE_TAG )
 	{
@@ -618,6 +611,8 @@ STDMETHODIMP CShellFolderImpl::GetDetailsOf(__in_opt PCUITEMID_CHILD pidl, UINT 
 		}
 		else
 		{
+			// see ..\_Reference\RegNamespace
+			/*
 			IPropertyDescription* sppropdesc;
 			hr = PSGetPropertyDescription(c_rgColumnInfo[iColumn].key, IID_PPV_ARGS(&sppropdesc));
 			if (SUCCEEDED(hr))
@@ -665,6 +660,7 @@ STDMETHODIMP CShellFolderImpl::GetDetailsOf(__in_opt PCUITEMID_CHILD pidl, UINT 
 				}
 
 			}
+			*/
 		}
 	}
 	return hr;

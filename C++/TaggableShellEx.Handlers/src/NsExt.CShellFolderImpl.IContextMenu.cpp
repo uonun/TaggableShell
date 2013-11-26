@@ -113,3 +113,65 @@ HRESULT CShellFolderImpl::InvokeCommand (
 
 	return S_OK;
 }
+
+
+STDMETHODIMP CShellFolderImpl::CallBack(__in_opt IShellFolder *psf, HWND hwndOwner, __in_opt IDataObject *pdo, UINT uiMsg, WPARAM wParam, LPARAM lParam)
+{
+	HRESULT hr = S_OK;
+	switch (uiMsg)
+	{
+	case DFM_MERGECONTEXTMENU:
+		{
+			QCMINFO *pqcmi = (QCMINFO *)lParam;
+			HMENU hmnuMerge = LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_MENU_Folder));
+			if (SUCCEEDED(hr))
+			{
+				UINT uiCmdIdFirst = pqcmi->idCmdFirst;
+				UINT uiMax = Shell_MergeMenus(pqcmi->hmenu, hmnuMerge, pqcmi->indexMenu, pqcmi->idCmdFirst, pqcmi->idCmdLast,
+					MM_ADDSEPARATOR | MM_SUBMENUSHAVEIDS | MM_DONTREMOVESEPS);
+				DestroyMenu(hmnuMerge);
+				pqcmi->idCmdFirst = uiMax;
+				if (!(wParam & CMF_NODEFAULT))
+				{
+					SetMenuDefaultItem(pqcmi->hmenu, uiCmdIdFirst + 1, MF_BYCOMMAND);
+				}
+			}
+		}
+		break;
+
+	case DFM_INVOKECOMMANDEX:
+		switch (wParam)
+		{
+		case 1:
+			{
+				MessageBox(hwndOwner,L"1111",L"SDFSDF",MB_OK);
+			}
+			break;
+
+		default:
+			hr = S_FALSE;   // do the default "Create Shortcut" for example
+			break;
+		}
+		break;
+
+	case DFM_MAPCOMMANDNAME:
+	case DFM_GETVERBW:
+	case DFM_GETVERBA:
+	case DFM_GETHELPTEXTW:
+	case DFM_GETHELPTEXT:
+	case DFM_VALIDATECMD:
+		//hr = _HandleStandardMenuMessage(uiMsg, wParam, lParam, s_rgMenuMap, ARRAYSIZE(s_rgMenuMap));
+		break;
+	case DFM_MERGECONTEXTMENU_TOP:		
+		break;
+	case DFM_MERGECONTEXTMENU_BOTTOM:
+		break;
+	case DFM_MODIFYQCMFLAGS:
+		break;
+	default:
+		hr = E_NOTIMPL;
+		break;
+	}
+
+	return hr;
+}

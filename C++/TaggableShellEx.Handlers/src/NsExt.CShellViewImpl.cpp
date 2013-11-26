@@ -81,8 +81,9 @@ IFACEMETHODIMP CShellViewImpl::QueryInterface(REFIID riid, void ** ppv)
 		QITABENT(CShellViewImpl, ICommDlgBrowser2),
 		QITABENT(CShellViewImpl, ICommDlgBrowser3),
 		QITABENT(CShellViewImpl, IOleWindow),
-		QITABENT(CShellViewImpl, IFolderView),		
+		QITABENT(CShellViewImpl, IFolderView),
 		QITABENT(CShellViewImpl, IFolderView2),
+		QITABENT(CShellViewImpl, IContextMenuCB),
 		QITABENT(CShellViewImpl, IBrowserFrameOptions),		
 		{0},
 	};
@@ -285,6 +286,8 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 					pcm->SetColumnInfo(PKEY_DateModified, &ci2);
 				}
 			}
+
+			//hr = pfv2->SetGroupBy(PKEY_ItemFolderPathDisplay,TRUE);
 		}
 
 		pcm->Release();
@@ -429,7 +432,7 @@ HRESULT CShellViewImpl::DoWorkAsyn(IResultsFolder *prf)
 
 				// free memory allocated by pEnum->Next
 				CoTaskMemFree(pidl);
-			}
+			} // end while
 
 			WCHAR tmp4[MAX_PATH];
 			wsprintf ( tmp4,::MyLoadString(IDS_MSG_N_FILES_LOADED_FOR_TAG_WITH_NOT_FOUND),nLoaded,nNotAvailable);
@@ -550,4 +553,62 @@ void CShellViewImpl::HandleDeactivate()
 
 		m_uUIState = SVUIA_DEACTIVATE;
 	}
+}
+
+STDMETHODIMP CShellViewImpl::CallBack(__in_opt IShellFolder *psf, HWND hwndOwner, __in_opt IDataObject *pdo, UINT uiMsg, WPARAM wParam, LPARAM lParam)
+{
+	HRESULT hr = S_OK;
+	MessageBox(hwndOwner,L"CShellViewImpl::CallBack",L"CShellViewImpl::CallBack",MB_OK);
+
+	switch (uiMsg)
+	{
+	case DFM_MERGECONTEXTMENU:
+		{
+			QCMINFO *pqcmi = (QCMINFO *)lParam;
+			HMENU hmnuMerge = LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_MENU_Folder));
+			if (SUCCEEDED(hr))
+			{
+				UINT uiCmdIdFirst = pqcmi->idCmdFirst;
+				UINT uiMax = Shell_MergeMenus(pqcmi->hmenu, hmnuMerge, pqcmi->indexMenu, pqcmi->idCmdFirst, pqcmi->idCmdLast,
+					MM_ADDSEPARATOR | MM_SUBMENUSHAVEIDS | MM_DONTREMOVESEPS);
+				DestroyMenu(hmnuMerge);
+				pqcmi->idCmdFirst = uiMax;
+				if (!(wParam & CMF_NODEFAULT))
+				{
+					SetMenuDefaultItem(pqcmi->hmenu, uiCmdIdFirst + 1, MF_BYCOMMAND);
+				}
+			}
+		}
+		break;
+
+	case DFM_INVOKECOMMANDEX:
+		switch (wParam)
+		{
+		case 1:
+			{
+				MessageBox(hwndOwner,L"1111",L"SDFSDF",MB_OK);
+			}
+			break;
+
+		default:
+			hr = S_FALSE;   // do the default "Create Shortcut" for example
+			break;
+		}
+		break;
+
+	case DFM_MAPCOMMANDNAME:
+	case DFM_GETVERBW:
+	case DFM_GETVERBA:
+	case DFM_GETHELPTEXTW:
+	case DFM_GETHELPTEXT:
+	case DFM_VALIDATECMD:
+		//hr = _HandleStandardMenuMessage(uiMsg, wParam, lParam, s_rgMenuMap, ARRAYSIZE(s_rgMenuMap));
+		break;
+
+	default:
+		hr = E_NOTIMPL;
+		break;
+	}
+
+	return hr;
 }

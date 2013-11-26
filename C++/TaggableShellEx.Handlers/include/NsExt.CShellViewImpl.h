@@ -11,6 +11,7 @@ class CShellViewImpl:
 	,public IServiceProvider
 	,public ICommDlgBrowser3
 	,public IFolderView2
+	,public IContextMenuCB
 	,public IBrowserFrameOptions
 	//,public IPersistIDList
 {
@@ -105,6 +106,9 @@ public:
 	HRESULT STDMETHODCALLTYPE IsMoveInSameFolder( void);
 	HRESULT STDMETHODCALLTYPE DoRename( void);
 #pragma endregion
+
+	// IContextMenuCB
+    IFACEMETHODIMP CallBack(__in_opt IShellFolder *psf, HWND hwndOwner, __in_opt IDataObject *pdtobj, UINT uiMsg, WPARAM wParam, LPARAM lParam);
 
 	// IBrowserFrameOptions
 	HRESULT GetFrameOptions(

@@ -14,6 +14,7 @@
 class CShellFolderImpl:
 	public IExtractIcon
 	,public IContextMenu
+	,public IContextMenuCB
 	,public IExplorerPaneVisibility
 	,public IQueryInfo
 	,public IShellFolder2	
@@ -69,7 +70,7 @@ public:
 	HRESULT GetIconLocation(UINT uFlags,PTSTR pszIconFile,UINT cchMax,int *piIndex,UINT *pwFlags);
 
 	// IContextMenuCB
-    //IFACEMETHODIMP CallBack(__in_opt IShellFolder *psf, HWND hwndOwner, __in_opt IDataObject *pdtobj, UINT uiMsg, WPARAM wParam, LPARAM lParam);
+    IFACEMETHODIMP CallBack(__in_opt IShellFolder *psf, HWND hwndOwner, __in_opt IDataObject *pdtobj, UINT uiMsg, WPARAM wParam, LPARAM lParam);
 
 	// IContextMenu
 	STDMETHODIMP GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT* pwReserved, LPSTR pszName, UINT cchMax);

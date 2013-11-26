@@ -70,32 +70,37 @@ STDMETHODIMP CShellViewImpl::IncludeObject(IShellView * psv, PCUITEMID_CHILD pid
 }
 
 
+#define MENU_OFFSET  1
+#define MENU_MAX     100
 
 // ICommDlgBrowser2
 HRESULT CShellViewImpl::Notify(IShellView *ppshv,DWORD dwNotifyType)
 {
-	//CDB2N_CONTEXTMENU_START
-	//CDB2N_CONTEXTMENU_DONE
-	return E_NOTIMPL;
+	HRESULT hr = E_NOTIMPL;
 
-	//switch (dwNotifyType)
-	//{
-	//case CDB2N_CONTEXTMENU_START:
-	//	{
-	//		m_hMenu = GetContextMenuForItems(1,NULL);
-	//	}
-	//	break;
-	//case CDB2N_CONTEXTMENU_DONE:
-	//	if( NULL != m_hMenu )
-	//	{
-	//		DestroyMenu(m_hMenu);
-	//		m_hMenu = NULL;
-	//	}
-	//	break;
-	//default:
-	//	break;
-	//}
-	//return S_OK;
+	switch (dwNotifyType)
+	{
+	case CDB2N_CONTEXTMENU_START:
+		{
+			// not finished.
+			//GetContextMenuForItems(0,NULL);
+			//hr = S_OK;
+		}
+		break;
+	case CDB2N_CONTEXTMENU_DONE:
+		if( NULL != m_hMenu )
+		{
+			DestroyMenu(m_hMenu);
+			m_hMenu = NULL;
+			hr = S_OK;
+		}
+
+		//Refresh();
+		break;
+	default:
+		break;
+	}
+	return hr;
 }
 HRESULT CShellViewImpl::GetDefaultMenuText(IShellView *ppshv,LPWSTR pszText,int cchMax)
 {
@@ -121,11 +126,9 @@ HRESULT CShellViewImpl::OnPreViewCreated(IShellView *ppshv)
 	return E_NOTIMPL;
 }
 
-#define MENU_OFFSET  1
-#define MENU_MAX     100
 HMENU CShellViewImpl::GetContextMenuForItems(UINT uItems,LPITEMIDLIST *aItems)
 {
-	LPCONTEXTMENU  pContextMenu = NULL;
+	IContextMenu* pContextMenu = NULL;
 	m_psfContainingFolder->GetUIObjectOf(m_hwndParent,
 		uItems,
 		(LPCITEMIDLIST*)aItems,
@@ -149,11 +152,12 @@ HMENU CShellViewImpl::GetContextMenuForItems(UINT uItems,LPITEMIDLIST *aItems)
 			fExplore = TRUE;
 		}
 
-		if(m_hMenu && SUCCEEDED(pContextMenu->QueryContextMenu( m_hMenu,
+		auto hr = pContextMenu->QueryContextMenu( m_hMenu,
 			0,
 			MENU_OFFSET,
 			MENU_MAX,
-			CMF_NORMAL | (fExplore ? CMF_EXPLORE : 0))))
+			CMF_NORMAL | (fExplore ? CMF_EXPLORE : 0));
+		if(m_hMenu && SUCCEEDED(hr))
 		{
 
 		}

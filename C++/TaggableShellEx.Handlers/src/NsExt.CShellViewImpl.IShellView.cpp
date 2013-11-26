@@ -44,6 +44,10 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 #pragma endregion
 
 #ifdef USE_ExplorerBrowser
+	//RECT rc;
+	//GetWindowRect(m_hWnd, &rc);
+	//MapWindowRect(HWND_DESKTOP, m_hwndParent, &rc);
+
 	//hr = SHCoCreateInstance(NULL, &CLSID_ExplorerBrowser, NULL, IID_PPV_ARGS(&_peb));
 	hr = CoCreateInstance(CLSID_ExplorerBrowser, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_peb));
 	if (SUCCEEDED(hr))
