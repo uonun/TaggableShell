@@ -287,7 +287,8 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 				}
 			}
 
-			//hr = pfv2->SetGroupBy(PKEY_ItemFolderPathDisplay,TRUE);
+			// it is better not to do so many works, or it will be slowly to display the items.
+			// hr = pfv2->SetGroupBy(PKEY_ItemFolderPathDisplay,TRUE);
 		}
 
 		pcm->Release();
@@ -313,7 +314,7 @@ BOOL CShellViewImpl::IsShowTag()
 }
 
 // FillList() populates the list control.
-void CShellViewImpl::FillList()
+void CShellViewImpl::FillList(IResultsFolder* prf)
 {
 	if( !m_isRefreshing )
 	{
@@ -323,7 +324,7 @@ void CShellViewImpl::FillList()
 			CBackgroundThread<CShellViewImpl,IResultsFolder> *pfrobt = new (std::nothrow) CBackgroundThread<CShellViewImpl,IResultsFolder>(this);
 			if (pfrobt)
 			{
-				pfrobt->StartThread(_prf);
+				pfrobt->StartThread(prf);
 				pfrobt->Release();
 			}
 		}

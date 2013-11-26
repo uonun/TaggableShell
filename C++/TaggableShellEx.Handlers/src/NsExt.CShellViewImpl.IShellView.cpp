@@ -92,7 +92,7 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 					hr = pfv2->GetFolder(IID_PPV_ARGS(&_prf));
 					if (SUCCEEDED(hr))
 					{
-						FillList();
+						FillList(_prf);
 					}
 
 					pfv2->Release();
@@ -153,7 +153,9 @@ STDMETHODIMP CShellViewImpl::Refresh()
 {
 	// Repopulate the list control.
 
-	FillList();
+	_ASSERT_EXPR( _prf != NULL, L"_prf could not be NULL.");
+
+	FillList(_prf);
 
 	return S_OK;
 }

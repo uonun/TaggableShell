@@ -15,11 +15,11 @@ class CShellFolderImpl:
 	public IExtractIcon
 	,public IContextMenu
 	,public IContextMenuCB
-	,public IExplorerPaneVisibility
 	,public IQueryInfo
-	,public IShellFolder2	
+	,public IShellFolder2				// for Detail informations of items, do more works than IShellFolder.
 	,public IPersistFolder
-	,public IExplorerCommandProvider
+	,public IExplorerCommandProvider	// for Explorer Command bar
+	,public IExplorerPaneVisibility		// for Explorer Command bar
 	//,public IPropertyStore
 {
 public:

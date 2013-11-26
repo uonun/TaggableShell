@@ -14,32 +14,39 @@ HRESULT CShellFolderImpl::BindToObject(
 	{
 		::PrintLog(L"ShellFolder::BindToObject: riid = IID_IShellFolder, FolderPath = %s", FolderPath);
 
-		auto data = m_PidlMgr.GetData(pidl);
-		if( NULL != data )
+		// create a new instance of a CShellFolderImpl for a given child ID
+		IShellFolder *psf;
+		hr = CoCreateInstance(__uuidof(CShellFolderImpl),NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&psf));
+		if( hr == S_OK )
 		{
-			// HACK: there may be a bug:
-			//			when an other application which is explorering shell folders from MyComputer, the NSE will be listed as supposed to,
-			//			but when open a physical directory which is in any TAG, the TAGs will be listed in the directory again while not the items in the directory.
-			//			absolutely it is not right.
-			// As a HACK way to avoid this bug, we make sure the FolderPath will not be empty.
-			if ( FolderPath[0] != 0 )
+			auto data = m_PidlMgr.GetData(pidl);
+			if( NULL != data )
 			{
-				auto pidlFolder = ILClone(m_pIDFolder);
-				auto pidlCurrent = ILClone(pidl);
-				hr = this->Init( pidlFolder,(PIDLIST_RELATIVE)pidlCurrent );
+				// HACK: there may be a bug:
+				//			when an other application which is explorering shell folders from MyComputer, the NSE will be listed as supposed to,
+				//			but when open a physical directory which is in any TAG, the TAGs will be listed in the directory again while not the items in the directory.
+				//			absolutely it is not right.
+				// As a HACK way to avoid this bug, we make sure the FolderPath will not be empty.
+				if ( FolderPath[0] != 0 )
+				{
+					auto pidlFolder = ILClone(m_pIDFolder);
+					auto pidlCurrent = ILClone(pidl);
+					hr = ((CShellFolderImpl*)psf)->Init( pidlFolder,(PIDLIST_RELATIVE)pidlCurrent );
 
-				::PrintLog(L"ShellFolder::BindToObject: Got object: %s",data->wszDisplayName);
+					::PrintLog(L"ShellFolder::BindToObject: Got object: %s",data->wszDisplayName);
 
-				hr = this->QueryInterface(riid,ppvOut);
+					hr = psf->QueryInterface(riid,ppvOut);
+					psf->Release();
 
+				}else{
+					// TODO:
+					// 1. get pidl of the specified physical directory.	( not able to finish this step right now.)
+					// 2. get shell folder of Desktop by SHGetDesktopFolder
+					// 3. pShellFolder->BindToObject(specified pidl,pbc,riid,ppvOut);
+				}
 			}else{
-				// TODO:
-				// 1. get pidl of the specified physical directory.	( not able to finish this step right now.)
-				// 2. get shell folder of Desktop by SHGetDesktopFolder
-				// 3. pShellFolder->BindToObject(specified pidl,pbc,riid,ppvOut);
+				// if the pidl is not a TAG(MYPIDLDATA), leave the hr = E_NOINTERFACE to allow the shell explorer as normal.
 			}
-		}else{
-			// if the pidl is not a TAG(MYPIDLDATA), leave the hr = E_NOINTERFACE to allow the shell explorer as normal.
 		}
 	}
 	else
@@ -125,11 +132,11 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	HRESULT hr = E_NOINTERFACE;
 
 	// Create a new ShellViewImpl COM object.
-	// A new view object must be created each time this method is called.
 	if ( IsEqualIID(IID_IShellView,riid) )
 	{
 		::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IShellView");
 
+		// A new view object must be created each time this method is called.
 		CShellViewImpl* v = NULL;
 		hr = CoCreateInstance(__uuidof(CShellViewImpl), NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS((IShellView**)&v)); 
 
