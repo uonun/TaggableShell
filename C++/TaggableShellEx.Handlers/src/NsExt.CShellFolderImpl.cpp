@@ -68,6 +68,7 @@ IFACEMETHODIMP CShellFolderImpl::QueryInterface(REFIID riid, void ** ppv)
 		QITABENT(CShellFolderImpl, IShellFolder2),
 		//QITABENT(CShellFolderImpl, IPropertyStore),
 		QITABENT(CShellFolderImpl, IPersistFolder),
+		QITABENT(CShellFolderImpl, IPersistFolder2),
 		{0},
 	};
 	return QISearch(this, qit, riid, ppv);

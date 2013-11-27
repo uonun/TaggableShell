@@ -17,7 +17,7 @@ class CShellFolderImpl:
 	,public IContextMenuCB
 	,public IQueryInfo
 	,public IShellFolder2				// for Detail informations of items, do more works than IShellFolder.
-	,public IPersistFolder
+	,public IPersistFolder2
 	,public IExplorerCommandProvider	// for Explorer Command bar
 	,public IExplorerPaneVisibility		// for Explorer Command bar
 	//,public IPropertyStore
@@ -31,12 +31,14 @@ public:
 	IFACEMETHODIMP_(ULONG) AddRef();
 	IFACEMETHODIMP_(ULONG) Release();
 
-	// IPersistFolder
-	// @pidl: The address of the ITEMIDLIST (item identifier list) structure that specifies the absolute location of the folder.
-	HRESULT Initialize(LPCITEMIDLIST pidl);
-
 	// IPersist which is the base of IPersistFolder
-	HRESULT GetClassID(CLSID *pClassID);
+    IFACEMETHODIMP GetClassID(__out CLSID *pclsid);
+
+    // IPersistFolder
+    IFACEMETHODIMP Initialize(PCIDLIST_ABSOLUTE pidl);
+
+    // IPersistFolder2
+    IFACEMETHODIMP GetCurFolder(__out PIDLIST_ABSOLUTE *ppidl);
 
 #pragma region IShellFolder
 	// IShellFolder

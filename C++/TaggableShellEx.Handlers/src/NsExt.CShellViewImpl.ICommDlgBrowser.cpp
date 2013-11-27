@@ -40,7 +40,7 @@ STDMETHODIMP CShellViewImpl::OnDefaultCommand(IShellView * psv)
 						ei.nShow        = SW_NORMAL;
 						ei.lpIDList     = pidl;
 
-						ShellExecuteEx(&ei);
+						hr = ShellExecuteEx(&ei);
 					}
 				}
 				CoTaskMemFree(pidl);
@@ -63,6 +63,10 @@ STDMETHODIMP CShellViewImpl::OnStateChange(IShellView * psv, ULONG uChange)
 	return S_OK;
 }
 
+// When dealing with data sources that have many items, such as libraries and searches, 
+// the callback to this method results in poor performance. To avoid that situation, 
+// implement GetViewFlags and return CDB2GVF_NOINCLUDEITEM. Doing so enables the view 
+// to skip calling ICommDlgBrowser::IncludeObject, thereby improving performance.
 STDMETHODIMP CShellViewImpl::IncludeObject(IShellView * psv, PCUITEMID_CHILD pidl)
 {
 	::PrintLog(L"CShellViewImpl::IncludeObject");
@@ -94,8 +98,6 @@ HRESULT CShellViewImpl::Notify(IShellView *ppshv,DWORD dwNotifyType)
 			m_hMenu = NULL;
 			hr = S_OK;
 		}
-
-		//Refresh();
 		break;
 	default:
 		break;
@@ -108,7 +110,7 @@ HRESULT CShellViewImpl::GetDefaultMenuText(IShellView *ppshv,LPWSTR pszText,int 
 }
 HRESULT CShellViewImpl::GetViewFlags(DWORD *pdwFlags)
 {
-	*pdwFlags = CDB2GVF_SHOWALLFILES | CDB2GVF_ISFOLDERPICKER;
+	*pdwFlags = CDB2GVF_SHOWALLFILES | CDB2GVF_ISFOLDERPICKER | CDB2GVF_NOINCLUDEITEM;
 	return S_OK;
 }
 

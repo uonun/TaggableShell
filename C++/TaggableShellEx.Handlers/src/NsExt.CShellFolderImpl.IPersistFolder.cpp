@@ -1,8 +1,21 @@
 #pragma once
 #include "../include/NsExt.CShellFolderImpl.h"
 
+// IPersist which is the base of IPersistFolder
+HRESULT CShellFolderImpl::GetClassID(
+	CLSID *pClassID
+	)
+{
+	if ( NULL == pClassID )
+		return E_POINTER;
+
+	*pClassID = __uuidof(CShellFolderImpl);
+
+	return S_OK;
+}
+
 // IPersistFolder
-HRESULT CShellFolderImpl::Initialize(LPCITEMIDLIST pIDFolder)
+HRESULT CShellFolderImpl::Initialize(PCIDLIST_ABSOLUTE pIDFolder)
 {
 	::PrintLog(L"CShellFolderImpl::Initialize");
 
@@ -15,7 +28,7 @@ HRESULT CShellFolderImpl::Initialize(LPCITEMIDLIST pIDFolder)
 	//Store the new PIDL.
 	if(pIDFolder)
 	{
-		m_pIDFolder = ILClone(pIDFolder);
+		m_pIDFolder = ILCloneFull(pIDFolder);
 
 		// could not use the line bellow to get path as it will not return a path string like ::{CLSID}\::{CLSID}
 		//SHGetPathFromIDList(m_pIDFolder,_FolderPath);
@@ -64,45 +77,45 @@ HRESULT CShellFolderImpl::Initialize(LPCITEMIDLIST pIDFolder)
 		hr = SHCreateShellItem(NULL,NULL,m_pIDFolder,&si);
 		if ( SUCCEEDED(hr) )
 		{
-			si->GetDisplayName(SIGDN_NORMALDISPLAY,&_path);
-			::PrintLog(L"Get in path: SIGDN_NORMALDISPLAY\t\t\t %s",_path);
-			CoTaskMemFree(_path);
+		si->GetDisplayName(SIGDN_NORMALDISPLAY,&_path);
+		::PrintLog(L"Get in path: SIGDN_NORMALDISPLAY\t\t\t %s",_path);
+		CoTaskMemFree(_path);
 
-			si->GetDisplayName(SIGDN_PARENTRELATIVEPARSING,&_path);
-			::PrintLog(L"Get in path: SIGDN_PARENTRELATIVEPARSING\t\t\t %s",_path);
-			CoTaskMemFree(_path);
+		si->GetDisplayName(SIGDN_PARENTRELATIVEPARSING,&_path);
+		::PrintLog(L"Get in path: SIGDN_PARENTRELATIVEPARSING\t\t\t %s",_path);
+		CoTaskMemFree(_path);
 
-			si->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING,&_path);
-			::PrintLog(L"Get in path: SIGDN_DESKTOPABSOLUTEPARSING\t\t\t %s",_path);
-			CoTaskMemFree(_path);
+		si->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING,&_path);
+		::PrintLog(L"Get in path: SIGDN_DESKTOPABSOLUTEPARSING\t\t\t %s",_path);
+		CoTaskMemFree(_path);
 
-			si->GetDisplayName(SIGDN_PARENTRELATIVEEDITING,&_path);
-			::PrintLog(L"Get in path: SIGDN_PARENTRELATIVEEDITING\t\t\t %s",_path);
-			CoTaskMemFree(_path);
+		si->GetDisplayName(SIGDN_PARENTRELATIVEEDITING,&_path);
+		::PrintLog(L"Get in path: SIGDN_PARENTRELATIVEEDITING\t\t\t %s",_path);
+		CoTaskMemFree(_path);
 
-			si->GetDisplayName(SIGDN_DESKTOPABSOLUTEEDITING,&_path);
-			::PrintLog(L"Get in path: SIGDN_DESKTOPABSOLUTEEDITING\t\t\t %s",_path);
-			CoTaskMemFree(_path);
+		si->GetDisplayName(SIGDN_DESKTOPABSOLUTEEDITING,&_path);
+		::PrintLog(L"Get in path: SIGDN_DESKTOPABSOLUTEEDITING\t\t\t %s",_path);
+		CoTaskMemFree(_path);
 
-			si->GetDisplayName(SIGDN_FILESYSPATH,&_path);
-			::PrintLog(L"Get in path: SIGDN_FILESYSPATH\t\t\t %s",_path);
-			CoTaskMemFree(_path);
+		si->GetDisplayName(SIGDN_FILESYSPATH,&_path);
+		::PrintLog(L"Get in path: SIGDN_FILESYSPATH\t\t\t %s",_path);
+		CoTaskMemFree(_path);
 
-			si->GetDisplayName(SIGDN_URL,&_path);
-			::PrintLog(L"Get in path: SIGDN_URL\t\t\t %s",_path);
-			CoTaskMemFree(_path);
+		si->GetDisplayName(SIGDN_URL,&_path);
+		::PrintLog(L"Get in path: SIGDN_URL\t\t\t %s",_path);
+		CoTaskMemFree(_path);
 
-			si->GetDisplayName(SIGDN_PARENTRELATIVEFORADDRESSBAR,&_path);
-			::PrintLog(L"Get in path: SIGDN_PARENTRELATIVEFORADDRESSBAR\t\t\t %s",_path);
-			CoTaskMemFree(_path);
+		si->GetDisplayName(SIGDN_PARENTRELATIVEFORADDRESSBAR,&_path);
+		::PrintLog(L"Get in path: SIGDN_PARENTRELATIVEFORADDRESSBAR\t\t\t %s",_path);
+		CoTaskMemFree(_path);
 
-			si->GetDisplayName(SIGDN_PARENTRELATIVE,&_path);
-			::PrintLog(L"Get in path: SIGDN_PARENTRELATIVE\t\t\t %s",_path);
-			CoTaskMemFree(_path);
+		si->GetDisplayName(SIGDN_PARENTRELATIVE,&_path);
+		::PrintLog(L"Get in path: SIGDN_PARENTRELATIVE\t\t\t %s",_path);
+		CoTaskMemFree(_path);
 
-			si->GetDisplayName(SIGDN_PARENTRELATIVEFORUI,&_path);
-			::PrintLog(L"Get in path: SIGDN_PARENTRELATIVEFORUI\t\t\t %s",_path);
-			CoTaskMemFree(_path);
+		si->GetDisplayName(SIGDN_PARENTRELATIVEFORUI,&_path);
+		::PrintLog(L"Get in path: SIGDN_PARENTRELATIVEFORUI\t\t\t %s",_path);
+		CoTaskMemFree(_path);
 		}
 		si->Release();
 		*/
@@ -111,15 +124,23 @@ HRESULT CShellFolderImpl::Initialize(LPCITEMIDLIST pIDFolder)
 	return S_OK;
 }
 
-// IPersist which is the base of IPersistFolder
-HRESULT CShellFolderImpl::GetClassID(
-	CLSID *pClassID
-	)
+// IPersistFolder2
+STDMETHODIMP CShellFolderImpl::GetCurFolder(__out PIDLIST_ABSOLUTE *ppidl)
 {
-	if ( NULL == pClassID )
-		return E_POINTER;
+	ppidl = NULL;
 
-	pClassID = (CLSID *)&__uuidof(CShellFolderImpl);
+	if(m_pIDFolder)
+	{
+		auto cbSrc = ILGetSize(m_pIDFolder);
+		IMalloc *m_spMalloc;
+		HRESULT hr = SHGetMalloc ( &m_spMalloc );
+		if( SUCCEEDED(hr) )
+		{
+			ppidl = (LPITEMIDLIST *) m_spMalloc->Alloc ( cbSrc );
+			*ppidl = ILCloneFull(m_pIDFolder);
+		}
+		return hr;
+	}
 
-	return S_OK;
+	return S_FALSE;
 }

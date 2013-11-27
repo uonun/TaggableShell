@@ -62,12 +62,6 @@ STDMETHODIMP CShellViewImpl::Exec ( const GUID* pguidCmdGroup, DWORD nCmdID,
 	else if ( CGID_Explorer == *pguidCmdGroup )
 	{
 		PrintLog("Exec - EXPLORER : %u", nCmdID);
-
-		if ( OLECMDID_PREREFRESH == nCmdID )
-		{
-			hrRet = S_OK;
-		}
-
 	}
 	else if ( CGID_ShellDocView == *pguidCmdGroup )
 	{

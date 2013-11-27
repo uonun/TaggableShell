@@ -26,7 +26,7 @@ Known bugs:
 	- 左侧树形菜单未能为 Tag 显示正常的图标
 	- 点击、选择标签、文件、文件夹时，资源管理器底部应当有正确的响应
 	- 在切换标签后，地址栏应当正常刷新显示新的地址（此时EDIT版本和DISPLAY版本显示的地址不一致）：
-		- 点击左侧树形菜单，从Folder跳转到标签，或者从一个标签跳转到另一个标签时
+		- [FIXED]点击左侧树形菜单，从Folder跳转到标签，或者从一个标签跳转到另一个标签时
 		- 直接在地址栏输入另外标签名时
 	- 应当保存ExplorerBrowser的状态。
 		- 点击ExplorerBrowser的列头进行排序，切换到其他文件夹，再返回，ExplorerBrowser的排序已被重置。（目前未进行初始排序，默认排序是根据加载的顺序来排的。）
@@ -37,7 +37,7 @@ Known bugs:
 TBD:
 	- 在桌面、我的电脑上显示Folder。
 	- Folder
-		- 菜单栏，切换视图
+		- [DONE]菜单栏，切换视图
 		- 标签文件夹的自定义右键菜单
 	
 	- 不允许给非法Item添加标签
@@ -52,6 +52,10 @@ TIPS:
 	- 如果要在修改注册表后立即生效，需注意注册表中的缓存：
 		- HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Cached
 
+	- 添加入口：
+		- 新建快捷方式，填入：%WINDIR%\explorer.exe shell:::{8F08EB60-3F01-1982-0805-C2DEBAE9C1D6}
+		- 新建文件夹，重命名为：“MyFolder.{8F08EB60-3F01-1982-0805-C2DEBAE9C1D6}”
+		- 桌面，我的电脑
 
 OTHER NOTES:
 // http://mikolajapp.appspot.com/uuid/query?q=%7B6CCB7BE0-6807-11D0-B810-00C04FD706EC%7D
