@@ -62,7 +62,9 @@ UINT CALLBACK PageCallbackProc(
 	return 1;   // use nonzero let the page be created
 }
 
-
+// add property page on an item.
+// FILE: right click on a file which could be added to TAG.
+// FOLDER: right click on the FOLDER or something else which should not to be added to TAG, such as the FOLDER itself in MyComputer.
 STDMETHODIMP CHandler::AddPages(LPFNADDPROPSHEETPAGE lpfnAddPage, LPARAM lParam)
 {
 	::PrintLog(L"PropertyPageHandler.AddPages");

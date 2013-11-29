@@ -27,6 +27,7 @@
 
 // 导入静态库     
 #pragma comment(lib, "Comctl32.lib")
+#pragma comment(lib, "shlwapi.lib")
 // 开启视觉效果 Copy from MSDN     
 #pragma comment(linker,"\"/manifestdependency:type='win32' \
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \

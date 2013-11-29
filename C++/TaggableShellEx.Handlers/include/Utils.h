@@ -33,3 +33,6 @@ char* UTF8ToANSI(char* str);
 BOOL Is64BitWindows();
 wchar_t * GetOSVersionStr();
 BOOL TestMinimumOSRequirement();
+
+#define RIIDNAME(riid,riid2) GetRiidName(riid),GetRiidName(riid2)
+LPWSTR GetRiidName(REFIID riid);

@@ -24,7 +24,8 @@ STDMETHODIMP CShellViewImpl::CreateViewWindow ( LPSHELLVIEW pPrevView,
 	m_spShellBrowser->EnableModelessSB(TRUE);
 	//m_spShellBrowser->GetViewStateStream(STGM_READ,&m_pViewState);
 	m_folderSettings = *lpfs;
-	m_folderSettings.fFlags = FWF_AUTOARRANGE | FWF_NOWEBVIEW | FWF_NOHEADERINALLVIEWS;	// show tags in a folder way while not like the desktop
+	// show tags in a folder way while not like the desktop
+	m_folderSettings.fFlags = FWF_AUTOARRANGE | FWF_NOWEBVIEW | FWF_NOHEADERINALLVIEWS;
 
 #pragma region prepare window handler
 	DWORD dwListStyles = WS_CHILDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
@@ -113,17 +114,18 @@ STDMETHODIMP CShellViewImpl::DestroyViewWindow()
 	// Clean up the UI.
 	UIActivate ( SVUIA_DEACTIVATE );
 
+	if( NULL != _peb )
+	{
+        IUnknown_SetSite(_peb, NULL);
+		_peb->Destroy();
+		_peb = NULL;
+	}
+
 	if ( NULL != _prf )
 	{
 		_prf->RemoveAll();
 		_prf->Release();
 		_prf = NULL;
-	}
-
-	if( NULL != _peb )
-	{
-		_peb->Destroy();
-		_peb = NULL;
 	}
 
 	if ( NULL != m_spShellBrowser )
@@ -219,7 +221,7 @@ UINT CALLBACK PageCallbackProc_ShellViewImpl(
 	case PSPCB_RELEASE:
 		CShellViewImpl* tmp = (CShellViewImpl*)ppsp->lParam;
 		tmp->Release();
-		MessageBox(hwnd,L"PSPCB_RELEASE",L"PSPCB_RELEASE",MB_OK);		
+		//MessageBox(hwnd,L"PageCallbackProc_ShellViewImpl",L"PSPCB_RELEASE",MB_OK);		
 		break;
 	}
 
@@ -312,5 +314,27 @@ STDMETHODIMP 	CShellViewImpl::SelectItem(LPCITEMIDLIST pidlItem, UINT uFlags)
 }
 STDMETHODIMP 	CShellViewImpl::TranslateAccelerator(LPMSG lpmsg)
 { 	
+	::PrintLog(L"CShellViewImpl::TranslateAccelerator");
 	return E_NOTIMPL; 
 }
+
+
+#ifdef IMPL_IShellFolderViewCB
+STDMETHODIMP CShellViewImpl::MessageSFVCB(THIS_ UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	::PrintLog(L"CShellViewImpl::MessageSFVCB: 0x%X,0x%X,0x%X",uMsg,wParam,lParam);
+
+	HRESULT hr = E_NOTIMPL;
+	switch (uMsg)
+	{
+	case SFVM_INVOKECOMMAND:
+		{
+			UINT idCmd = wParam;
+		}
+		break;
+	default:
+		break;
+	}
+	return hr;
+}
+#endif

@@ -435,3 +435,99 @@ BOOL TestMinimumOSRequirement()
 		VER_SERVICEPACKMAJOR | VER_SERVICEPACKMINOR,
 		dwlConditionMask);
 }
+
+#if _DEBUG
+#include <initguid.h>
+#include <Filter.h>	// for IID_IFilter
+#include <ShlGuid.h>
+#include <ShObjIdl.h>
+#include <ExDisp.h>
+DEFINE_GUID(IID_IBrowserSettings,					0xDD1E21CC, 0xE2C7, 0x402C, 0xBF,0x05, 0x10,0x32,0x8D,0x3F,0x6B,0xAD);
+DEFINE_GUID(IID_IShellBrowserService,				0xDFBC7E30, 0xF9E5, 0x455F, 0x88,0xF8, 0xFA,0x98,0xC1,0xE4,0x94,0xCA);
+DEFINE_GUID(IID_IBrowserWithActivationNotification,	0x6DB89131, 0x7B4C, 0x4E1C, 0x8B,0x01, 0x5D,0x31,0x2C,0x9C,0x73,0x88);
+DEFINE_GUID(IID_ILayoutModifier,					0x90B4135A, 0x95BA, 0x46EA, 0x8C,0xAA, 0xE0,0x5B,0x45,0xCD,0x80,0x1E);
+DEFINE_GUID(CLSID_Desktop,							0x00021400, 0x0000, 0x0000, 0xC0,0x00, 0x00,0x00,0x00,0x00,0x00,0x46);
+DEFINE_GUID(IID_IFileDialogPrivate,					0xAC92FFC5, 0xF0E9, 0x455A, 0x90,0x6B, 0x4A,0x83,0xE7,0x4A,0x80,0x3B);
+DEFINE_GUID(IID_IFolderTypeModifier,				0x04BA120E, 0xAD52, 0x4A2D, 0x98,0x07, 0x2D,0xA1,0x78,0xD0,0xC3,0xE1);
+
+struct RIIDNAME
+{
+	REFIID riid;
+	LPWSTR riidName;
+	LPWSTR riidCode;
+};
+
+// known riid names
+const RIIDNAME c_riidNames[] =
+{
+	{ CLSID_Desktop,							L"CLSID_Desktop",							L"", },
+	{ IID_IUnknown,								L"IID_IUnknown",							L"", },
+	{ IID_ILayoutModifier,						L"IID_ILayoutModifier",						L"", },
+	{ IID_IBrowserSettings,						L"IID_IBrowserSettings",					L"", },
+	{ IID_ICommDlgBrowser,						L"IID_ICommDlgBrowser",						L"", },
+	{ IID_ICommDlgBrowser2,						L"IID_ICommDlgBrowser2",					L"", },
+	{ IID_ICommDlgBrowser3,						L"IID_ICommDlgBrowser3",					L"", },
+	{ IID_IFolderTypeModifier,					L"IID_IFolderTypeModifier",					L"", },
+	{ IID_IBrowserWithActivationNotification,	L"IID_IBrowserWithActivationNotification",	L"", },
+	{ IID_IWebBrowserApp,						L"IID_IWebBrowserApp",						L"", },
+	{ IID_IConnectionPointContainer,			L"IID_IConnectionPointContainer",			L"", },
+	{ IID_IFolderView,							L"IID_IFolderView",							L"", },
+	{ IID_IFileDialog,							L"IID_IFileDialog",							L"", },
+	{ IID_IFileDialogPrivate,					L"IID_IFileDialogPrivate",					L"", },
+	{ SID_STopLevelBrowser,						L"SID_STopLevelBrowser",					L"", },
+	{ IID_IShellBrowserService,					L"IID_IShellBrowserService",				L"", },
+	{ IID_IShellBrowser,						L"IID_IShellBrowser",						L"", },
+	{ IID_IConnectionPointContainer,			L"IID_IConnectionPointContainer",			L"", },
+	{ IID_IProfferService,						L"IID_IProfferService",						L"", },
+	{ IID_IShellTaskScheduler,					L"IID_IShellTaskScheduler",					L"", },
+	{ SID_DefView,								L"SID_DefView",								L"", },
+	{ IID_IShellFolderViewCB,					L"IID_IShellFolderViewCB",					L"", },
+	//{ IID_IShellSearchTarget,					L"IID_IShellSearchTarget",					L"", },
+	//{ IID_IShellItemBrowser,					L"IID_IShellItemBrowser",					L"", },
+	//{ IID_IDelayedVisibility,					L"IID_IDelayedVisibility",					L"", },
+	{ IID_IShellFolder,							L"IID_IShellFolder",						L"{000214E6-0000-0000-C000-000000000046}", },
+	{ IID_IShellLinkA,							L"IID_IShellLinkA",							L"{000214EE-0000-0000-C000-000000000046}", },
+	{ IID_IShellLinkW,							L"IID_IShellLinkW",							L"{000214F9-0000-0000-C000-000000000046}", },
+	{ IID_IPersistFile,							L"IID_IPersistFile",						L"{0000010B-0000-0000-C000-000000000046}", },
+	{ IID_IPersistStream,						L"IID_IPersistStream",						L"{00000109-0000-0000-C000-000000000046}", },
+	{ IID_IShellExtInit,						L"IID_IShellExtInit",						L"{000214E8-0000-0000-C000-000000000046}", },
+	{ IID_IContextMenu,							L"IID_IContextMenu",						L"{000214E4-0000-0000-C000-000000000046}", },
+	{ IID_IContextMenu2,						L"IID_IContextMenu2",						L"{000214F4-0000-0000-C000-000000000046}", },
+	{ IID_IContextMenu3,						L"IID_IContextMenu3",						L"{BCFCE0A0-EC17-11D0-8D10-00A0C90F2719}", },
+	{ IID_IDropTarget,							L"IID_IDropTarget",							L"{00000122-0000-0000-C000-000000000046}", },
+	{ IID_IExtractIconA,						L"IID_IExtractIconA",						L"{000214EB-0000-0000-C000-000000000046}", },
+	{ IID_IExtractIconW,						L"IID_IExtractIconW",						L"{000214FA-0000-0000-C000-000000000046}", },
+	{ IID_IShellLinkDataList,					L"IID_IShellLinkDataList",					L"{45E2B4AE-B1C3-11D0-B92F-00A0C90312E1}", },
+	{ IID_IQueryInfo,							L"IID_IQueryInfo",							L"{00021500-0000-0000-C000-000000000046}", },
+	{ IID_IPersistPropertyBag,					L"IID_IPersistPropertyBag",					L"{37D84F60-42CB-11CE-8135-00AA004BB851}", },
+	{ IID_IObjectWithSite,						L"IID_IObjectWithSite",						L"{FC4801A3-2BA9-11CF-A229-00AA003D7352}", },
+	{ IID_IServiceProvider,						L"IID_IServiceProvider",					L"{6D5140C1-7436-11CE-8034-00AA006009FA}", },
+	{ IID_IFilter,								L"IID_IFilter",								L"{89BCB740-6119-101A-BCB7-00DD010655AF}", },
+	{ IID_IShellTaskScheduler ,					L"IID_IShellTaskScheduler ",				L"{6CCB7BE0-6807-11D0-B810-00C04FD706EC}", },
+	{ IID_IExplorerPaneVisibility,				L"IID_IExplorerPaneVisibility",				L"{E07010EC-BC17-44C0-97B0-46C7C95B9EDC}", },
+	{ IID_ICommDlgBrowser,						L"IID_ICommDlgBrowser",						L"{000214F1-0000-0000-C000-000000000046}", },
+	{ IID_ICommDlgBrowser2,						L"IID_ICommDlgBrowser2",					L"{10339516-2894-11D2-9039-00C04F8EEB3E}", },
+	{ IID_IShellTaskScheduler,					L"IID_IShellTaskScheduler",					L"{6CCB7BE0-6807-11D0-B810-00C04FD706EC}", },
+	{ IID_IQueryAssociations,					L"IID_IQueryAssociations",					L"{C46CA590-3C3F-11D2-BEE6-0000F805CA57}", },
+	{ IID_IDataObject,							L"IID_IDataObject",							L"{0000010E-0000-0000-C000-000000000046}", },
+};
+#endif
+
+LPWSTR GetRiidName(REFIID riid)
+{
+#if _DEBUG
+	for (size_t i = 0; i < ARRAYSIZE(c_riidNames); i++)
+	{
+		if ( IsEqualIID( riid , c_riidNames[i].riid ))
+		{
+			return c_riidNames[i].riidName;
+		}
+	}
+#endif
+	static wchar_t buffer[50];
+	LPOLESTR str;
+	StringFromIID(riid,&str);
+	StrCpy(buffer,str);
+	CoTaskMemFree(str);
+	return buffer;
+}

@@ -3,8 +3,6 @@
 #include <propkeydef.h>
 #include <propkey.h>
 
-DEFINE_GUID(IID_IBrowserSettings,     0xDD1E21CC, 0xE2C7, 0x402C, 0xBF,0x05, 0x10,0x32,0x8D,0x3F,0x6B,0xAD);
-
 HANDLE CShellViewImpl::m_mutex = ::CreateMutex(NULL, FALSE, NULL);
 
 CShellViewImpl::CShellViewImpl(void): 
@@ -44,6 +42,7 @@ CShellViewImpl::~CShellViewImpl(void)
 
 	if ( NULL != _peb )
 	{
+		IUnknown_SetSite(_peb, NULL);
 		_peb->Release();
 		_peb = NULL;
 	}
@@ -83,6 +82,9 @@ IFACEMETHODIMP CShellViewImpl::QueryInterface(REFIID riid, void ** ppv)
 		QITABENT(CShellViewImpl, IOleWindow),
 		QITABENT(CShellViewImpl, IFolderView),
 		QITABENT(CShellViewImpl, IFolderView2),
+#ifdef IMPL_IShellFolderViewCB
+		QITABENT(CShellViewImpl, IShellFolderViewCB),
+#endif
 		QITABENT(CShellViewImpl, IContextMenuCB),
 		QITABENT(CShellViewImpl, IBrowserFrameOptions),		
 		{0},
@@ -126,6 +128,8 @@ STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void
 	{IID_IFolderView}								{IID_IShellSearchTarget}
 	................................................{9365FF5E-C1F5-499E-B81F-586BFC067E48}
 	---------------------------------------------------------------------------
+	{IID_IShellFolderViewCB}........................{IID_IShellFolderViewCB}
+	---------------------------------------------------------------------------
 	{IID_IFileDialogPrivate}						{IID_IFileDialog}
 	................................................{IID_IFileDialogPrivate}
 	---------------------------------------------------------------------------
@@ -152,15 +156,6 @@ STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void
 	HRESULT hr = E_NOINTERFACE;
 	*ppv = NULL;
 
-#ifdef _DEBUG
-	LPOLESTR str,str2;
-	StringFromIID(guidService,&str);
-	StringFromIID(riid,&str2);
-	::PrintLog(L"CShellViewImpl::QueryService: guidService = %s, riid = %s",str,str2);
-	CoTaskMemFree(str);
-	CoTaskMemFree(str2);
-#endif
-
 	hr = QueryInterface(riid, ppv);		
 
 	if( FAILED(hr) && NULL != _peb )
@@ -168,6 +163,8 @@ STDMETHODIMP CShellViewImpl::QueryService(REFGUID guidService, REFIID riid, void
 
 	if( FAILED(hr) && NULL != m_spShellBrowser )
 		hr = m_spShellBrowser->QueryInterface(riid,ppv);
+
+	::PrintLog(L"CShellViewImpl::QueryService: %s, guidService = %s, riid = %s"	,SUCCEEDED(hr) ? L"  OK":L"FAIL",RIIDNAME(guidService,riid)	);
 
 	return hr;
 }
@@ -184,7 +181,8 @@ STDMETHODIMP CShellViewImpl::GetWindow ( HWND* phwnd )
 HRESULT CShellViewImpl::GetFrameOptions(BROWSERFRAMEOPTIONS dwMask,BROWSERFRAMEOPTIONS *pdwOptions	)
 {
 	HRESULT hr = E_NOTIMPL;
-	*pdwOptions = BFO_QUERY_ALL;
+	dwMask = BFO_QUERY_ALL;
+	*pdwOptions = BFO_BROWSER_PERSIST_SETTINGS | BFO_SUBSTITUE_INTERNET_START_PAGE;
 	hr = S_OK;
 	return hr;
 }
@@ -269,9 +267,9 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 				if (SUCCEEDED(hr))
 				{
 					ci.dwState = CM_STATE_ALWAYSVISIBLE;
-					ci.uWidth = 460;
-					ci.uDefaultWidth = 460;
-					ci.uIdealWidth = 460;
+					ci.uWidth = 400;
+					ci.uDefaultWidth = 400;
+					ci.uIdealWidth = 400;
 					pcm->SetColumnInfo(PKEY_ItemNameDisplay, &ci);
 				}
 

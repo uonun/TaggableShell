@@ -317,7 +317,7 @@ HRESULT CShellFolderImpl::GetAttributesOf(
 		{
 			if( data->Type = MYSHITEMTYPE_TAG )
 			{
-				dwAttribs |= SFGAO_FILESYSANCESTOR | SFGAO_STORAGE | SFGAO_BROWSABLE | SFGAO_HASPROPSHEET;// | SFGAO_CANRENAME;
+				dwAttribs |= SFGAO_FILESYSANCESTOR | SFGAO_STORAGE | SFGAO_BROWSABLE | SFGAO_HASPROPSHEET | SFGAO_CANRENAME;
 
 				// set SFGAO_FOLDER will let the tag could be expand, and response clicks. but also lead to a bug that expanding in a loopping way on the left tree.
 				dwAttribs |= SFGAO_FOLDER;

@@ -5,12 +5,18 @@
 #include "CBackgroundThread.h"
 #include "PidlMgr.h"
 
+//#define IMPL_IShellFolderViewCB
+
+
 class CShellViewImpl:
 	public IShellView
 	,public IOleCommandTarget
 	,public IServiceProvider
 	,public ICommDlgBrowser3
 	,public IFolderView2
+#ifdef IMPL_IShellFolderViewCB
+	,public IShellFolderViewCB
+#endif
 	,public IContextMenuCB
 	,public IBrowserFrameOptions
 	//,public IPersistIDList
@@ -106,6 +112,11 @@ public:
 	HRESULT STDMETHODCALLTYPE IsMoveInSameFolder( void);
 	HRESULT STDMETHODCALLTYPE DoRename( void);
 #pragma endregion
+
+#ifdef IMPL_IShellFolderViewCB
+	// IShellFolderViewCB
+	STDMETHOD(MessageSFVCB)(THIS_ UINT uMsg, WPARAM wParam, LPARAM lParam);
+#endif
 
 	// IContextMenuCB
     IFACEMETHODIMP CallBack(__in_opt IShellFolder *psf, HWND hwndOwner, __in_opt IDataObject *pdtobj, UINT uiMsg, WPARAM wParam, LPARAM lParam);
