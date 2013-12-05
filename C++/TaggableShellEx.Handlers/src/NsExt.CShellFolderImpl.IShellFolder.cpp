@@ -122,7 +122,6 @@ HRESULT CShellFolderImpl::CreateViewObject(
 	void **ppv
 	)
 {
-	// TODO: THERE MUST BE A BUG THAT IShellView* WILL NOT BE RELEASED AFTER THE SHELL FOLDER CLOSED!!
 	/*
 	riid = 
 	{IID_IConnectionFactory}
@@ -170,6 +169,20 @@ HRESULT CShellFolderImpl::CreateViewObject(
 		::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IExplorerCommandProvider");
 		hr = this->QueryInterface ( riid, ppv );
 	}
+	else if( riid == IID_IContextMenu )
+	{
+		DEFCONTEXTMENU dcm = { hwndOwner, static_cast<IContextMenuCB*>(this), m_pIDFolder, static_cast<IShellFolder*>(this), 0, NULL, NULL, 0, NULL };
+		hr = ::SHCreateDefaultContextMenu(&dcm, riid, ppv);
+	}
+	//else if( riid == IID_IShellFolder )
+	//{
+	//	// Allows internal objects to query the C++ implementation of this IShellFolder instance.
+	//	// This violates basic COM sense, but we need this as a programming shortcut. It restricts
+	//	// our Shell Extension to only work as an in-proc component.
+	//	AddRef(); 
+	//	*ppv = this;
+	//	return S_OK;
+	//}
 #ifdef _DEBUG
 	//else if ( IsEqualIID(IID_IDropTarget, riid))
 	//{
@@ -451,26 +464,32 @@ HRESULT CShellFolderImpl::GetUIObjectOf(
 	{
 		// 	CDefFolderMenu_Create2(m_pIDFolder,hwndOwner,cidl,apidl,static_cast<IShellFolder *>(this),CallBack,0,NULL,(IContextMenu**)ppv);
 
-		DEFCONTEXTMENU dcm = { 0 };
-		dcm.hwnd = hwndOwner;
-		dcm.pcmcb = static_cast<IContextMenuCB *>(this);
-		dcm.pidlFolder = m_pIDFolder;
-		dcm.psf = static_cast<IShellFolder2 *>(this);
-		dcm.cidl = cidl;
-		dcm.apidl = apidl;
-		hr = SHCreateDefaultContextMenu(&dcm, riid, ppv);
+		DEFCONTEXTMENU dcm = { hwndOwner, static_cast<IContextMenuCB*>(this), m_pIDFolder, static_cast<IShellFolder*>(this), cidl, apidl, NULL, 0, NULL };
+		hr = SHCreateDefaultContextMenu(&dcm, IID_IContextMenu, ppv);
+
+		//hr = this->QueryInterface(riid,ppv);
 	}
-	else if ( IsEqualIID(IID_IExtractIcon,riid) )
+	else if ( IsEqualIID(IID_IExtractIcon,riid) || IsEqualIID(IID_IExtractImage,riid) )
 	{
 		hr = this->QueryInterface(riid,ppv);
 	}
 	else if ( IsEqualIID(IID_IQueryAssociations,riid) )	// {C46CA590-3C3F-11D2-BEE6-0000F805CA57}
 	{
 		// not implement, see: AssocCreateForClasses
+		wchar_t tmp[MAX_PATH];
+		LPWSTR bstrCLSID = tmp;
+		::m2w(CLSID_CShellFolderImpl,bstrCLSID);
+		ASSOCIATIONELEMENT rgAssoc[] = { { ASSOCCLASS_CLSID_STR, NULL, bstrCLSID }, { ASSOCCLASS_FOLDER, NULL, NULL } };
+		hr = ::AssocCreateForClasses(rgAssoc, 2U, riid, ppv);
+
 	}
 	else if ( IsEqualIID(IID_IDataObject,riid) )	// {0000010E-0000-0000-C000-000000000046}
 	{
 		hr = SHCreateDataObject(m_pIDFolder, cidl, apidl, NULL, riid, ppv);
+	}
+	else if ( IsEqualIID(IID_IQueryInfo, riid ) )
+	{
+		hr = this->QueryInterface(riid,ppv);
 	}
 #ifdef _DEBUG
 	else

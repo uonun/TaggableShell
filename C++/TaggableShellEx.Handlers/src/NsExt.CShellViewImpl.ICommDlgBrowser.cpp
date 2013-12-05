@@ -74,9 +74,6 @@ STDMETHODIMP CShellViewImpl::IncludeObject(IShellView * psv, PCUITEMID_CHILD pid
 }
 
 
-#define MENU_OFFSET  1
-#define MENU_MAX     100
-
 // ICommDlgBrowser2
 HRESULT CShellViewImpl::Notify(IShellView *ppshv,DWORD dwNotifyType)
 {
@@ -87,8 +84,8 @@ HRESULT CShellViewImpl::Notify(IShellView *ppshv,DWORD dwNotifyType)
 	case CDB2N_CONTEXTMENU_START:
 		{
 			// not finished.
-			//GetContextMenuForItems(0,NULL);
-			//hr = S_OK;
+			// GetContextMenuForItems(0,NULL);
+			hr = S_OK;
 		}
 		break;
 	case CDB2N_CONTEXTMENU_DONE:
@@ -104,13 +101,14 @@ HRESULT CShellViewImpl::Notify(IShellView *ppshv,DWORD dwNotifyType)
 	}
 	return hr;
 }
+
 HRESULT CShellViewImpl::GetDefaultMenuText(IShellView *ppshv,LPWSTR pszText,int cchMax)
 {
 	return E_NOTIMPL;
 }
 HRESULT CShellViewImpl::GetViewFlags(DWORD *pdwFlags)
 {
-	*pdwFlags = CDB2GVF_SHOWALLFILES | CDB2GVF_ISFOLDERPICKER | CDB2GVF_NOINCLUDEITEM;
+	*pdwFlags = CDB2GVF_SHOWALLFILES | CDB2GVF_NOSELECTVERB | CDB2GVF_NOINCLUDEITEM;
 	return S_OK;
 }
 
@@ -131,6 +129,7 @@ HRESULT CShellViewImpl::OnPreViewCreated(IShellView *ppshv)
 HMENU CShellViewImpl::GetContextMenuForItems(UINT uItems,LPITEMIDLIST *aItems)
 {
 	IContextMenu* pContextMenu = NULL;
+
 	m_psfContainingFolder->GetUIObjectOf(m_hwndParent,
 		uItems,
 		(LPCITEMIDLIST*)aItems,
@@ -141,6 +140,10 @@ HMENU CShellViewImpl::GetContextMenuForItems(UINT uItems,LPITEMIDLIST *aItems)
 	if(pContextMenu)
 	{
 		m_hMenu = CreatePopupMenu();
+		// MF_BYCOMMAND  MF_BYPOSITION
+		AppendMenu ( m_hMenu, MF_BYPOSITION, CMD_NEWTAG , ::MyLoadString(IDS_CONTEXTMENU_SUB_NEWTAG));
+		AppendMenu ( m_hMenu, MF_BYPOSITION, CMD_SETTINGS , ::MyLoadString(IDS_CONTEXTMENU_SUB_SETTINGS));
+		AppendMenu ( m_hMenu, MF_BYPOSITION, CMD_ABOUT , ::MyLoadString(IDS_CONTEXTMENU_SUB_ABOUT));
 
 		/*
 		See if we are in Explore or Open mode. If the browser's tree is
@@ -154,14 +157,18 @@ HMENU CShellViewImpl::GetContextMenuForItems(UINT uItems,LPITEMIDLIST *aItems)
 			fExplore = TRUE;
 		}
 
-		auto hr = pContextMenu->QueryContextMenu( m_hMenu,
+		UINT uIDAdjust = GetMenuItemCount(m_hMenu);
+		UINT uIDAdjustMax = 0xFFFF; //To allow all IDs, set this parameter to 0xFFFF.
+		HRESULT hr = pContextMenu->QueryContextMenu( m_hMenu,
 			0,
-			MENU_OFFSET,
-			MENU_MAX,
-			CMF_NORMAL | (fExplore ? CMF_EXPLORE : 0));
+			uIDAdjust,
+			uIDAdjustMax,
+			CMF_NORMAL | CMF_EXTENDEDVERBS | (fExplore ? CMF_EXPLORE : 0));
 		if(m_hMenu && SUCCEEDED(hr))
 		{
-
+			POINT p;
+			GetCursorPos(&p);
+			TrackPopupMenu(m_hMenu,TPM_LEFTALIGN|TPM_TOPALIGN|TPM_RETURNCMD,p.x,p.y,0,m_hWnd,NULL);
 		}
 		else
 		{

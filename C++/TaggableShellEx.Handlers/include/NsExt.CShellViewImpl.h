@@ -17,7 +17,6 @@ class CShellViewImpl:
 #ifdef IMPL_IShellFolderViewCB
 	,public IShellFolderViewCB
 #endif
-	,public IContextMenuCB
 	,public IBrowserFrameOptions
 	//,public IPersistIDList
 {
@@ -117,9 +116,6 @@ public:
 	// IShellFolderViewCB
 	STDMETHOD(MessageSFVCB)(THIS_ UINT uMsg, WPARAM wParam, LPARAM lParam);
 #endif
-
-	// IContextMenuCB
-    IFACEMETHODIMP CallBack(__in_opt IShellFolder *psf, HWND hwndOwner, __in_opt IDataObject *pdtobj, UINT uiMsg, WPARAM wParam, LPARAM lParam);
 
 	// IBrowserFrameOptions
 	HRESULT GetFrameOptions(
