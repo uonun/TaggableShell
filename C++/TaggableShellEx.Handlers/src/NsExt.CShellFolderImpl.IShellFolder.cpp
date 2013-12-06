@@ -139,6 +139,8 @@ HRESULT CShellFolderImpl::CreateViewObject(
 
 	HRESULT hr = E_NOINTERFACE;
 
+	m_hwndOwner = hwndOwner;
+
 	// Create a new ShellViewImpl COM object.
 	if ( IsEqualIID(IID_IShellView,riid) )
 	{

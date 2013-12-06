@@ -21,9 +21,11 @@
   <ItemGroup>
     <ClCompile Include="sqlite-201310070036\src\shell.c" />
     <ClCompile Include="sqlite-201310070036\src\sqlite3.c" />
+    <ClCompile Include="src\DlgProcs.cpp" />
     <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\Log.cpp" />
     <ClCompile Include="src\NsExt.CEnumExplorerCommandImpl.cpp" />
+    <ClCompile Include="src\NsExt.CExplorerCommandImpl.cpp" />
     <ClCompile Include="src\NsExt.CShellFolderImpl.IExplorerCommandProviderImpl.cpp" />
     <ClCompile Include="src\NsExt.CShellFolderImpl.IContextMenu.cpp" />
     <ClCompile Include="src\NsExt.CShellFolderImpl.IExplorerPaneVisibility.cpp" />
@@ -53,6 +55,7 @@
     <ClInclude Include="include\Log.h" />
     <ClInclude Include="include\CBackgroundThread.h" />
     <ClInclude Include="include\NsExt.CEnumExplorerCommandImpl.h" />
+    <ClInclude Include="include\NsExt.CExplorerCommandImpl.h" />
     <ClInclude Include="include\PidlMgr.h" />
     <ClInclude Include="include\NsExt.CEnumIDListImpl.h" />
     <ClInclude Include="include\NsExt.CShellViewImpl.h" />

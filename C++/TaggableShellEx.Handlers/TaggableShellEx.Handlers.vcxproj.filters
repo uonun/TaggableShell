@@ -102,6 +102,12 @@
     <ClCompile Include="src\NsExt.CEnumExplorerCommandImpl.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\NsExt.CExplorerCommandImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DlgProcs.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite-201310070036\src\sqlite3.h">
@@ -156,6 +162,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\NsExt.CEnumExplorerCommandImpl.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\NsExt.CExplorerCommandImpl.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

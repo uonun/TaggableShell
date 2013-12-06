@@ -3,6 +3,7 @@
 #include "Taghelper.h"
 #include "NsExt.CShellViewImpl.h"
 #include "NsExt.CEnumIDListImpl.h"
+#include "NsExt.CExplorerCommandImpl.h"
 #include "PidlMgr.h"
 #include <shidfact.h>
 #include <propkeydef.h>
@@ -95,7 +96,8 @@ public:
 
 	// Init function - call right after constructing a CShellFolderImpl object.
 	HRESULT Init ( PIDLIST_ABSOLUTE pidl_perent, PIDLIST_RELATIVE pidl_current );
-	BOOL IsShowTag();
+	BOOL IsShowTagList();
+	HRESULT ExecuteMenuCommand(CExplorerCommandImpl *cmd,IShellItemArray* psiItemArray, IBindCtx* pbc);
 
 	// current shell item data. (m_PIDLCurrent)
 	MYPIDLDATA* CurrentShellItemData;
@@ -120,6 +122,7 @@ private:
 
 	// mutex lock
 	HANDLE m_mutex;
+	HWND m_hwndOwner;
 
 	// get details for columns.
 	HRESULT _GetPropertyForItem(PCUITEMID_CHILD pidl, REFPROPERTYKEY key, __out PROPVARIANT *ppropvar);

@@ -15,6 +15,5 @@ HRESULT CShellFolderImpl::GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *pe
 	{
 		*peps = EPS_DEFAULT_ON | EPS_FORCE;
 	}
-
 	return S_OK;
 }

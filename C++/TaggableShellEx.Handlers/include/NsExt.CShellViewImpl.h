@@ -152,7 +152,7 @@ private:
 	int					_currentIconSize;
 
 	void InitExplorerBrowserColumns(IFolderView2* pfv2);
-	BOOL IsShowTag();
+	BOOL IsShowTagList();
 	HRESULT GetItemFromView(IFolderView2 *pfv, int iItem, REFIID riid, void **ppv);
 
 	void FillList(IResultsFolder* & prf);

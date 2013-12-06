@@ -36,6 +36,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #undef SUPPORT_SETTINGS_IN_REG	// we do not surrpot that right now.
 
 #define _DELETE(obj) if (obj != NULL) {delete obj , obj = NULL;}
+#define _RELEASE(obj) if (obj != NULL) {obj->Release() , obj = NULL;}
 
 using namespace std;
 using namespace std::tr2::sys;
@@ -86,6 +87,12 @@ for the CLSIDs: ASCII(C2DEBAE9C1D6) = Author
 #define CMD_NEWTAG							0x1
 #define CMD_SETTINGS						0x2
 #define CMD_ABOUT							0x3
+// CMD-IDs for command bar on the top of explorer browser.
+#define CMD_CMDBAR_NEWTAG					0x1
+#define CMD_CMDBAR_MODIFYTAG				0x2
+#define CMD_CMDBAR_DELTAG					0x3
+#define CMD_CMDBAR_SETTINGS					0x10
+#define CMD_CMDBAR_ABOUT					0x11
 
 #define COLOR_MY_DEFAULT					COLOR_WINDOWTEXT
 #define COLOR_MY_ERROR						RGB(0xFF,0,0)

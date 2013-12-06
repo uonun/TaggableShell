@@ -242,7 +242,7 @@ STDMETHODIMP CShellViewImpl::AddPropertySheetPages(DWORD dwReserved, LPFNADDPROP
 	psp.dwSize      = sizeof(PROPSHEETPAGE);
 	psp.dwFlags     = PSP_USEREFPARENT | PSP_USETITLE | PSP_DEFAULT | PSP_USECALLBACK;
 	psp.hInstance   = ::g_hInst;
-	psp.pszTemplate = MAKEINTRESOURCE(IDD_PROPERTYPAGE_FOLDER);
+	psp.pszTemplate = MAKEINTRESOURCE(IDD_SETTINGS);
 	psp.pszIcon     = 0;
 	psp.pszTitle    = MAKEINTRESOURCE(IDS_DLG_PROPERTYPAGE_CAPTION);
 	psp.pfnDlgProc  = PageDlgProc_ShellViewImpl;

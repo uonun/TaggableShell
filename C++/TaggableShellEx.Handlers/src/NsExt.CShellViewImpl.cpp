@@ -215,7 +215,7 @@ void CShellViewImpl::InitExplorerBrowserColumns(IFolderView2* pfv2)
 	HRESULT hr = pfv2->QueryInterface(&pcm);
 	if (SUCCEEDED(hr))
 	{
-		if( IsShowTag() )
+		if( IsShowTagList() )
 		{
 			m_folderSettings.ViewMode = FVM_TILE;
 			_peb->SetFolderSettings(&m_folderSettings);
@@ -300,13 +300,11 @@ HRESULT CShellViewImpl::Init ( CShellFolderImpl* pContainingFolder )
 	return S_OK;
 }
 
-BOOL CShellViewImpl::IsShowTag()
+BOOL CShellViewImpl::IsShowTagList()
 {
-	if ( NULL != m_psfContainingFolder && m_psfContainingFolder->IsShowTag() )
+	if ( NULL != m_psfContainingFolder )
 	{
-		//auto data = m_PidlMgr.GetData(m_psfContainingFolder->m_PIDLCurrent);
-		//return data != NULL && data->Type == MYSHITEMTYPE_TAG ? TRUE : FALSE;
-		return FALSE;
+		return m_psfContainingFolder->IsShowTagList();
 	}
 	return TRUE;
 }
@@ -339,8 +337,8 @@ HRESULT CShellViewImpl::DoWorkAsyn(IResultsFolder *prf)
 
 #pragma region do work
 		LPWSTR infoLoaded = 0;
-		BOOL isShowTag = this->IsShowTag();
-		if ( isShowTag )
+		BOOL isShowTags = this->IsShowTagList();
+		if ( isShowTags )
 		{
 			this->m_folderSettings.ViewMode = FVM_ICON;
 			infoLoaded = ::MyLoadString(IDS_MSG_NO_TAG_WITH_DETAIL);
@@ -372,7 +370,7 @@ HRESULT CShellViewImpl::DoWorkAsyn(IResultsFolder *prf)
 		LPITEMIDLIST pidl = NULL;
 		HRESULT hr;
 
-		DWORD flag = isShowTag ? SHCONTF_FOLDERS : SHCONTF_NONFOLDERS;
+		DWORD flag = isShowTags ? SHCONTF_FOLDERS : SHCONTF_NONFOLDERS;
 		hr = this->m_psfContainingFolder->EnumObjects ( this->m_hWnd, flag,&pEnum );
 		if ( SUCCEEDED(hr) )
 		{
