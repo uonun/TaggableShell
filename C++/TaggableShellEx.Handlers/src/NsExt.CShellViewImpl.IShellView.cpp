@@ -272,11 +272,11 @@ STDMETHODIMP CShellViewImpl::AddPropertySheetPages(DWORD dwReserved, LPFNADDPROP
 }
 #pragma endregion
 
-STDMETHODIMP 	CShellViewImpl::EnableModeless(BOOL fEnable)
+STDMETHODIMP CShellViewImpl::EnableModeless(BOOL fEnable)
 { 
 	return m_spShellBrowser->EnableModelessSB(fEnable);
 }
-STDMETHODIMP 	CShellViewImpl::GetItemObject(UINT uItem, REFIID riid, void** ppv)
+STDMETHODIMP CShellViewImpl::GetItemObject(UINT uItem, REFIID riid, void** ppv)
 {
 	/* riid:
 	{05B718B0-0000-0000-B01A-7B6225D90000}
@@ -302,17 +302,17 @@ STDMETHODIMP 	CShellViewImpl::GetItemObject(UINT uItem, REFIID riid, void** ppv)
 
 	return hr;
 }
-STDMETHODIMP 	CShellViewImpl::SaveViewState()
+STDMETHODIMP CShellViewImpl::SaveViewState()
 {
 	// seems take no effect...
 	m_spShellBrowser->GetViewStateStream(STGM_WRITE,&m_pViewState);
 	return E_NOTIMPL;
 }
-STDMETHODIMP 	CShellViewImpl::SelectItem(LPCITEMIDLIST pidlItem, UINT uFlags)
+STDMETHODIMP CShellViewImpl::SelectItem(LPCITEMIDLIST pidlItem, UINT uFlags)
 {
 	return E_NOTIMPL; 
 }
-STDMETHODIMP 	CShellViewImpl::TranslateAccelerator(LPMSG lpmsg)
+STDMETHODIMP CShellViewImpl::TranslateAccelerator(LPMSG lpmsg)
 { 	
 	::PrintLog(L"CShellViewImpl::TranslateAccelerator");
 	return E_NOTIMPL; 
@@ -320,6 +320,30 @@ STDMETHODIMP 	CShellViewImpl::TranslateAccelerator(LPMSG lpmsg)
 
 
 #ifdef IMPL_IShellFolderViewCB
+// define some undocumented messages. See "shlext.h" from Henk Devos & Andrew Le Bihan, at http://www.whirlingdervishes.com/nselib/public
+#define SFVCB_SELECTIONCHANGED    0x0008
+#define SFVCB_DRAWMENUITEM        0x0009
+#define SFVCB_MEASUREMENUITEM     0x000A
+#define SFVCB_EXITMENULOOP        0x000B
+#define SFVCB_VIEWRELEASE         0x000C
+#define SFVCB_GETNAMELENGTH       0x000D
+#define SFVCB_WINDOWCLOSING       0x0010
+#define SFVCB_LISTREFRESHED       0x0011
+#define SFVCB_WINDOWFOCUSED       0x0012
+#define SFVCB_REGISTERCOPYHOOK    0x0014
+#define SFVCB_COPYHOOKCALLBACK    0x0015
+#define SFVCB_ADDINGOBJECT        0x001D
+#define SFVCB_REMOVINGOBJECT      0x001E
+
+#define SFVCB_GETCOMMANDDIR       0x0021
+#define SFVCB_GETCOLUMNSTREAM     0x0022
+#define SFVCB_CANSELECTALL        0x0023
+#define SFVCB_ISSTRICTREFRESH     0x0025
+#define SFVCB_ISCHILDOBJECT       0x0026
+#define SFVCB_GETEXTVIEWS         0x0028
+#define SFVCB_WNDMAIN              46
+#define SFVCB_COLUMNCLICK2   0x32
+
 STDMETHODIMP CShellViewImpl::MessageSFVCB(THIS_ UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	::PrintLog(L"CShellViewImpl::MessageSFVCB: 0x%X,0x%X,0x%X",uMsg,wParam,lParam);
@@ -333,6 +357,8 @@ STDMETHODIMP CShellViewImpl::MessageSFVCB(THIS_ UINT uMsg, WPARAM wParam, LPARAM
 		}
 		break;
 	default:
+		//hr = SHShellFolderView_Message(m_hwndParent, uMsg, lParam);
+		//bResult = ProcessWindowMessage(NULL, uMsg, wParam, lParam, lResult, 0);
 		break;
 	}
 	return hr;

@@ -469,6 +469,7 @@ void CShellViewImpl::HandleActivate ( UINT uState )
 	// If we are being activated
 	if ( SVUIA_DEACTIVATE != uState )
 	{
+		// The Shell view object must call this method before calling the IShellBrowser::InsertMenusSB method.
 		m_spShellBrowser->OnViewWindowActive(this);
 
 		/*

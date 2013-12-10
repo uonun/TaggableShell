@@ -9,6 +9,7 @@ CShellFolderImpl::CShellFolderImpl(void):
 	,pTagHelper(NULL)
 	,m_mutex(NULL)
 	,m_hwndOwner(NULL)
+	,m_currentView(NULL)
 {
 	::PrintLog(L"CShellFolderImpl.ctor");
 
@@ -123,40 +124,42 @@ HRESULT CShellFolderImpl::ExecuteMenuCommand(CExplorerCommandImpl *cmd,IShellIte
 	{
 	case CMD_CMDBAR_NEWTAG:
 		{
-			hr = MessageBox(NULL,cmd->m_mii.dwTypeData,L"CMD",MB_OK);;
+			hr = MessageBox(NULL,cmd->m_mii.dwTypeData,L"CMD",MB_OK);
 			break;
 		}
 	case CMD_CMDBAR_MODIFYTAG:
 		{
-			hr = MessageBox(NULL,cmd->m_mii.dwTypeData,L"CMD",MB_OK);;
+			if( NULL != psiItemArray )
+			{
+				DWORD count;
+				hr = psiItemArray->GetCount(&count);
+				if( SUCCEEDED(hr) && count > 0 )
+				{
+					this->m_currentView->DoRename();
+				}
+			}
+#if _DEBUG
+			else{
+				MessageBox(NULL,L"Error: Nothing selected.",L"Error",MB_OK | MB_ICONERROR);
+			}
+#endif			
 			break;
 		}
 	case CMD_CMDBAR_DELTAG:
 		{
-			hr = MessageBox(NULL,cmd->m_mii.dwTypeData,L"CMD",MB_OK);;
+			hr = MessageBox(NULL,cmd->m_mii.dwTypeData,L"CMD",MB_OK);
 			break;
 		}
 	case CMD_CMDBAR_SETTINGS:
 		{
-			auto _hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_SETTINGS),m_hwndOwner,DlgProc_Settings);
-			if(_hdlg != NULL){
-				SetWindowText(_hdlg,::MyLoadString(IDS_ProductName));
-				ShowWindow(_hdlg, SW_SHOW);
-				UpdateWindow(_hdlg);
-				SetWindowPos(_hdlg,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW);
-				hr = S_OK;
-			}
+			auto _hdlg = CreateSingletonDlg(m_hwndOwner,IDD_SETTINGS,::MyLoadString(IDS_DLG_SETTINGS_CAPTION),DlgProc_Settings,NULL);
+			hr = _hdlg != NULL ? S_OK : S_FALSE;
 			break;
 		}
 	case CMD_CMDBAR_ABOUT:
 		{
-			auto _hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_ABOUT),m_hwndOwner,DlgProc_About);
-			if(_hdlg != NULL){
-				AnimateWindow(_hdlg,200, AW_VER_POSITIVE);
-				UpdateWindow(_hdlg);
-				SetWindowPos(_hdlg,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW);
-				hr = S_OK;
-			}
+			auto _hdlg = CreateSingletonDlg(m_hwndOwner,IDD_ABOUT,::MyLoadString(IDS_DLG_ABOUT_CAPTION),DlgProc_About,NULL);
+			hr = _hdlg != NULL ? S_OK : S_FALSE;
 			break;
 		}
 	default:

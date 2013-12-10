@@ -40,6 +40,7 @@ public:
 
 	BOOL IsAsso(LPCWSTR file, LPCWSTR tag);
 	BOOL IsTagExists(LPCWSTR & tag);
+	BOOL RenameTag(LPCWSTR & oldTag, LPCWSTR & newTag);
 
 	UINT GetFileID(LPSTR* fileNameInSQL);				// return DB_RECORD_NOT_EXIST if fail
 	UINT GetTagID(LPWSTR & tag);						// return DB_RECORD_NOT_EXIST if fail

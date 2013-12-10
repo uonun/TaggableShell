@@ -56,9 +56,17 @@ STDMETHODIMP CShellViewImpl::OnDefaultCommand(IShellView * psv)
 STDMETHODIMP CShellViewImpl::OnStateChange(IShellView * psv, ULONG uChange)
 {
 	::PrintLog(L"CShellViewImpl::OnStateChange, uChange = %d",uChange);
-	if (uChange == CDBOSC_SELCHANGE)
+	switch (uChange)
 	{
-		//PostMessage(m_hWnd, KFD_SELCHANGE, 0, 0);
+	case CDBOSC_SETFOCUS:
+		m_spShellBrowser->OnViewWindowActive(psv);
+		break;
+	case CDBOSC_SELCHANGE:
+		//PostMessage(m_hWnd, WM_USER + 1, 0, 0);
+		//SHChangeNotify(SHCNE_UPDATEITEM, ...)
+		break;
+	default:
+		break;
 	}
 	return S_OK;
 }

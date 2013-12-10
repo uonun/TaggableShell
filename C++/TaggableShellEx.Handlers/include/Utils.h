@@ -36,3 +36,5 @@ BOOL TestMinimumOSRequirement();
 
 #define RIIDNAME(riid,riid2) GetRiidName(riid),GetRiidName(riid2)
 LPWSTR GetRiidName(REFIID riid);
+
+HWND CreateSingletonDlg(HWND parent,UINT dlgResourceID,LPWSTR windowCaption,DLGPROC lpDialogFunc,LPARAM lParam);

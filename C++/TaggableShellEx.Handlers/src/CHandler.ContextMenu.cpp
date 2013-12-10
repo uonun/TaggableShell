@@ -38,7 +38,7 @@ HRESULT CHandler::QueryContextMenu (
 	// MF_BYCOMMAND  MF_BYPOSITION
 	InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION | MF_SEPARATOR, _firstSpecialCmdID , L"MF_SEPARATOR" );
 	InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION, _firstSpecialCmdID + CMD_NEWTAG,::MyLoadString(IDS_CONTEXTMENU_SUB_NEWTAG));
-	//InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION, _firstSpecialCmdID + CMD_SETTINGS,::MyLoadString(IDS_CONTEXTMENU_SUB_SETTINGS));
+	InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION, _firstSpecialCmdID + CMD_SETTINGS,::MyLoadString(IDS_CONTEXTMENU_SUB_SETTINGS));
 	InsertMenu ( _hSubmenu, uIdx++ , MF_BYPOSITION, _firstSpecialCmdID + CMD_ABOUT,::MyLoadString(IDS_CONTEXTMENU_SUB_ABOUT));
 
 	// http://msdn.microsoft.com/en-us/library/windows/desktop/ms647578(v=vs.85).aspx
@@ -125,37 +125,24 @@ HRESULT CHandler::InvokeCommand (
 	else
 	{	
 		HWND parent = GetDesktopWindow();
-		BOOL createNew = true;
-
-		// the caption of window, must be same as it when the window got msg WM_INITDIALOG.
-		wchar_t windowCaption[LOADSTRING_BUFFERSIZE] = {0};
-
+		HWND _hdlg;
 		switch (cmd - this->pTagHelper->TagCount)
 		{
 		case CMD_NEWTAG:
 			{
-				auto tmp = ::MyLoadString(IDS_DLG_TAGMANAGER_CAPTION);
-				memcpy(windowCaption,tmp,sizeof(windowCaption));
-				_hdlg = FindWindowEx(parent, NULL, WINDOWCLASS_DLG, windowCaption);
-				if ( NULL == _hdlg ){
-					_hdlg = CreateDialogParam(g_hInst,MAKEINTRESOURCE(IDD_TAG_MANAGER),parent,DlgProc_TagManager,(LPARAM)this);
-					createNew = true;
-					::PrintLog(L"New window created: %s, handle = 0x%x",windowCaption, _hdlg);
-				}else
-				{
-					createNew = false;
-					::PrintLog(L"Got existed window: %s, handle = 0x%x",windowCaption, _hdlg);
-				}
+				_hdlg = CreateSingletonDlg(parent,IDD_TAG_MANAGER,::MyLoadString(IDS_DLG_TAGMANAGER_CAPTION),DlgProc_TagManager,(LPARAM)this);
+				break;
 			}
-			break;
 		case CMD_SETTINGS:
-			_hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE( _contextMenuSupposed ? IDD_PROPERTYPAGE_FILE : IDD_SETTINGS),pCmdInfo->hwnd,DlgProc_Settings);
-			break;
+			{
+				_hdlg = CreateSingletonDlg(parent,IDD_SETTINGS,::MyLoadString(IDS_DLG_SETTINGS_CAPTION),DlgProc_Settings,NULL);
+				break;
+			}
 		case CMD_ABOUT:
 			{
-				_hdlg = CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_ABOUT),pCmdInfo->hwnd,DlgProc_About);
+				_hdlg = CreateSingletonDlg(pCmdInfo->hwnd,IDD_ABOUT,::MyLoadString(IDS_DLG_ABOUT_CAPTION),DlgProc_About,NULL);
+				break;
 			}
-			break;
 		default:
 			{
 				return E_FAIL;
@@ -163,16 +150,7 @@ HRESULT CHandler::InvokeCommand (
 			break;
 		}
 
-		if(_hdlg != NULL){
-			SetWindowText(_hdlg,windowCaption);
-			ShowWindow(_hdlg, SW_SHOW);
-			UpdateWindow(_hdlg);
-
-			if( !createNew )
-			{
-				SetWindowPos(_hdlg,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW);
-			}
-		}else{
+		if(_hdlg == NULL){
 			DWORD e = GetLastError();
 			::PrintLog(L"Can not create window. cmd = %d, error = %d",cmd - this->pTagHelper->TagCount,e);
 			MessageBox(pCmdInfo->hwnd,L"Can not create window",L"Error",MB_OK);

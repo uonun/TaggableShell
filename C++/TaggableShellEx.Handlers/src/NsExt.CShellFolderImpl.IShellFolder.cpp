@@ -139,12 +139,13 @@ HRESULT CShellFolderImpl::CreateViewObject(
 
 	HRESULT hr = E_NOINTERFACE;
 
-	m_hwndOwner = hwndOwner;
-
 	// Create a new ShellViewImpl COM object.
 	if ( IsEqualIID(IID_IShellView,riid) )
 	{
 		::PrintLog(L"ShellFolder::CreateViewObject: riid = IID_IShellView");
+
+		if ( NULL != hwndOwner )
+			m_hwndOwner = hwndOwner;
 
 		// A new view object must be created each time this method is called.
 		CShellViewImpl* v = NULL;
@@ -154,7 +155,8 @@ HRESULT CShellFolderImpl::CreateViewObject(
 			return hr;
 
 		// Object initialization - pass the object its containing folder (this).
-		hr = ((CShellViewImpl*)v)->Init ( this );
+		hr = ((CShellViewImpl*)v)->Init ( this );		
+		this->m_currentView = v;
 
 		if ( FAILED(hr) )
 		{
@@ -534,8 +536,38 @@ HRESULT CShellFolderImpl::SetNameOf(
 	SHGDNF uFlags,
 	PITEMID_CHILD *ppidlOut
 	)
-{	
-	return S_OK;	
+{
+	HRESULT	hr = S_FALSE;
+	auto data = m_PidlMgr.GetData(pidl);
+	if( NULL != data )
+	{
+		LPCWSTR oldTag = data->wszDisplayName;
+		BOOL x = this->pTagHelper->RenameTag(oldTag,pszName);
+		if( x )
+		{
+			MYPIDLDATA d = {sizeof(MYPIDLDATA)};
+			d.cb = sizeof(MYPIDLDATA);
+			d.Type = MYSHITEMTYPE_TAG;
+			StringCbCopyW(d.wszDisplayName,sizeof(d.wszDisplayName), pszName);
+			*ppidlOut = m_PidlMgr.Create(&d);
+
+			UpdateWindow(hwndOwner);
+
+			hr = S_OK;
+		}
+		else
+		{
+			MessageBox(NULL,::MyLoadString(IDS_MSG_TAG_UNAVAILABLE),L"Error",MB_OK | MB_ICONERROR);
+		}
+	}
+#if _DEBUG
+	else
+	{
+		MessageBox(NULL,L"Selected item can not be renamed.",L"Error",MB_OK | MB_ICONERROR);
+	}
+#endif
+
+	return hr;	
 };
 #pragma endregion
 
@@ -564,6 +596,7 @@ STDMETHODIMP CShellFolderImpl::GetDefaultColumnState(UINT iColumn, __out SHCOLST
 	return hr;
 }
 
+#pragma region value of columns
 // to display details for TAGs. some of them will be listed as column in detail view.
 const CShellFolderImpl::COLUMNINFO CShellFolderImpl::c_rgColumnInfo[] =
 {
@@ -637,6 +670,7 @@ HRESULT CShellFolderImpl::_GetPropertyForItem(PCUITEMID_CHILD pidl, REFPROPERTYK
 	}
 	return hr;
 }
+#pragma endregion
 
 // The IShellFolder2::GetDetailsOf method provides access to the information that is displayed in the Windows Explorer Details view of a Shell folder.
 STDMETHODIMP CShellFolderImpl::GetDetailsOf(__in_opt PCUITEMID_CHILD pidl, UINT iColumn, __out SHELLDETAILS *psd)

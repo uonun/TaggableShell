@@ -522,6 +522,9 @@ BOOL CTaghelper::IsAsso(LPCWSTR file, LPCWSTR tag)
 
 BOOL CTaghelper::IsTagExists(LPCWSTR & tag)
 {
+	// reload again.
+	LoadTags(true);
+
 	if(TagCount > 0)
 	{
 		for (UINT i = 0; i < TagCount; i++)
@@ -533,6 +536,50 @@ BOOL CTaghelper::IsTagExists(LPCWSTR & tag)
 		}
 	}
 	return FALSE;
+}
+
+BOOL CTaghelper::RenameTag(LPCWSTR & oldTag, LPCWSTR & newTag)
+{
+	BOOL x = FALSE;
+	char oldTagInSQL[MAXLENGTH_EACHTAG] = {0};
+	::UnicodeToANSI(oldTag,oldTagInSQL);
+	::Replace(oldTagInSQL,"'","''");
+
+	char newTagInSQL[MAXLENGTH_EACHTAG] = {0};
+	::UnicodeToANSI(newTag,newTagInSQL);
+	::Replace(newTagInSQL,"'","''");
+
+	size_t len = strlen(newTagInSQL);
+	if( len > 0 )
+	{
+		x = IsTagExists(newTag);
+		if( !x )
+		{
+			char * sSQLFormater = NULL;
+			char sSQL[MAXLENGTH_SQL] = {0};
+			sSQLFormater = "UPDATE [TAGS] SET [TAGNAME]='%s' WHERE [TAGNAME]='%s';";
+			sprintf ( sSQL,sSQLFormater,newTagInSQL,oldTagInSQL );
+
+			char * pErrMsg = 0;
+			int ret = 0;
+			ANSIToUTF8(sSQL);
+			::PrintLog("RenameTag: %s",sSQL);
+			ret = sqlite3_exec( _db,sSQL, NULL, NULL, &pErrMsg );  
+			if ( ret != SQLITE_OK )  
+			{  
+				::PrintLog("SQL error(0x%x): %s", ret,pErrMsg);  
+				sqlite3_free(pErrMsg);
+				x = FALSE;
+			}
+			else
+			{
+				// reload again.
+				LoadTags(true);
+				x = TRUE;
+			}
+		}
+	}
+	return x;
 }
 
 HRESULT CTaghelper::GetFilesByTagID(LPWSTR* & files,UINT & count,const UINT tagIdInDb)

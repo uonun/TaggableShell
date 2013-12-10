@@ -436,6 +436,46 @@ BOOL TestMinimumOSRequirement()
 		dwlConditionMask);
 }
 
+HWND CreateSingletonDlg(HWND parent,UINT dlgResourceID,LPWSTR winCaption,DLGPROC lpDialogFunc,LPARAM lParam)
+{
+	BOOL createNew = true;
+	wchar_t windowCaption[LOADSTRING_BUFFERSIZE] = {0};
+	memcpy(windowCaption,winCaption,sizeof(windowCaption));
+	HWND _hdlg = NULL;
+	_hdlg = FindWindowEx(parent, NULL, WINDOWCLASS_DLG, windowCaption);
+	if( NULL == _hdlg )
+		_hdlg = FindWindowEx(NULL, NULL, WINDOWCLASS_DLG, windowCaption);
+
+	if( NULL == _hdlg )
+	{
+		_hdlg = CreateDialogParam(g_hInst,MAKEINTRESOURCE(dlgResourceID),parent,lpDialogFunc,lParam);
+		::PrintLog(L"New window created: %s, handle = 0x%x",windowCaption, _hdlg);
+	}else{
+		createNew = FALSE;
+		::PrintLog(L"Got existed window: %s, handle = 0x%x",windowCaption, _hdlg);
+	}
+
+	if(_hdlg != NULL){
+		// the caption of window.
+		// must be same as it when the window got msg WM_INITDIALOG for the reason of using FindWindow/FindWindowEx.
+		SetWindowText(_hdlg,windowCaption);
+
+		if( dlgResourceID == IDD_ABOUT )
+			AnimateWindow(_hdlg,200, AW_VER_POSITIVE);
+		else
+			ShowWindow(_hdlg,SW_SHOW );
+
+		UpdateWindow(_hdlg);
+
+		if( !createNew )
+		{
+			SetWindowPos(_hdlg,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW);
+		}
+	}
+	return _hdlg;
+}
+
+
 #if _DEBUG
 #include <initguid.h>
 #include <Filter.h>	// for IID_IFilter
@@ -531,3 +571,4 @@ LPWSTR GetRiidName(REFIID riid)
 	CoTaskMemFree(str);
 	return buffer;
 }
+
