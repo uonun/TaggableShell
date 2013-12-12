@@ -90,7 +90,7 @@ STDMETHODIMP CExplorerCommandImpl::GetState(IShellItemArray* psiItemArray, BOOL 
 
 STDMETHODIMP CExplorerCommandImpl::Invoke(IShellItemArray* psiItemArray, IBindCtx* pbc)
 {
-	::PrintLog(L"CExplorerCommandImpl::Invoke\n");
+	::PrintLog(L"CExplorerCommandImpl::Invoke: wID = %d,%s",m_mii.wID, m_mii.dwTypeData);
 	// Execute menu command.
 	// If nobody cared for the command, we will try it directly on the folder.
 	// This allows commands to work on a specific folder-level even when no items are selected.
