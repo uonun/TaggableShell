@@ -47,6 +47,7 @@ HRESULT CBackgroundThread<T1,TArgs>::StartThread(TArgs* & prf)
 	return hr;
 }
 
+
 template<class T1,typename TArgs>
 ULONG CBackgroundThread<T1,TArgs>::AddRef()
 {
@@ -72,6 +73,7 @@ DWORD WINAPI CBackgroundThread<T1,TArgs>::s_ThreadProc(void *pv)
 	if ( NULL != pfrobt->_pStream )
 	{
 		hr = CoGetInterfaceAndReleaseStream(pfrobt->_pStream, IID_PPV_ARGS(&prf));
+		prf->AddRef();
 		pfrobt->_pStream = NULL;
 	}
 

@@ -139,17 +139,14 @@ void FormTagManager::AddTag(void)
 	{
 		::PrintLog(L"Got new tag =[ %s ], adding to database.", key);
 		BOOL isAttchWithFilesChecked = Button_GetCheck(_hCheckAttachToFiles) == BST_CHECKED;
-		int count = isAttchWithFilesChecked ? _handler->pTagHelper->FileCount : 0;
 		UINT TID = 0;
-		TID = _handler->pTagHelper->InsertTag(key,count); // not need to reload tags here, as they will be reloaded after be associated with files.
-		if( TID != DB_RECORD_NOT_EXIST )
+		TID = _handler->pTagHelper->InsertTag(key); // not need to reload tags here, as they will be reloaded after be associated with files.
+		if( TID > 0 && TID != DB_RECORD_NOT_EXIST )
 		{
 			if( isAttchWithFilesChecked )
 			{
-				_handler->pTagHelper->SetTagByRecordId(_hwnd,TID);
+				_handler->pTagHelper->AsynSetTagByRecordId(_hwnd,TID);
 			}
-
-			LoadTags();
 
 			ShowMsg(L"Ìí¼Ó³É¹¦",COLOR_MY_OK);
 		}
@@ -286,13 +283,13 @@ void FormTagManager::InitTagList()
 	c.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_TAGNAME);
 	c.mask = LVCF_TEXT | LVCF_MINWIDTH | LVCF_WIDTH;
 	c.cxMin = 80;
-	c.cx = 115;
+	c.cx = 105;
 	ListView_InsertColumn(_hListTags,cIdx++,&c);
 
 	c.pszText = ::MyLoadString(IDS_DLG_TAGMANAGER_LV_TAGS_HEADER_USECOUNT);
 	c.mask = LVCF_TEXT | LVCF_MINWIDTH | LVCF_WIDTH | LVCF_FMT;
-	c.cxMin = 30;
-	c.cx = 40;
+	c.cxMin = 40;
+	c.cx = 50;
 	c.fmt = LVCFMT_RIGHT;
 	ListView_InsertColumn(_hListTags,cIdx++,&c);
 
@@ -328,7 +325,9 @@ void FormTagManager::GetListColValue_Tags(NMLVDISPINFO* & plvdi)
 		break;
 
 	case 1:
-		_itow_s((int) _handler->pTagHelper->Tags[plvdi->item.iItem].UseCount,plvdi->item.pszText,10,10);
+		{
+			_itow_s((int) _handler->pTagHelper->Tags[plvdi->item.iItem].UseCount,plvdi->item.pszText,10,10);
+		}
 		break;
 
 	default:

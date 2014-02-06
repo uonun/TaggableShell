@@ -18,3 +18,4 @@ void DllRelease();
 
 LRESULT CALLBACK DlgProc_About(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam);
 LRESULT CALLBACK DlgProc_Settings(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam);
+

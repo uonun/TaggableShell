@@ -27,6 +27,7 @@ public:
 	IFACEMETHODIMP_(ULONG) Release();
 
 	LRESULT CALLBACK DlgProc(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam);
+	void LoadTags(void);
 
 private :
 	CHandler* _handler;
@@ -53,7 +54,6 @@ private :
 	COLORREF _msgColor;
 	void ShowMsg(LPWSTR msg,COLORREF color = RGB(0,0,0));
 	
-	void LoadTags(void);
 	void LoadSelectedFiles(void);
 
 	BOOL IsNewTagOk(_Out_ wchar_t* key,_Out_  UINT & keyLength);

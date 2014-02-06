@@ -120,7 +120,7 @@ HRESULT CHandler::InvokeCommand (
 	{
 		UINT cmd_tagIdx = cmd;
 
-		this->pTagHelper->SetTagByIdx(pCmdInfo->hwnd,cmd_tagIdx);
+		this->pTagHelper->AsynSetTagByIdx(pCmdInfo->hwnd,cmd_tagIdx);
 	}
 	else
 	{	

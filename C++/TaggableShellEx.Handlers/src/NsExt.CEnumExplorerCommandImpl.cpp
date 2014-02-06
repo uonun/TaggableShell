@@ -23,7 +23,7 @@ CEnumExplorerCommandImpl::~CEnumExplorerCommandImpl(void)
 	{
 		// cmds in "_cmds" are just pointers,
 		// the real instances of them created in Init() by "new", need to release them manually.
-		for (int i = 0; i < _cmdCount; i++)
+		for (UINT i = 0; i < _cmdCount; i++)
 		{
 			_cmds[i]->Release();
 		}

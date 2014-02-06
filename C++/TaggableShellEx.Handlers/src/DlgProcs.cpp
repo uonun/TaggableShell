@@ -1,6 +1,13 @@
 #pragma once
 #include "..\include\Form.TagManager.h"
 
+LRESULT CALLBACK Callback_SetTagByRecordId()
+{
+	FormTagManager *pebhd = pebhd = FormTagManager::instance();
+	pebhd->LoadTags();
+	return 0;
+}
+
 LRESULT CALLBACK DlgProc_TagManager(_In_  HWND hwnd,_In_  UINT uMsg,_In_  WPARAM wParam,_In_  LPARAM lParam){
 	FormTagManager *pebhd = reinterpret_cast<FormTagManager *>(GetWindowLongPtr(hwnd, DWLP_USER));
 	if (uMsg == WM_INITDIALOG)

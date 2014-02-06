@@ -29,9 +29,9 @@ public:
 	void LoadTags(bool ignoreCache = false);
 
 	// Bind/Unbind tag to files by index of tag in the array of Tags.
-	HRESULT SetTagByIdx(HWND progressBarHwnd,UINT & tagIdx);
+	HRESULT AsynSetTagByIdx(HWND progressBarHwnd,UINT & tagIdx);
 	// Bind/Unbind tag to files by record ID in database.
-	HRESULT SetTagByRecordId(HWND progressBarHwnd,UINT & tagIdInDb);
+	HRESULT AsynSetTagByRecordId(HWND progressBarHwnd,UINT & tagIdInDb);
 
 	LPWSTR TargetFileNames[MAXCOUNT_SELECTED_ITEM];			// the file full path of target item.
 	UINT FileCount;
@@ -45,7 +45,7 @@ public:
 	UINT GetFileID(LPSTR* fileNameInSQL);				// return DB_RECORD_NOT_EXIST if fail
 	UINT GetTagID(LPWSTR & tag);						// return DB_RECORD_NOT_EXIST if fail
 	UINT InsertFile(LPWSTR & targetFile);				// return DB_RECORD_NOT_EXIST if fail
-	UINT InsertTag(LPWSTR & newTag,const int useCount);	// return DB_RECORD_NOT_EXIST if fail
+	UINT InsertTag(LPWSTR & newTag);					// return DB_RECORD_NOT_EXIST if fail
 
 	void DeleteTags(wchar_t tags[MAXCOUNT_TAG][MAXLENGTH_EACHTAG], const int count);
 

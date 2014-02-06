@@ -15,6 +15,9 @@ const LPSTR sSQL_CLEARNUP
 
 CTaghelper* CTaghelper::p_instance_ = NULL;
 
+LRESULT CALLBACK Callback_SetTagByRecordId();
+
+
 CTaghelper::CTaghelper(void):
 	_cRef(1)
 	,_cached(false)
@@ -126,7 +129,7 @@ int _callback_exec_load_tags(void * tagHelper,int argc, char ** argv, char ** as
 		memcpy(tag.Tag,tmpTag,ARRAYSIZE(tag.Tag));
 		delete tmpTag;
 
-		::PrintLog( L"Got tag: %s",tag.Tag );
+		::PrintLog( L"Got tag: %s, TagID=%d, TagIdx=%d, UseCount=%d, bAsso=%d",tag.Tag,tag.TagID,tag.TagIdx,tag.UseCount,tag.bAsso );
 
 		h->TagCount++;
 
@@ -212,7 +215,7 @@ void CTaghelper::LoadTags(bool ignoreCache)
 	}
 }
 
-HRESULT CTaghelper::SetTagByRecordId(HWND progressBarHwnd,UINT & tagIdInDb)
+HRESULT CTaghelper::AsynSetTagByRecordId(HWND progressBarHwnd,UINT & tagIdInDb)
 {
 	_ASSERT_EXPR( tagIdInDb > 0,L"tagIdInDb must be greater than 0.");
 
@@ -238,13 +241,14 @@ HRESULT CTaghelper::SetTagByRecordId(HWND progressBarHwnd,UINT & tagIdInDb)
 			pfrobt->Release();
 		}
 	}
+
 	return S_OK;
 }
 
-HRESULT CTaghelper::SetTagByIdx(HWND progressBarHwnd,UINT & tagIdx)
+HRESULT CTaghelper::AsynSetTagByIdx(HWND progressBarHwnd,UINT & tagIdx)
 {
 	_ASSERT_EXPR( tagIdx < TagCount,L"tagIdx must be less than TagCount.");
-	return SetTagByRecordId(progressBarHwnd,Tags[tagIdx].TagID);
+	return AsynSetTagByRecordId(progressBarHwnd,Tags[tagIdx].TagID);
 }
 
 // get file id in _db, return DB_RECORD_NOT_EXIST if fail.
@@ -415,29 +419,29 @@ UINT CTaghelper::InsertFile(LPWSTR & targetFile)
 	return id;
 }
 
-UINT CTaghelper::InsertTag(LPWSTR & newTag, const int useCount)
+UINT CTaghelper::InsertTag(LPWSTR & newTag)
 {
 	char * sSQLFormater = NULL;
 	char sSQL[MAXLENGTH_SQL] = {0};
+	
+	// attach the SQL for clean up first.
+	strcat(sSQL,sSQL_CLEARNUP);	
+	strcat(sSQL,";\r\n");
 
-	sSQLFormater = "INSERT INTO [TAGS] (TAGNAME,USECOUNT,DISPLAY_ORDER) values ('%s','%d','0');";
+	sSQLFormater = "INSERT INTO [TAGS] (TAGNAME,USECOUNT,DISPLAY_ORDER) values ('%s','0','0');";
 	char tagInSQL[MAXLENGTH_EACHTAG] = {0};
 	::UnicodeToANSI(newTag,tagInSQL);
 	::Replace(tagInSQL,"'","''");
-	sprintf ( sSQL,sSQLFormater,tagInSQL,useCount,tagInSQL );
+	sprintf ( sSQL,sSQLFormater,tagInSQL );
 
 	ANSIToUTF8(sSQL);
-
-	// attach the SQL for clean up.
-	strcat(sSQL,";\r\n");
-	strcat(sSQL,sSQL_CLEARNUP);
 
 	// select the inserted tag id. must be the last query for sqlite3_get_table.
 	strcat(sSQL,"SELECT [ID] FROM [TAGS] WHERE [TAGNAME]='");
 	strcat(sSQL,tagInSQL);
 	strcat(sSQL,"';");
 
-	UINT id=0;
+	UINT id = 0;
 	char** pazResult = 0;
 	int pnRow = 0;
 	int pnColumn = 0;
@@ -677,7 +681,7 @@ HRESULT CTaghelper::ShowProgressDlg(HWND hwnd,IOperationsProgressDialog * & _pOP
 						hr = _pOPD->StartProgressDialog(hwnd, PROGDLG_MODAL | PROGDLG_NOCANCEL | PROGDLG_AUTOTIME | OPPROGDLG_DONTDISPLAYLOCATIONS | OPPROGDLG_DONTDISPLAYDESTPATH );						
 						hr = _pOPD->SetMode(PDM_RUN);
 						hr = _pOPD->SetOperation(SPACTION_CALCULATING);
-						hr = pfo->SetProgressDialog(_pOPD);
+						hr = pfo->SetProgressDialog(_pOPD);						
 					}
 				}
 
@@ -699,11 +703,11 @@ HRESULT CTaghelper::ShowProgressDlg(HWND hwnd,IOperationsProgressDialog * & _pOP
 	return hr;
 }
 
-// Asynchronized SetTagByRecordId
+// Do real work for AsynSetTagByRecordId
 HRESULT CTaghelper::DoWorkAsyn(IOperationsProgressDialog * & _pOPD)
 {
 	_ASSERT_EXPR( _pOPD != NULL ,L"_pOPD could not be NULL");
-
+	
 	HRESULT hr = S_FALSE;
 
 	// found the tag
@@ -729,7 +733,7 @@ HRESULT CTaghelper::DoWorkAsyn(IOperationsProgressDialog * & _pOPD)
 					FID = InsertFile(TargetFileNames[0]);
 				}
 
-				_ASSERT_EXPR(FID > 0,L"FID is not available!");
+				_ASSERT_EXPR(FID > 0 && FID != DB_RECORD_NOT_EXIST,L"FID is not available!");
 
 			}else{
 
@@ -757,7 +761,7 @@ HRESULT CTaghelper::DoWorkAsyn(IOperationsProgressDialog * & _pOPD)
 
 			sprintf ( sSQL,sSQLFormater,FID,TID,TID );
 			ANSIToUTF8(sSQL);
-			::PrintLog("SetTag: %s",sSQL);
+			::PrintLog("DoWorkAsyn: %s",sSQL);
 			ret = sqlite3_exec( _db, sSQL, NULL, 0, &pErrMsg );
 			if( ret != SQLITE_OK)
 			{
@@ -775,7 +779,7 @@ HRESULT CTaghelper::DoWorkAsyn(IOperationsProgressDialog * & _pOPD)
 					FID = InsertFile(TargetFileNames[i]);
 				}
 
-				_ASSERT_EXPR(FID > 0,L"FID is not available!");
+				_ASSERT_EXPR(FID > 0 && FID != DB_RECORD_NOT_EXIST,L"FID is not available!");
 
 				if ( !IsAsso(TargetFileNames[i],_Asyn_currentTag->Tag) )
 				{
@@ -817,6 +821,8 @@ HRESULT CTaghelper::DoWorkAsyn(IOperationsProgressDialog * & _pOPD)
 		// can not find the tag
 		hr = S_FALSE;
 	}
+	
+	Callback_SetTagByRecordId();
 
 	return hr;
 }
