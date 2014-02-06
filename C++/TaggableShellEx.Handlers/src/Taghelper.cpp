@@ -822,6 +822,7 @@ HRESULT CTaghelper::DoWorkAsyn(IOperationsProgressDialog * & _pOPD)
 		hr = S_FALSE;
 	}
 	
+	// do some external works such as reload the tag list again.
 	Callback_SetTagByRecordId();
 
 	return hr;
